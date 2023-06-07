@@ -11,10 +11,10 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	
+
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
-	
+
 	"github.com/oarkflow/pkg/decimal"
 	"github.com/oarkflow/pkg/pdfs"
 	"github.com/oarkflow/pkg/pdfs/color"
@@ -33,11 +33,11 @@ func FloatStr(f float64) string {
 	roundedFloat := math.Round(f*100) / 100
 	p := message.NewPrinter(language.English)
 	results := r.FindAllString(p.Sprintf("%f", roundedFloat), 1)
-	
+
 	if len(results) < 1 {
 		panic("got some ridiculous number that has no decimals")
 	}
-	
+
 	return results[0]
 }
 
@@ -251,7 +251,7 @@ func (i *Invoice) Create(detail *Detail) *Invoice {
 	for i, item := range detail.Transactions {
 		transactions = append(transactions, item.Strings(strconv.Itoa(i+1)))
 	}
-	
+
 	detail.transactions = transactions
 	detail.TransactionAmount = detail.TransactionTotal()
 	detail.TotalAmount = detail.Total() - detail.TransactionAmount
@@ -453,7 +453,7 @@ func (i *Invoice) prepareSummary(detail *Detail) {
 		})
 	})
 	i.engine.Row(15, func() {
-	
+
 	})
 	i.engine.Row(5, func() {
 		i.engine.ColSpace(8)
@@ -490,9 +490,9 @@ func (i *Invoice) prepareHeader(detail *Detail) {
 					Percent: 100,
 				})
 			})
-			
+
 			i.engine.ColSpace(6)
-			
+
 			i.engine.Col(3, func() {
 				i.engine.Text("INVOICE", props.Text{
 					Align: consts.Right,
@@ -506,7 +506,7 @@ func (i *Invoice) prepareHeader(detail *Detail) {
 				})
 			})
 		})
-		
+
 		i.engine.Line(1.0,
 			props.Line{
 				Color: *primaryColor,
@@ -524,7 +524,7 @@ func (i *Invoice) prepareBusinessDetail(detail Contact) {
 		Style: consts.Bold,
 		Color: *primaryColor,
 	})
-	
+
 	i.engine.Text(detail.Address1, props.Text{
 		Size: 10,
 		Top:  15,
@@ -550,7 +550,7 @@ func (i *Invoice) prepareBusinessDetail(detail Contact) {
 				Top:  35,
 			})
 		}
-		
+
 	} else {
 		i.engine.Text(fmt.Sprintf("%s, %s %s, %s", detail.City, detail.State, detail.ZipCode, detail.Country), props.Text{
 			Size: 10,
@@ -669,9 +669,7 @@ func (i *Invoice) prepareDetail(detail *Detail) {
 			Color: *primaryColor,
 		},
 	)
-	i.engine.Row(10, func() {
-	
-	})
+	i.engine.Row(10, func() {})
 }
 
 func (i *Invoice) prepareFooter() {
@@ -719,7 +717,7 @@ func (i *Invoice) prepareFooter() {
 					Size:  10,
 				})
 			})
-			
+
 			i.engine.Col(4, func() {
 				i.engine.Text("", props.Text{
 					Top:   4,
@@ -797,7 +795,7 @@ func (i *Invoice) prepareFooter() {
 		})
 		i.engine.Line(1)
 		i.engine.Row(3, func() {
-		
+
 		})
 		i.engine.Row(7, func() {
 			i.engine.Col(2, func() {
