@@ -1,0 +1,48 @@
+{
+	"type": "object",
+	"properties": {
+		"em": {
+			"type": "object",
+			"properties": {
+				"code": {
+					"type": "string"
+				},
+				"encounter_uid": {
+					"type": "integer"
+				},
+				"work_item_uid": {
+					"type": "integer"
+				},
+				"billing_provider": {
+					"type": "string"
+				},
+				"resident_provider": {
+					"type": "string"
+				}
+			}
+		},
+		"cpt": {
+			"type" : "array",
+			"items" : {
+				"type": "object",
+				"properties": {
+					"code": {
+						"type": "string"
+					},
+					"encounter_uid": {
+						"type": "integer"
+					},
+					"work_item_uid": {
+						"type": "integer"
+					},
+					"billing_provider": {
+						"type": "string"
+					},
+					"resident_provider": {
+						"type": "string"
+					}
+				}
+			}
+		}
+	}
+}
