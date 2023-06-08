@@ -71,6 +71,7 @@ type BankDetail struct {
 type Business struct {
 	Details      Contact    `json:"details"`
 	BankDetail   BankDetail `json:"bank_detail"`
+	PayPal       string     `json:"paypal"`
 	ContactName  string     `json:"contact_name"`
 	ContactEmail string     `json:"contact_email"`
 	ContactPhone string     `json:"contact_phone"`
@@ -138,6 +139,7 @@ type Detail struct {
 	TransactionAmount float64       `yaml:"transaction_amount" json:"transaction_amount"`
 	TotalAmount       float64       `yaml:"total_amount" json:"total_amount"`
 	TaxRate           string        `json:"tax_rate"`
+	Note              string        `json:"note"`
 	TaxAmount         float64       `json:"tax_amount"`
 	UseExactDate      bool          `yaml:"use_exact_date" json:"use_exact_date"`
 	Customer          Customer      `yaml:"customer" json:"customer"`
@@ -394,7 +396,15 @@ func (i *Invoice) prepareSummary(detail *Detail) {
 		})
 	})
 	i.engine.Row(5, func() {
-		i.engine.ColSpace(8)
+		i.engine.Col(6, func() {
+			i.engine.Text(detail.Note, props.Text{
+				Top:   5,
+				Size:  10,
+				Style: consts.Bold,
+				Color: *primaryColor,
+			})
+		})
+		i.engine.ColSpace(2)
 		i.engine.Col(2, func() {
 			i.engine.Text(fmt.Sprintf("Tax (%s%%):", detail.TaxRate), props.Text{
 				Top:   5,
@@ -571,45 +581,33 @@ func (i *Invoice) prepareBusinessDetail(detail Contact) {
 		Size: 10,
 		Top:  15,
 	})
+	top := 20.0
 	if detail.Address2 != "" {
 		i.engine.Text(detail.Address2, props.Text{
 			Size: 10,
-			Top:  20,
+			Top:  top,
 		})
-		i.engine.Text(fmt.Sprintf("%s, %s %s, %s", detail.City, detail.State, detail.ZipCode, detail.Country), props.Text{
-			Size: 10,
-			Top:  25,
-		})
-		if detail.Telephone != "" {
-			i.engine.Text("Tel: "+detail.Telephone, props.Text{
-				Size: 10,
-				Top:  30,
-			})
-		}
-		if detail.Email != "" {
-			i.engine.Text(detail.Email, props.Text{
-				Size: 10,
-				Top:  35,
-			})
-		}
+		top += 5
 
-	} else {
-		i.engine.Text(fmt.Sprintf("%s, %s %s, %s", detail.City, detail.State, detail.ZipCode, detail.Country), props.Text{
+	}
+
+	i.engine.Text(fmt.Sprintf("%s, %s %s, %s", detail.City, detail.State, detail.ZipCode, detail.Country), props.Text{
+		Size: 10,
+		Top:  top,
+	})
+	top += 5
+	if detail.Telephone != "" {
+		i.engine.Text("Tel: "+detail.Telephone, props.Text{
 			Size: 10,
-			Top:  20,
+			Top:  top,
 		})
-		if detail.Telephone != "" {
-			i.engine.Text("Tel: "+detail.Telephone, props.Text{
-				Size: 10,
-				Top:  25,
-			})
-		}
-		if detail.Email != "" {
-			i.engine.Text(detail.Email, props.Text{
-				Size: 10,
-				Top:  30,
-			})
-		}
+	}
+	top += 5
+	if detail.Email != "" {
+		i.engine.Text(detail.Email, props.Text{
+			Size: 10,
+			Top:  top,
+		})
 	}
 }
 
@@ -716,12 +714,13 @@ func (i *Invoice) prepareDetail(detail *Detail) {
 
 func (i *Invoice) prepareFooter() {
 	detail := i.config.Business.Details
+	paypal := i.config.Business.PayPal
 	bankDetail := i.config.Business.BankDetail
 	contactName := i.config.Business.ContactName
 	contactEmail := i.config.Business.ContactEmail
 	contactPhone := i.config.Business.ContactPhone
 	i.engine.RegisterFooter(func() {
-		i.engine.Row(40, func() {
+		i.engine.Row(42, func() {
 			i.engine.Col(4, func() {
 				i.engine.Text("Payment Details:", props.Text{
 					Top:   4,
@@ -733,28 +732,41 @@ func (i *Invoice) prepareFooter() {
 						Blue:  124,
 					},
 				})
+				top := 10.0
+				if paypal != "" {
+					i.engine.Text("PAYPAL:", props.Text{
+						Top:   top,
+						Align: consts.Left,
+						Size:  10,
+					})
+					top += 5
+				}
 				i.engine.Text("BENEFICIARY NAME:", props.Text{
-					Top:   10,
+					Top:   top,
 					Align: consts.Left,
 					Size:  10,
 				})
+				top += 5
 				i.engine.Text("BENEFICIARY ACCOUNT NUMBER:", props.Text{
-					Top:   15,
+					Top:   top,
 					Align: consts.Left,
 					Size:  10,
 				})
+				top += 5
 				i.engine.Text("BANK NAME:", props.Text{
-					Top:   20,
+					Top:   top,
 					Align: consts.Left,
 					Size:  10,
 				})
+				top += 5
 				i.engine.Text("BANK ADDRESS:", props.Text{
-					Top:   25,
+					Top:   top,
 					Align: consts.Left,
 					Size:  10,
 				})
+				top += 5
 				i.engine.Text("BANK SWIFT CODE:", props.Text{
-					Top:   30,
+					Top:   top,
 					Align: consts.Left,
 					Size:  10,
 				})
@@ -771,36 +783,51 @@ func (i *Invoice) prepareFooter() {
 						Blue:  124,
 					},
 				})
+				top := 10.0
+				if paypal != "" {
+					i.engine.Text(paypal, props.Text{
+						Top:   top,
+						Align: consts.Left,
+						Style: consts.Bold,
+						Size:  10,
+						Color: *primaryColor,
+					})
+					top += 5
+				}
 				i.engine.Text(bankDetail.AccountName, props.Text{
-					Top:   10,
+					Top:   top,
 					Align: consts.Left,
 					Style: consts.Bold,
 					Size:  10,
 					Color: *primaryColor,
 				})
+				top += 5
 				i.engine.Text(bankDetail.AccountNumber, props.Text{
-					Top:   15,
+					Top:   top,
 					Align: consts.Left,
 					Style: consts.Bold,
 					Size:  10,
 					Color: *primaryColor,
 				})
+				top += 5
 				i.engine.Text(bankDetail.BankName, props.Text{
-					Top:   20,
+					Top:   top,
 					Align: consts.Left,
 					Style: consts.Bold,
 					Size:  10,
 					Color: *primaryColor,
 				})
+				top += 5
 				i.engine.Text(bankDetail.BankAddress, props.Text{
-					Top:   25,
+					Top:   top,
 					Align: consts.Left,
 					Style: consts.Bold,
 					Size:  10,
 					Color: *primaryColor,
 				})
+				top += 5
 				i.engine.Text(bankDetail.SwiftCode, props.Text{
-					Top:   30,
+					Top:   top,
 					Align: consts.Left,
 					Style: consts.Bold,
 					Size:  10,
@@ -836,10 +863,8 @@ func (i *Invoice) prepareFooter() {
 			})
 		})
 		i.engine.Line(1)
-		i.engine.Row(3, func() {
-
-		})
-		i.engine.Row(7, func() {
+		i.engine.Row(3, func() {})
+		i.engine.Row(6, func() {
 			i.engine.Col(2, func() {
 				if i.logo != nil {
 					_ = i.engine.Base64Image(i.logo.base64Image, i.logo.ext, props.Rect{
