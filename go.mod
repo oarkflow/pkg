@@ -23,6 +23,7 @@ require (
 	github.com/phpdave11/gofpdf v1.4.2
 	github.com/ruudk/golang-pdf417 v0.0.0-20201230142125-a7e3863a1245
 	github.com/samber/lo v1.37.0
+	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e
 	github.com/sourcegraph/conc v0.2.0
 	github.com/tidwall/pretty v1.2.1
 	golang.org/x/crypto v0.9.0

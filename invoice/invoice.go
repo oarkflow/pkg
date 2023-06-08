@@ -17,8 +17,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/skip2/go-qrcode"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
+
+	_ "github.com/skip2/go-qrcode"
 
 	"github.com/oarkflow/pkg/decimal"
 	"github.com/oarkflow/pkg/pdfs"
@@ -540,9 +543,9 @@ func (i *Invoice) prepareHeader(detail *Detail) {
 					})
 				})
 
-				i.engine.ColSpace(6)
+				i.engine.ColSpace(4)
 			} else {
-				i.engine.ColSpace(9)
+				i.engine.ColSpace(7)
 			}
 
 			i.engine.Col(3, func() {
@@ -556,6 +559,15 @@ func (i *Invoice) prepareHeader(detail *Detail) {
 					Size:  18,
 					Color: *color.Hex2RGB("a4a4a4"),
 				})
+			})
+			png, _ := qrcode.Encode("https://orgwareconstruct.com", qrcode.Medium, 1024)
+			i.engine.Col(2, func() {
+				i.engine.Base64Image(base64.StdEncoding.EncodeToString(png), "png", props.Rect{
+					Percent: 100,
+					Center:  true,
+					Left:    7777,
+				})
+
 			})
 		})
 
