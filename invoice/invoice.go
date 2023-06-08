@@ -3,9 +3,14 @@ package invoice
 import (
 	"bytes"
 	"encoding/base64"
+	"errors"
 	"fmt"
+	"io"
 	"math"
+	"mime"
+	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -20,6 +25,7 @@ import (
 	"github.com/oarkflow/pkg/pdfs/color"
 	"github.com/oarkflow/pkg/pdfs/consts"
 	"github.com/oarkflow/pkg/pdfs/props"
+	"github.com/oarkflow/pkg/str"
 	"github.com/oarkflow/pkg/timeutil"
 )
 
@@ -469,12 +475,44 @@ func (i *Invoice) prepareSummary(detail *Detail) {
 	})
 }
 
+var supportedImageTypes = []string{"image/jpeg", "image/jpg", "image/png", "image/x-png"}
+
+func getLogo(logo string) (data []byte, ext string, err error) {
+	if strings.HasPrefix(logo, "http") || strings.HasPrefix(logo, "https") {
+		var r *http.Response
+		r, err = http.Get(logo)
+		if err != nil {
+			return
+		}
+		defer r.Body.Close()
+
+		fname := path.Base(logo)
+		ext = strings.ReplaceAll(filepath.Ext(fname), ".", "")
+		if !str.Contains(supportedImageTypes, r.Header.Get("Content-Type")) {
+			err = errors.New("Unsupported image type: " + ext)
+			return
+		}
+		data, err = io.ReadAll(r.Body)
+	} else {
+		data, err = os.ReadFile(logo)
+		if err != nil {
+			return
+		}
+
+		ext = strings.ReplaceAll(filepath.Ext(logo), ".", "")
+		if !str.Contains(supportedImageTypes, mime.TypeByExtension(ext)) {
+			err = errors.New("Unsupported image type: " + ext)
+			return
+		}
+	}
+	return
+}
+
 func (i *Invoice) getEncodedLogo() error {
-	byteSlices, err := os.ReadFile(i.config.Business.Details.Logo)
+	byteSlices, ext, err := getLogo(i.config.Business.Details.Logo)
 	if err != nil {
 		return err
 	}
-	ext := strings.ReplaceAll(filepath.Ext(i.config.Business.Details.Logo), ".", "")
 	i.logo = &logo{
 		ext:         consts.Extension(ext),
 		base64Image: base64.StdEncoding.EncodeToString(byteSlices),
@@ -484,14 +522,18 @@ func (i *Invoice) getEncodedLogo() error {
 
 func (i *Invoice) prepareHeader(detail *Detail) {
 	i.engine.RegisterHeader(func() {
-		i.engine.Row(20, func() {
-			i.engine.Col(3, func() {
-				_ = i.engine.Base64Image(i.logo.base64Image, i.logo.ext, props.Rect{
-					Percent: 100,
+		i.engine.Row(23, func() {
+			if i.logo != nil {
+				i.engine.Col(3, func() {
+					_ = i.engine.Base64Image(i.logo.base64Image, i.logo.ext, props.Rect{
+						Percent: 100,
+					})
 				})
-			})
 
-			i.engine.ColSpace(6)
+				i.engine.ColSpace(6)
+			} else {
+				i.engine.ColSpace(9)
+			}
 
 			i.engine.Col(3, func() {
 				i.engine.Text("INVOICE", props.Text{
@@ -799,9 +841,11 @@ func (i *Invoice) prepareFooter() {
 		})
 		i.engine.Row(7, func() {
 			i.engine.Col(2, func() {
-				_ = i.engine.Base64Image(i.logo.base64Image, i.logo.ext, props.Rect{
-					Percent: 100,
-				})
+				if i.logo != nil {
+					_ = i.engine.Base64Image(i.logo.base64Image, i.logo.ext, props.Rect{
+						Percent: 100,
+					})
+				}
 			})
 			i.engine.Col(4, func() {
 				i.engine.Text(detail.Name, props.Text{
