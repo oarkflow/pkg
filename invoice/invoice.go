@@ -515,8 +515,8 @@ func getLogo(logo string) (data []byte, ext string, err error) {
 		}
 
 		ext = strings.ReplaceAll(filepath.Ext(logo), ".", "")
-		if !str.Contains(supportedImageTypes, mime.TypeByExtension(ext)) {
-			err = errors.New("Unsupported image type: " + ext)
+		if !str.Contains(supportedImageTypes, mime.TypeByExtension("."+ext)) {
+			err = errors.New("Unsupported local image type: " + ext)
 			return
 		}
 	}
