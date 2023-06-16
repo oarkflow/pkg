@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	json "github.com/bytedance/sonic"
 	"io"
 	"math"
 	"mime"
@@ -131,6 +132,7 @@ func (b *Item) Strings(index string) []string {
 type Detail struct {
 	Department        string        `yaml:"department" json:"department"`
 	InvoiceNumber     string        `yaml:"invoice_number" json:"invoice_number"`
+	InvoiceURL        string        `json:"invoice_url"`
 	Currency          string        `yaml:"currency" json:"currency"`
 	PaymentTerms      string        `yaml:"payment_terms" json:"payment_terms"`
 	DueDate           string        `yaml:"due_date" json:"due_date"`
@@ -535,7 +537,7 @@ func (i *Invoice) getEncodedLogo() error {
 
 func (i *Invoice) prepareHeader(detail *Detail) {
 	i.engine.RegisterHeader(func() {
-		i.engine.Row(23, func() {
+		i.engine.Row(22, func() {
 			if i.logo != nil {
 				i.engine.Col(3, func() {
 					_ = i.engine.Base64Image(i.logo.base64Image, i.logo.ext, props.Rect{
@@ -560,12 +562,25 @@ func (i *Invoice) prepareHeader(detail *Detail) {
 					Color: *color.Hex2RGB("a4a4a4"),
 				})
 			})
-			png, _ := qrcode.Encode("https://orgwareconstruct.com", qrcode.Medium, 1024)
+			if detail.InvoiceURL == "" {
+				detail.InvoiceURL = "https://orgwareconstruct.com"
+			}
+			qrData := map[string]any{
+				"amount": detail.TotalAmount,
+				"number": detail.InvoiceNumber,
+				"date":   detail.Date,
+				"url":    detail.InvoiceURL,
+				"from":   i.config.Business.Details.Name,
+				"to":     detail.Customer.Details.Name,
+				"items":  len(detail.items),
+			}
+			bt, _ := json.Marshal(qrData)
+			png, _ := qrcode.Encode(base64.StdEncoding.EncodeToString(bt), qrcode.Medium, 1024)
 			i.engine.Col(2, func() {
 				i.engine.Base64Image(base64.StdEncoding.EncodeToString(png), "png", props.Rect{
 					Percent: 100,
-					Center:  true,
-					Left:    7777,
+					// Center: true,
+					Left: 11,
 				})
 
 			})
@@ -626,7 +641,7 @@ func (i *Invoice) prepareBusinessDetail(detail Contact) {
 func (i *Invoice) prepareDetail(detail *Detail) {
 	businessDetail := i.config.Business.Details
 	customerDetail := detail.Customer.Details
-	i.engine.Row(40, func() {
+	i.engine.Row(37, func() {
 		i.engine.Col(4, func() {
 			i.engine.Text("Bill From:", props.Text{
 				Top:   4,
@@ -721,7 +736,7 @@ func (i *Invoice) prepareDetail(detail *Detail) {
 			Color: *primaryColor,
 		},
 	)
-	i.engine.Row(10, func() {})
+	i.engine.Row(5, func() {})
 }
 
 func (i *Invoice) prepareFooter() {
@@ -732,7 +747,7 @@ func (i *Invoice) prepareFooter() {
 	contactEmail := i.config.Business.ContactEmail
 	contactPhone := i.config.Business.ContactPhone
 	i.engine.RegisterFooter(func() {
-		i.engine.Row(42, func() {
+		i.engine.Row(37, func() {
 			i.engine.Col(4, func() {
 				i.engine.Text("Payment Details:", props.Text{
 					Top:   4,
