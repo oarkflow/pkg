@@ -539,13 +539,13 @@ func (i *Invoice) prepareHeader(detail *Detail) {
 	i.engine.RegisterHeader(func() {
 		i.engine.Row(22, func() {
 			if i.logo != nil {
-				i.engine.Col(3, func() {
+				i.engine.Col(4, func() {
 					_ = i.engine.Base64Image(i.logo.base64Image, i.logo.ext, props.Rect{
 						Percent: 100,
 					})
 				})
 
-				i.engine.ColSpace(4)
+				i.engine.ColSpace(3)
 			} else {
 				i.engine.ColSpace(7)
 			}
