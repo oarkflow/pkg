@@ -29,7 +29,7 @@ import (
 )
 
 func (dt *DataTable) GroupBy(query string) *DataTable {
-	if dt.Count <= 1 {
+	if dt.Count == 0 {
 		return dt
 	}
 	exp := ParseExpr([]byte(query))
