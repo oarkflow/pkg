@@ -15,6 +15,8 @@ import (
 	"github.com/oarkflow/pkg/search/lib"
 	"github.com/oarkflow/pkg/search/radix"
 	"github.com/oarkflow/pkg/search/tokenizer"
+	"github.com/oarkflow/pkg/str"
+	"github.com/oarkflow/pkg/utils"
 )
 
 const (
@@ -303,6 +305,7 @@ func (db *Store[Schema]) Search(params *Params) (Result[Schema], error) {
 	queryScores := db.findDocumentIds(idxParams)
 	if len(params.Extra) > 0 {
 		idScores := make(map[int64]float64)
+		commonKeys := make(map[string][]int64)
 		for key, val := range params.Extra {
 			param := &Params{
 				Query:      fmt.Sprintf("%v", val),
@@ -320,7 +323,22 @@ func (db *Store[Schema]) Search(params *Params) (Result[Schema], error) {
 			for id, _ := range scores {
 				if v, k := queryScores[id]; k {
 					idScores[id] = v
+					commonKeys[key] = append(commonKeys[key], id)
 				}
+			}
+		}
+		var keys [][]int64
+		for _, k := range commonKeys {
+			keys = append(keys, k)
+		}
+		commonKeys = nil
+		if len(keys) != len(params.Extra) {
+			return Result[Schema]{}, nil
+		}
+		d := utils.Intersection(keys...)
+		for id, _ := range idScores {
+			if !str.Contains(d, id) {
+				delete(idScores, id)
 			}
 		}
 		if cachedKey != 0 {

@@ -30,7 +30,6 @@ require (
 	golang.org/x/exp v0.0.0-20230515195305-f3d0a9c9a5cc
 	golang.org/x/image v0.0.0-20220302094943-723b81ca9867
 	golang.org/x/net v0.10.0
-	golang.org/x/sync v0.2.0
 	golang.org/x/text v0.9.0
 	gonum.org/v1/gonum v0.12.0
 	gopkg.in/yaml.v3 v3.0.1

@@ -30,7 +30,6 @@ func testStruct() {
 	}
 	start := time.Now()
 	s, err := ftsSearch.Search(&search.Params{
-		Query:      "Escherichia",
 		Exact:      true,
 		BoolMode:   search.AND,
 		Properties: []string{"Desc"},
@@ -59,7 +58,6 @@ func testMap() {
 	if len(errs) > 0 {
 		panic(errs)
 	}
-	start := time.Now()
 	s, err := ftsSearch.Search(&search.Params{
 		Query:    "Diabetes in pregnancy first trimester",
 		BoolMode: search.AND,
@@ -72,50 +70,6 @@ func testMap() {
 		panic(err)
 	}
 	fmt.Println(s.Hits)
-	fmt.Println(fmt.Sprintf("Time to search %s", time.Since(start)))
-	start = time.Now()
-	s, err = ftsSearch.Search(&search.Params{
-		Query:    "Diabetes in pregnancy first trimester",
-		BoolMode: search.AND,
-		Exact:    false,
-		Extra: map[string]any{
-			"code": "O24911",
-		},
-	})
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println(s.Hits)
-	fmt.Println(fmt.Sprintf("Time to search %s", time.Since(start)))
-	start = time.Now()
-	s, err = ftsSearch.Search(&search.Params{
-		Query:    "Diabetes in pregnancy first trimester",
-		BoolMode: search.AND,
-		Exact:    false,
-		Extra: map[string]any{
-			"code": "O24911",
-		},
-	})
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println(s.Hits)
-	fmt.Println(fmt.Sprintf("Time to search %s", time.Since(start)))
-	ftsSearch.ClearCache()
-	start = time.Now()
-	s, err = ftsSearch.Search(&search.Params{
-		Query:    "Diabetes in pregnancy first trimester",
-		BoolMode: search.AND,
-		Exact:    false,
-		Extra: map[string]any{
-			"code": "O24911",
-		},
-	})
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println(s.Hits)
-	fmt.Println(fmt.Sprintf("Time to search %s", time.Since(start)))
 }
 
 func testString() {
