@@ -10,11 +10,10 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/oarkflow/pkg/evaluate"
-
 	"github.com/oarkflow/frame/pkg/common/xid"
 
 	"github.com/oarkflow/pkg/dipper"
+	"github.com/oarkflow/pkg/evaluate"
 	"github.com/oarkflow/pkg/jet"
 	"github.com/oarkflow/pkg/maputil"
 	"github.com/oarkflow/pkg/str"
@@ -55,6 +54,8 @@ const (
 	EndsWith    ConditionOperator = "ends_with"
 	NotZero     ConditionOperator = "not_zero"
 	IsZero      ConditionOperator = "is_zero"
+	IsNull      ConditionOperator = "is_null"
+	NotNull     ConditionOperator = "not_null"
 )
 
 type Filter struct {
@@ -878,6 +879,10 @@ func (condition *Condition) Validate(data Data) bool {
 			return reflect.ValueOf(dipper.Get(data, condition.Field)).IsZero()
 		case NotZero:
 			return !reflect.ValueOf(dipper.Get(data, condition.Field)).IsZero()
+		case IsNull:
+			return dipper.Get(data, condition.Field) == nil
+		case NotNull:
+			return dipper.Get(data, condition.Field) != nil
 		case EqCount:
 			return condition.checkEqCount(data)
 		case NeqCount:
@@ -1217,7 +1222,6 @@ func (r *Rule) Apply(d Data, callback ...CallbackFn) (any, error) {
 					data = append(data, line)
 				}
 			}
-
 		}
 		if len(data) == 0 && r.ErrorAction != "" {
 			errorMsg, _ := jet.Parse(r.ErrorMsg, d)
