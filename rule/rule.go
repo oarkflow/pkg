@@ -882,7 +882,13 @@ func (condition *Condition) Validate(data Data) bool {
 		case IsNull:
 			return dipper.Get(data, condition.Field) == nil
 		case NotNull:
-			return dipper.Get(data, condition.Field) != nil
+			val := dipper.Get(data, condition.Field)
+			if err := dipper.Error(val); err != nil {
+				if err == dipper.ErrNotFound {
+					return false
+				}
+			}
+			return val != nil
 		case EqCount:
 			return condition.checkEqCount(data)
 		case NeqCount:
