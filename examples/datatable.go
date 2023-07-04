@@ -18,8 +18,7 @@ func main() {
 
 	dt := datatable.New(rows)
 
-	// Where 条件匹配 (a=1 and b=2) or (c=2 and d=3) Condition match
-	table := dt.Where("money > 2").DeleteSymbolKey().GroupBy("code")
+	table := dt.GroupBy("code,money")
 	for i, row := range table.Rows {
 		fmt.Println(i, row)
 	}

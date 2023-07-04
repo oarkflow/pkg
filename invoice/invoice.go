@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	json "github.com/bytedance/sonic"
 	"io"
 	"math"
 	"mime"
@@ -17,6 +16,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	json "github.com/bytedance/sonic"
 
 	"github.com/skip2/go-qrcode"
 	"golang.org/x/text/language"
@@ -258,6 +259,17 @@ func (i *Invoice) Create(detail *Detail) *Invoice {
 			detail.DueDate = date.Add(time.Duration(detail.DueDays) * 24 * time.Hour).Format(time.DateOnly)
 		} else {
 			detail.DueDate = detail.Date
+		}
+	} else {
+		currentDate, err := timeutil.ParseTime(detail.Date)
+		if err != nil {
+			detail.DueDate = time.Now().Format(time.DateOnly)
+		}
+		date, _, err := timeutil.Parse(detail.DueDate, currentDate)
+		if err != nil {
+			detail.DueDate = time.Now().Format(time.DateOnly)
+		} else {
+			detail.DueDate = date.Format(time.DateOnly)
 		}
 	}
 	var transactions [][]string

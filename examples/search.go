@@ -54,17 +54,46 @@ func testMap() {
 			EnableStemming:  true,
 		},
 	})
-	errs := ftsSearch.InsertBatch(data, 100)
+	for _, d := range data {
+		_, err := ftsSearch.Insert(d, tokenizer.ENGLISH)
+		if err != nil {
+			panic(err)
+		}
+	}
+	/*errs := ftsSearch.InsertBatch(data, 100)
 	if len(errs) > 0 {
 		panic(errs)
-	}
+	}*/
+
 	s, err := ftsSearch.Search(&search.Params{
-		Query:    "Diabetes in pregnancy first trimester",
 		BoolMode: search.AND,
 		Exact:    false,
 		Extra: map[string]any{
-			"code": "O24911",
+			"code": "A000",
 		},
+	})
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(s.Hits)
+
+	s, err = ftsSearch.Search(&search.Params{
+		Query:    "Cholera due to Vibrio cholerae",
+		BoolMode: search.AND,
+		Exact:    false,
+		Extra: map[string]any{
+			"code": "A001",
+		},
+	})
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(s.Hits)
+
+	s, err = ftsSearch.Search(&search.Params{
+		Query:    "Cholera",
+		BoolMode: search.AND,
+		Exact:    false,
 	})
 	if err != nil {
 		panic(err)

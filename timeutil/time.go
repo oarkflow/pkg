@@ -128,3 +128,11 @@ func ParseTime(s interface{}, layouts ...string) (t time.Time, err error) {
 	// t, err = time.ParseInLocation(layout, s, time.Local)
 	return
 }
+
+func BeginningOfMonth(date time.Time) time.Time {
+	return date.AddDate(0, 0, -date.Day()+1)
+}
+
+func EndOfMonth(date time.Time) time.Time {
+	return date.AddDate(0, 1, -date.Day())
+}

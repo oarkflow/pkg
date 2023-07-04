@@ -98,10 +98,10 @@ func normalizeToken(params *normalizeParams, config *Config) string {
 	if stem, ok := stems[params.language]; config.EnableStemming && ok {
 		token = stem(token, false)
 	}
-
-	if normToken, _, err := transform.String(normalizer, token); err == nil {
-		return normToken
-	}
-
+	/*
+		if normToken, _, err := transform.String(normalizer, token); err == nil {
+			return normToken
+		}
+	*/
 	return token
 }
