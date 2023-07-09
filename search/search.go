@@ -3,7 +3,6 @@ package search
 import (
 	"fmt"
 	"hash/fnv"
-	"math"
 	"reflect"
 	"sort"
 	"sync"
@@ -12,6 +11,7 @@ import (
 	json "github.com/bytedance/sonic"
 	"github.com/oarkflow/xid"
 
+	"github.com/oarkflow/pkg/conc"
 	"github.com/oarkflow/pkg/search/lib"
 	"github.com/oarkflow/pkg/search/radix"
 	"github.com/oarkflow/pkg/search/tokenizer"
@@ -56,7 +56,7 @@ type findParams struct {
 	boolMode   Mode
 	language   tokenizer.Language
 	query      string
-	properties []string
+	properties map[string]bool
 	exact      bool
 	tolerance  int
 }
@@ -66,7 +66,7 @@ type Params struct {
 	BoolMode   Mode               `json:"bool_mode"`
 	Language   tokenizer.Language `json:"language"`
 	Query      string             `json:"query"`
-	Properties []string           `json:"properties"`
+	Properties map[string]bool    `json:"properties"`
 	Exact      bool               `json:"exact"`
 	Paginate   bool               `json:"paginate"`
 	Tolerance  int                `json:"tolerance"`
@@ -121,7 +121,7 @@ type Store[Schema SchemaProps] struct {
 	defaultLanguage tokenizer.Language
 	key             string
 	sliceField      string
-	indexKeys       []string
+	indexKeys       map[string]bool
 	mutex           sync.RWMutex
 }
 
@@ -133,7 +133,7 @@ func New[Schema SchemaProps](c *Config) *Store[Schema] {
 		key:             c.Key,
 		documents:       make(map[int64]Schema),
 		indexes:         make(map[string]*radix.Trie),
-		indexKeys:       make([]string, 0),
+		indexKeys:       make(map[string]bool),
 		occurrences:     make(map[string]map[string]int),
 		defaultLanguage: c.DefaultLanguage,
 		tokenizerConfig: c.TokenizerConfig,
@@ -144,18 +144,37 @@ func New[Schema SchemaProps](c *Config) *Store[Schema] {
 	return db
 }
 
+func (db *Store[Schema]) newIndex(key string) {
+	db.mutex.Lock()
+	defer db.mutex.Unlock()
+	db.indexes[key] = radix.New()
+}
+
+func (db *Store[Schema]) newIndexKey(key string) {
+	db.mutex.Lock()
+	defer db.mutex.Unlock()
+	db.indexKeys[key] = true
+}
+
+func (db *Store[Schema]) newOccurrence(key string) {
+	db.mutex.Lock()
+	defer db.mutex.Unlock()
+	db.occurrences[key] = make(map[string]int)
+}
+
 func (db *Store[Schema]) Insert(doc Schema, lang ...tokenizer.Language) (Record[Schema], error) {
 	language := tokenizer.ENGLISH
 	if len(lang) > 0 {
 		language = lang[0]
 	}
-	if len(db.indexKeys) == 0 {
+	db.mutex.Lock()
+	indexLen := db.indexKeys
+	db.mutex.Unlock()
+	if len(indexLen) == 0 {
 		for key := range db.flattenSchema(doc) {
-			db.mutex.Lock()
-			db.indexes[key] = radix.New()
-			db.indexKeys = append(db.indexKeys, key)
-			db.occurrences[key] = make(map[string]int)
-			db.mutex.Unlock()
+			db.newIndex(key)
+			db.newIndexKey(key)
+			db.newOccurrence(key)
 		}
 	}
 	idxParams := indexParams{
@@ -183,45 +202,15 @@ func (db *Store[Schema]) Insert(doc Schema, lang ...tokenizer.Language) (Record[
 	return Record[Schema]{Id: idxParams.id, Data: doc}, nil
 }
 
-func (db *Store[Schema]) InsertBatch(docs []Schema, batchSize int, lang ...tokenizer.Language) []error {
+func (db *Store[Schema]) InsertBatch(docs []Schema, batchSize int, lang ...tokenizer.Language) error {
 	language := tokenizer.ENGLISH
 	if len(lang) > 0 {
 		language = lang[0]
 	}
-	batchCount := int(math.Ceil(float64(len(docs)) / float64(batchSize)))
-	docsChan := make(chan Schema)
-	errsChan := make(chan error)
-
-	var wg sync.WaitGroup
-	wg.Add(batchCount)
-	go func() {
-		for _, doc := range docs {
-			docsChan <- doc
-		}
-		close(docsChan)
-	}()
-
-	for i := 0; i < batchCount; i++ {
-		go func() {
-			defer wg.Done()
-			for doc := range docsChan {
-				if _, err := db.Insert(doc, language); err != nil {
-					errsChan <- err
-				}
-			}
-		}()
-	}
-
-	go func() {
-		wg.Wait()
-		close(errsChan)
-	}()
-
-	errs := make([]error, 0)
-	for err := range errsChan {
-		errs = append(errs, err)
-	}
-	return errs
+	return conc.Each(batchSize, docs, func(doc Schema) (err error) {
+		_, err = db.Insert(doc, language)
+		return
+	})
 }
 
 func (db *Store[Schema]) Update(params *UpdateParams[Schema]) (Record[Schema], error) {
@@ -308,12 +297,14 @@ func (db *Store[Schema]) Search(params *Params) (Result[Schema], error) {
 		commonKeys := make(map[string][]int64)
 		for key, val := range params.Extra {
 			param := &Params{
-				Query:      fmt.Sprintf("%v", val),
-				Properties: []string{key},
-				BoolMode:   params.BoolMode,
-				Exact:      true,
-				Tolerance:  params.Tolerance,
-				Language:   params.Language,
+				Query: fmt.Sprintf("%v", val),
+				Properties: map[string]bool{
+					key: true,
+				},
+				BoolMode:  params.BoolMode,
+				Exact:     true,
+				Tolerance: params.Tolerance,
+				Language:  params.Language,
 			}
 			extraParams, err := db.prepareFindParams(param)
 			if err != nil {
@@ -361,7 +352,7 @@ func (db *Store[Schema]) prepareFindParams(params *Params) (*findParams, error) 
 		params.Language = tokenizer.ENGLISH
 	}
 	if len(params.Properties) == 0 {
-		params.Properties = []string{WILDCARD}
+		params.Properties = map[string]bool{WILDCARD: true}
 	}
 
 	idxParams := &findParams{
@@ -380,7 +371,7 @@ func (db *Store[Schema]) prepareFindParams(params *Params) (*findParams, error) 
 		return nil, fmt.Errorf("not supported language")
 	}
 
-	if len(idxParams.properties) == 1 && idxParams.properties[0] == WILDCARD {
+	if _, ok := idxParams.properties[WILDCARD]; ok {
 		idxParams.properties = db.indexKeys
 	}
 	return idxParams, nil
@@ -413,11 +404,9 @@ func (db *Store[Schema]) prepareResult(idScores map[int64]float64, params *Param
 func (db *Store[Schema]) buildIndexes() {
 	var s Schema
 	for key := range db.flattenSchema(s) {
-		db.mutex.Lock()
-		db.indexes[key] = radix.New()
-		db.indexKeys = append(db.indexKeys, key)
-		db.occurrences[key] = make(map[string]int)
-		db.mutex.Unlock()
+		db.newIndex(key)
+		db.newIndexKey(key)
+		db.newOccurrence(key)
 	}
 }
 
@@ -430,7 +419,7 @@ func (db *Store[Schema]) findDocumentIds(params *findParams) map[int64]float64 {
 	tokens, _ := tokenizer.Tokenize(&tokenParams, db.tokenizerConfig)
 
 	idScores := make(map[int64]float64)
-	for _, prop := range params.properties {
+	for prop, _ := range params.properties {
 		if index, ok := db.indexes[prop]; ok {
 			idTokensCount := make(map[int64]int)
 

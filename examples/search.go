@@ -24,15 +24,15 @@ func testStruct() {
 			EnableStemming:  true,
 		},
 	})
-	errs := ftsSearch.InsertBatch(data, 100)
-	if len(errs) > 0 {
+	errs := ftsSearch.InsertBatch(data, 2)
+	if errs != nil {
 		panic(errs)
 	}
 	start := time.Now()
 	s, err := ftsSearch.Search(&search.Params{
 		Exact:      true,
 		BoolMode:   search.AND,
-		Properties: []string{"Desc"},
+		Properties: map[string]bool{"Desc": true},
 		Offset:     0,
 		Limit:      10,
 		Extra: map[string]any{
@@ -60,8 +60,8 @@ func testMap() {
 			panic(err)
 		}
 	}
-	/*errs := ftsSearch.InsertBatch(data, 100)
-	if len(errs) > 0 {
+	/*errs := ftsSearch.InsertBatch(data, 2)
+	if errs != nil {
 		panic(errs)
 	}*/
 
@@ -109,8 +109,8 @@ func testString() {
 			EnableStemming:  true,
 		},
 	})
-	errs := ftsSearch.InsertBatch(data, 100)
-	if len(errs) > 0 {
+	errs := ftsSearch.InsertBatch(data, 2)
+	if errs != nil {
 		panic(errs)
 	}
 	start := time.Now()

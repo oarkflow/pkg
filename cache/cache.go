@@ -93,9 +93,6 @@ func (c *Cache[K, V]) DeleteExpired() {
 			c.cache.Delete(key)
 		}
 		c.mu.Unlock()
-		if c.persist {
-			c.Persist(key, item)
-		}
 	}
 }
 
@@ -105,6 +102,9 @@ func (c *Cache[K, V]) Set(key K, val V, opts ...ItemOption) {
 	defer c.mu.Unlock()
 	item := newItem(key, val, opts...)
 	c.cache.Set(key, item)
+	if c.persist {
+		c.Persist(key, item)
+	}
 }
 
 // Keys returns the keys of the cache. the order is relied on algorithms.
@@ -129,11 +129,12 @@ func (c *Cache[K, V]) Contains(key K) bool {
 	return ok
 }
 
-func (c *Cache[K, V]) Persist(k K, val *Item[K, V]) {
+func (c *Cache[K, V]) Persist(k K, val *Item[K, V]) error {
 	key := fmt.Sprintf("%v", k)
-	c.store.Del(c.bucket, key)
+	_, err := c.store.Del(c.bucket, key)
+	if err != nil {
+		return err
+	}
 	value := fmt.Sprintf("%v", val.Value)
-	fmt.Println("PERSISTING...", k, value)
-	c.store.Set(c.bucket, key, str.ToByte(value))
-	fmt.Println("PERSISTED...", k, value)
+	return c.store.Set(c.bucket, key, str.ToByte(value))
 }
