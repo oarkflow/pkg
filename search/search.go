@@ -168,9 +168,9 @@ func (db *Store[Schema]) Insert(doc Schema, lang ...tokenizer.Language) (Record[
 		language = lang[0]
 	}
 	db.mutex.Lock()
-	indexLen := db.indexKeys
+	indexLen := len(db.indexKeys)
 	db.mutex.Unlock()
-	if len(indexLen) == 0 {
+	if indexLen == 0 {
 		for key := range db.flattenSchema(doc) {
 			db.newIndex(key)
 			db.newIndexKey(key)

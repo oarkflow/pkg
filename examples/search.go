@@ -54,16 +54,16 @@ func testMap() {
 			EnableStemming:  true,
 		},
 	})
-	for _, d := range data {
+	/*for _, d := range data {
 		_, err := ftsSearch.Insert(d, tokenizer.ENGLISH)
 		if err != nil {
 			panic(err)
 		}
-	}
-	/*errs := ftsSearch.InsertBatch(data, 2)
+	}*/
+	errs := ftsSearch.InsertBatch(data, 5)
 	if errs != nil {
 		panic(errs)
-	}*/
+	}
 
 	s, err := ftsSearch.Search(&search.Params{
 		BoolMode: search.AND,
