@@ -1,17 +1,17 @@
 package tokenizer
 
 import (
-	"github.com/oarkflow/pkg/search/tokenizer/stopwords"
+	stopwords2 "github.com/oarkflow/pkg/search/tokenizer/stopwords"
 )
 
 type StopWords map[string]struct{}
 
 var stopWords = map[Language]StopWords{
-	ENGLISH:   stopwords.English,
-	FRENCH:    stopwords.French,
-	HUNGARIAN: stopwords.Hungarian,
-	NORWEGIAN: stopwords.Norwegian,
-	RUSSIAN:   stopwords.Russian,
-	SPANISH:   stopwords.Spanish,
-	SWEDISH:   stopwords.Swedish,
+	ENGLISH:   stopwords2.English,
+	FRENCH:    stopwords2.French,
+	HUNGARIAN: stopwords2.Hungarian,
+	NORWEGIAN: stopwords2.Norwegian,
+	RUSSIAN:   stopwords2.Russian,
+	SPANISH:   stopwords2.Spanish,
+	SWEDISH:   stopwords2.Swedish,
 }

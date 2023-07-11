@@ -1,4 +1,4 @@
-package minisearch
+package search
 
 import (
 	"fmt"
@@ -12,8 +12,9 @@ import (
 	json "github.com/bytedance/sonic"
 	"github.com/oarkflow/xid"
 
-	"github.com/oarkflow/pkg/minisearch/lib"
-	"github.com/oarkflow/pkg/minisearch/tokenizer"
+	"github.com/oarkflow/pkg/search/lib"
+	"github.com/oarkflow/pkg/search/tokenizer"
+
 	"github.com/oarkflow/pkg/str"
 	"github.com/oarkflow/pkg/utils"
 )
@@ -180,7 +181,6 @@ func (db *Search[Schema]) Insert(doc Schema, lang ...tokenizer.Language) (Record
 
 	db.documents[id] = doc
 	db.indexDocument(id, document, language)
-
 	return Record[Schema]{Id: id, Data: doc}, nil
 }
 
@@ -222,7 +222,6 @@ func (db *Search[Schema]) InsertBatch(docs []Schema, batchSize int, lang ...toke
 	for err := range errsChan {
 		errs = append(errs, err)
 	}
-
 	return errs
 }
 
@@ -315,13 +314,14 @@ func (db *Search[Schema]) prepareParams(params *Params) (map[int64]float64, erro
 		properties = db.indexKeys
 	}
 	language := params.Language
-	if params.Language == "" {
+	if language == "" {
 		language = db.defaultLanguage
-
 	} else if !tokenizer.IsSupportedLanguage(language) {
 		return nil, fmt.Errorf("not supported language")
 	}
-
+	if language == "" {
+		language = tokenizer.ENGLISH
+	}
 	tokens, _ := tokenizer.Tokenize(&tokenizer.TokenizeParams{
 		Text:            params.Query,
 		Language:        language,
@@ -330,7 +330,6 @@ func (db *Search[Schema]) prepareParams(params *Params) (map[int64]float64, erro
 
 	db.mutex.RLock()
 	defer db.mutex.RUnlock()
-
 	for _, prop := range properties {
 		if index, ok := db.indexes[prop]; ok {
 			idScores := index.Find(&FindParams{
@@ -357,6 +356,14 @@ func (db *Search[Schema]) Search(params *Params) (Result[Schema], error) {
 	if cachedKey != 0 {
 		if score, ok := db.cache[cachedKey]; ok {
 			return db.prepareResult(score, params)
+		}
+	}
+	if params.Query == "" && len(params.Extra) > 0 {
+		for key, val := range params.Extra {
+			params.Query = fmt.Sprintf("%v", val)
+			params.Properties = append(params.Properties, key)
+			delete(params.Extra, key)
+			break
 		}
 	}
 	allIdScores, err := db.prepareParams(params)
@@ -446,32 +453,47 @@ func (db *Search[Schema]) flattenSchema(obj any, prefix ...string) map[string]st
 		return nil
 	}
 	fields := make(map[string]string)
-	switch obj := obj.(type) {
-	case string, bool, time.Time, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64:
-		fields[db.sliceField] = fmt.Sprintf("%v", obj)
-	case map[string]any:
-		rules := make(map[string]bool)
-		if db.rules != nil {
-			rules = db.rules
-		}
-		for field, val := range obj {
-			if reflect.TypeOf(field).Kind() == reflect.Map {
-				for key, value := range db.flattenSchema(val, field) {
-					fields[key] = value
+	if reflect.TypeOf(obj).Kind() == reflect.Struct {
+		t := reflect.TypeOf(obj)
+		v := reflect.ValueOf(obj)
+		visibleFields := reflect.VisibleFields(t)
+		hasIndexField := false
+		for i, field := range visibleFields {
+			if propName, ok := field.Tag.Lookup("index"); ok {
+				hasIndexField = true
+				if len(prefix) == 1 {
+					propName = fmt.Sprintf("%s.%s", prefix[0], propName)
 				}
-			} else {
-				if len(rules) > 0 {
-					if canIndex, ok := rules[field]; ok && canIndex {
-						fields[field] = fmt.Sprintf("%v", val)
+				if field.Type.Kind() == reflect.Struct {
+					for key, value := range db.flattenSchema(v.Field(i).Interface(), propName) {
+						fields[key] = value
 					}
 				} else {
-					fields[field] = fmt.Sprintf("%v", val)
+					fields[propName] = v.Field(i).String()
+				}
+			}
+		}
+		if !hasIndexField {
+			for i, field := range visibleFields {
+				propName := field.Name
+				if len(prefix) == 1 {
+					propName = fmt.Sprintf("%s.%s", prefix[0], propName)
+				}
+
+				if field.Type.Kind() == reflect.Struct {
+					for key, value := range db.flattenSchema(v.Field(i).Interface(), propName) {
+						fields[key] = value
+					}
+				} else {
+					fields[propName] = v.Field(i).String()
 				}
 			}
 		}
 		return fields
-	case any:
+	} else {
 		switch obj := obj.(type) {
+		case string, bool, time.Time, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64:
+			fields[db.sliceField] = fmt.Sprintf("%v", obj)
 		case map[string]any:
 			rules := make(map[string]bool)
 			if db.rules != nil {
@@ -492,6 +514,71 @@ func (db *Search[Schema]) flattenSchema(obj any, prefix ...string) map[string]st
 					}
 				}
 			}
+			return fields
+		case any:
+			switch obj := obj.(type) {
+			case map[string]any:
+				rules := make(map[string]bool)
+				if db.rules != nil {
+					rules = db.rules
+				}
+				for field, val := range obj {
+					if reflect.TypeOf(field).Kind() == reflect.Map {
+						for key, value := range db.flattenSchema(val, field) {
+							fields[key] = value
+						}
+					} else {
+						if len(rules) > 0 {
+							if canIndex, ok := rules[field]; ok && canIndex {
+								fields[field] = fmt.Sprintf("%v", val)
+							}
+						} else {
+							fields[field] = fmt.Sprintf("%v", val)
+						}
+					}
+				}
+				return fields
+			default:
+				t := reflect.TypeOf(obj)
+				v := reflect.ValueOf(obj)
+				visibleFields := reflect.VisibleFields(t)
+				hasIndexField := false
+				for i, field := range visibleFields {
+					if propName, ok := field.Tag.Lookup("index"); ok {
+						hasIndexField = true
+						if len(prefix) == 1 {
+							propName = fmt.Sprintf("%s.%s", prefix[0], propName)
+						}
+
+						if field.Type.Kind() == reflect.Struct {
+							for key, value := range db.flattenSchema(v.Field(i).Interface(), propName) {
+								fields[key] = value
+							}
+						} else {
+							fields[propName] = v.Field(i).String()
+						}
+					}
+				}
+
+				if !hasIndexField {
+					for i, field := range visibleFields {
+						propName := field.Name
+						if len(prefix) == 1 {
+							propName = fmt.Sprintf("%s.%s", prefix[0], propName)
+						}
+
+						if field.Type.Kind() == reflect.Struct {
+							for key, value := range db.flattenSchema(v.Field(i).Interface(), propName) {
+								fields[key] = value
+							}
+						} else {
+							fields[propName] = v.Field(i).String()
+						}
+					}
+				}
+				return fields
+			}
+
 		default:
 			t := reflect.TypeOf(obj)
 			v := reflect.ValueOf(obj)
@@ -530,45 +617,7 @@ func (db *Search[Schema]) flattenSchema(obj any, prefix ...string) map[string]st
 					}
 				}
 			}
-		}
-
-	default:
-		t := reflect.TypeOf(obj)
-		v := reflect.ValueOf(obj)
-		visibleFields := reflect.VisibleFields(t)
-		hasIndexField := false
-		for i, field := range visibleFields {
-			if propName, ok := field.Tag.Lookup("index"); ok {
-				hasIndexField = true
-				if len(prefix) == 1 {
-					propName = fmt.Sprintf("%s.%s", prefix[0], propName)
-				}
-
-				if field.Type.Kind() == reflect.Struct {
-					for key, value := range db.flattenSchema(v.Field(i).Interface(), propName) {
-						fields[key] = value
-					}
-				} else {
-					fields[propName] = v.Field(i).String()
-				}
-			}
-		}
-
-		if !hasIndexField {
-			for i, field := range visibleFields {
-				propName := field.Name
-				if len(prefix) == 1 {
-					propName = fmt.Sprintf("%s.%s", prefix[0], propName)
-				}
-
-				if field.Type.Kind() == reflect.Struct {
-					for key, value := range db.flattenSchema(v.Field(i).Interface(), propName) {
-						fields[key] = value
-					}
-				} else {
-					fields[propName] = v.Field(i).String()
-				}
-			}
+			return fields
 		}
 	}
 

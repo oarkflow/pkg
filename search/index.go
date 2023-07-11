@@ -1,8 +1,8 @@
-package minisearch
+package search
 
 import (
-	"github.com/oarkflow/pkg/minisearch/lib"
-	"github.com/oarkflow/pkg/minisearch/radix"
+	"github.com/oarkflow/pkg/search/lib"
+	"github.com/oarkflow/pkg/search/radix"
 )
 
 type FindParams struct {
