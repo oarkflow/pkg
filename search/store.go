@@ -157,6 +157,10 @@ func (db *Search[Schema]) buildIndexes() {
 	}
 }
 
+func (db *Search[Schema]) DocumentLen() int {
+	return len(db.documents)
+}
+
 func (db *Search[Schema]) Insert(doc Schema, lang ...tokenizer.Language) (Record[Schema], error) {
 	language := tokenizer.ENGLISH
 	if len(lang) > 0 {
