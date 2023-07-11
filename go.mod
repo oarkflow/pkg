@@ -17,6 +17,7 @@ require (
 	github.com/klauspost/compress v1.16.7
 	github.com/klauspost/pgzip v1.2.6
 	github.com/kljensen/snowball v0.8.0
+	github.com/micpst/minisearch v1.2.0
 	github.com/oarkflow/frame v0.0.49
 	github.com/oarkflow/gorm-adapter v0.0.7
 	github.com/oarkflow/govaluate v0.0.1
@@ -60,7 +61,7 @@ require (
 	github.com/jackc/pgx/v5 v5.3.1 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
-	github.com/klauspost/cpuid/v2 v2.2.3 // indirect
+	github.com/klauspost/cpuid/v2 v2.2.4 // indirect
 	github.com/leodido/go-urn v1.2.4 // indirect
 	github.com/mattn/go-isatty v0.0.18 // indirect
 	github.com/microsoft/go-mssqldb v0.21.0 // indirect
@@ -71,7 +72,7 @@ require (
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
-	golang.org/x/arch v0.0.0-20210923205945-b76863e36670 // indirect
+	golang.org/x/arch v0.2.0 // indirect
 	golang.org/x/sys v0.10.0 // indirect
 	google.golang.org/protobuf v1.30.0 // indirect
 	gorm.io/driver/mysql v1.5.0 // indirect

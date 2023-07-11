@@ -86,5 +86,15 @@ func mapData() {
 			"resident_provider": "Test Resident Provider",
 		},
 	}
+	d := map[string]any{
+		"2023-01-01": map[string]any{},
+	}
+	// dipper.Set(d, "2023-01-01.fac", map[string]any{})
+	dipper.Set(d, "2023-01-01.fac.em", map[string]any{
+		"code":              "001",
+		"billing_provider":  "Test provider",
+		"resident_provider": "Test Resident Provider",
+	})
+	fmt.Println(d)
 	fmt.Println(dipper.FilterSlice(data, ".[].code", []any{"OBS01"}))
 }
