@@ -7,7 +7,7 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/google/uuid"
+	"github.com/oarkflow/xid"
 
 	"github.com/oarkflow/pkg/minisearch/lib"
 	"github.com/oarkflow/pkg/minisearch/tokenizer"
@@ -25,7 +25,7 @@ type Mode string
 type SchemaProps any
 
 type Record[Schema SchemaProps] struct {
-	Id   string
+	Id   int64
 	Data Schema
 }
 
@@ -41,13 +41,13 @@ type InsertBatchParams[Schema SchemaProps] struct {
 }
 
 type UpdateParams[Schema SchemaProps] struct {
-	Id       string
+	Id       int64
 	Document Schema
 	Language tokenizer.Language
 }
 
 type DeleteParams[Schema SchemaProps] struct {
-	Id       string
+	Id       int64
 	Language tokenizer.Language
 }
 
@@ -75,7 +75,7 @@ type SearchResult[Schema SchemaProps] struct {
 }
 
 type SearchHit[Schema SchemaProps] struct {
-	Id    string
+	Id    int64
 	Data  Schema
 	Score float64
 }
@@ -96,7 +96,7 @@ type Config struct {
 
 type Search[Schema SchemaProps] struct {
 	mutex           sync.RWMutex
-	documents       map[string]Schema
+	documents       map[int64]Schema
 	indexes         map[string]*Index
 	indexKeys       []string
 	defaultLanguage tokenizer.Language
@@ -105,7 +105,7 @@ type Search[Schema SchemaProps] struct {
 
 func New[Schema SchemaProps](c *Config) *Search[Schema] {
 	db := &Search[Schema]{
-		documents:       make(map[string]Schema),
+		documents:       make(map[int64]Schema),
 		indexes:         make(map[string]*Index),
 		indexKeys:       make([]string, 0),
 		defaultLanguage: c.DefaultLanguage,
@@ -130,7 +130,7 @@ func (db *Search[Schema]) buildIndexes() {
 }
 
 func (db *Search[Schema]) Insert(params *InsertParams[Schema]) (Record[Schema], error) {
-	id := uuid.NewString()
+	id := xid.New().Int64()
 	document := db.flattenSchema(params.Document)
 
 	language := params.Language
@@ -251,7 +251,7 @@ func (db *Search[Schema]) Delete(params *DeleteParams[Schema]) error {
 }
 
 func (db *Search[Schema]) Search(params *SearchParams) (SearchResult[Schema], error) {
-	allIdScores := make(map[string]float64)
+	allIdScores := make(map[int64]float64)
 	results := make(SearchHits[Schema], 0)
 
 	properties := params.Properties
@@ -308,7 +308,7 @@ func (db *Search[Schema]) Search(params *SearchParams) (SearchResult[Schema], er
 	return SearchResult[Schema]{Hits: results[start:stop], Count: len(results)}, nil
 }
 
-func (db *Search[Schema]) indexDocument(id string, document map[string]string, language tokenizer.Language) {
+func (db *Search[Schema]) indexDocument(id int64, document map[string]string, language tokenizer.Language) {
 	for propName, index := range db.indexes {
 		tokens, _ := tokenizer.Tokenize(&tokenizer.TokenizeParams{
 			Text:            document[propName],
@@ -324,7 +324,7 @@ func (db *Search[Schema]) indexDocument(id string, document map[string]string, l
 	}
 }
 
-func (db *Search[Schema]) deindexDocument(id string, document map[string]string, language tokenizer.Language) {
+func (db *Search[Schema]) deindexDocument(id int64, document map[string]string, language tokenizer.Language) {
 	for propName, index := range db.indexes {
 		tokens, _ := tokenizer.Tokenize(&tokenizer.TokenizeParams{
 			Text:            document[propName],

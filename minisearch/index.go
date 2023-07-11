@@ -15,7 +15,7 @@ type FindParams struct {
 }
 
 type IndexParams struct {
-	Id        string
+	Id        int64
 	Tokens    []string
 	DocsCount int
 }
@@ -23,14 +23,14 @@ type IndexParams struct {
 type Index struct {
 	data             *radix.Trie
 	avgFieldLength   float64
-	fieldLengths     map[string]int
+	fieldLengths     map[int64]int
 	tokenOccurrences map[string]int
 }
 
 func NewIndex() *Index {
 	return &Index{
 		data:             radix.New(),
-		fieldLengths:     make(map[string]int),
+		fieldLengths:     make(map[int64]int),
 		tokenOccurrences: make(map[string]int),
 	}
 }
@@ -68,9 +68,9 @@ func (idx *Index) Delete(params *IndexParams) {
 	delete(idx.fieldLengths, params.Id)
 }
 
-func (idx *Index) Find(params *FindParams) map[string]float64 {
-	idScores := make(map[string]float64)
-	idTokensCount := make(map[string]int)
+func (idx *Index) Find(params *FindParams) map[int64]float64 {
+	idScores := make(map[int64]float64)
+	idTokensCount := make(map[int64]int)
 
 	for _, token := range params.Tokens {
 		infos := idx.data.Find(&radix.FindParams{

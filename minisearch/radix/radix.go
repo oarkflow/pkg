@@ -5,13 +5,13 @@ import (
 )
 
 type InsertParams struct {
-	Id            string
+	Id            int64
 	Word          string
 	TermFrequency float64
 }
 
 type DeleteParams struct {
-	Id   string
+	Id   int64
 	Word string
 }
 

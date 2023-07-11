@@ -8,7 +8,7 @@ import (
 )
 
 type RecordInfo struct {
-	Id            string
+	Id            int64
 	TermFrequency float64
 }
 
@@ -49,7 +49,7 @@ func (n *node) addRecordInfo(info RecordInfo) {
 	n.infos[idx] = info
 }
 
-func (n *node) removeRecordInfo(id string) bool {
+func (n *node) removeRecordInfo(id int64) bool {
 	num := len(n.infos)
 	idx := sort.Search(num, func(i int) bool {
 		return n.infos[i].Id >= id
