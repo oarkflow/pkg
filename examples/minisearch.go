@@ -50,21 +50,20 @@ func main() {
 			EnableStemming:  true,
 			EnableStopWords: true,
 		},
-		IndexKeys: []string{"code", "desc"},
+		IndexKeys: minisearch.DocFields(data[0]),
 	})
-	p := minisearch.InsertBatchParams[any]{
-		Documents: data,
-		BatchSize: 100,
-	}
-	errs := db.InsertBatch(&p)
+	errs := db.InsertBatch(data, 100)
 	if len(errs) > 0 {
 		panic(errs)
 	}
 
-	s := minisearch.SearchParams{
+	s := minisearch.Params{
 		Query:    "Cholera",
 		BoolMode: minisearch.AND,
 		Limit:    10,
+		Extra: map[string]any{
+			"code": "A000",
+		},
 	}
 	rs, err := db.Search(&s)
 	if err != nil {
