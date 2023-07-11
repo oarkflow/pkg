@@ -97,9 +97,9 @@ func normalizeToken(params *normalizeParams, config *Config) string {
 		token = stem(token, false)
 	}
 
-	if normToken, _, err := transform.String(normalizer, token); err == nil {
+	/*if normToken, _, err := transform.String(normalizer, token); err == nil {
 		return normToken
-	}
+	}*/
 
 	return token
 }
