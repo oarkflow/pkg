@@ -4,7 +4,7 @@ import (
 	"log"
 	"sort"
 
-	"github.com/oarkflow/pkg/minisearch/pkg/lib"
+	"github.com/oarkflow/pkg/minisearch/lib"
 )
 
 type RecordInfo struct {

@@ -1,4 +1,4 @@
-package store
+package minisearch
 
 import (
 	"fmt"
@@ -9,8 +9,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/oarkflow/pkg/minisearch/pkg/lib"
-	"github.com/oarkflow/pkg/minisearch/pkg/tokenizer"
+	"github.com/oarkflow/pkg/minisearch/lib"
+	"github.com/oarkflow/pkg/minisearch/tokenizer"
 )
 
 const (
@@ -94,7 +94,7 @@ type Config struct {
 	IndexKeys       []string
 }
 
-type MemDB[Schema SchemaProps] struct {
+type Search[Schema SchemaProps] struct {
 	mutex           sync.RWMutex
 	documents       map[string]Schema
 	indexes         map[string]*Index
@@ -103,8 +103,8 @@ type MemDB[Schema SchemaProps] struct {
 	tokenizerConfig *tokenizer.Config
 }
 
-func New[Schema SchemaProps](c *Config) *MemDB[Schema] {
-	db := &MemDB[Schema]{
+func New[Schema SchemaProps](c *Config) *Search[Schema] {
+	db := &Search[Schema]{
 		documents:       make(map[string]Schema),
 		indexes:         make(map[string]*Index),
 		indexKeys:       make([]string, 0),
@@ -121,17 +121,17 @@ func New[Schema SchemaProps](c *Config) *MemDB[Schema] {
 	return db
 }
 
-func (db *MemDB[Schema]) buildIndexes() {
+func (db *Search[Schema]) buildIndexes() {
 	var s Schema
-	for key := range flattenSchema(s) {
+	for key := range db.flattenSchema(s) {
 		db.indexes[key] = NewIndex()
 		db.indexKeys = append(db.indexKeys, key)
 	}
 }
 
-func (db *MemDB[Schema]) Insert(params *InsertParams[Schema]) (Record[Schema], error) {
+func (db *Search[Schema]) Insert(params *InsertParams[Schema]) (Record[Schema], error) {
 	id := uuid.NewString()
-	document := flattenSchema(params.Document)
+	document := db.flattenSchema(params.Document)
 
 	language := params.Language
 	if language == "" {
@@ -154,7 +154,7 @@ func (db *MemDB[Schema]) Insert(params *InsertParams[Schema]) (Record[Schema], e
 	return Record[Schema]{Id: id, Data: params.Document}, nil
 }
 
-func (db *MemDB[Schema]) InsertBatch(params *InsertBatchParams[Schema]) []error {
+func (db *Search[Schema]) InsertBatch(params *InsertBatchParams[Schema]) []error {
 	batchCount := int(math.Ceil(float64(len(params.Documents)) / float64(params.BatchSize)))
 	docsChan := make(chan Schema)
 	errsChan := make(chan error)
@@ -197,8 +197,8 @@ func (db *MemDB[Schema]) InsertBatch(params *InsertBatchParams[Schema]) []error 
 	return errs
 }
 
-func (db *MemDB[Schema]) Update(params *UpdateParams[Schema]) (Record[Schema], error) {
-	document := flattenSchema(params.Document)
+func (db *Search[Schema]) Update(params *UpdateParams[Schema]) (Record[Schema], error) {
+	document := db.flattenSchema(params.Document)
 
 	language := params.Language
 	if language == "" {
@@ -217,7 +217,7 @@ func (db *MemDB[Schema]) Update(params *UpdateParams[Schema]) (Record[Schema], e
 	}
 
 	db.indexDocument(params.Id, document, language)
-	document = flattenSchema(oldDocument)
+	document = db.flattenSchema(oldDocument)
 	db.deindexDocument(params.Id, document, language)
 
 	db.documents[params.Id] = params.Document
@@ -225,7 +225,7 @@ func (db *MemDB[Schema]) Update(params *UpdateParams[Schema]) (Record[Schema], e
 	return Record[Schema]{Id: params.Id, Data: params.Document}, nil
 }
 
-func (db *MemDB[Schema]) Delete(params *DeleteParams[Schema]) error {
+func (db *Search[Schema]) Delete(params *DeleteParams[Schema]) error {
 	language := params.Language
 	if language == "" {
 		language = db.defaultLanguage
@@ -242,7 +242,7 @@ func (db *MemDB[Schema]) Delete(params *DeleteParams[Schema]) error {
 		return fmt.Errorf("document not found")
 	}
 
-	doc := flattenSchema(document)
+	doc := db.flattenSchema(document)
 	db.deindexDocument(params.Id, doc, language)
 
 	delete(db.documents, params.Id)
@@ -250,7 +250,7 @@ func (db *MemDB[Schema]) Delete(params *DeleteParams[Schema]) error {
 	return nil
 }
 
-func (db *MemDB[Schema]) Search(params *SearchParams) (SearchResult[Schema], error) {
+func (db *Search[Schema]) Search(params *SearchParams) (SearchResult[Schema], error) {
 	allIdScores := make(map[string]float64)
 	results := make(SearchHits[Schema], 0)
 
@@ -308,7 +308,7 @@ func (db *MemDB[Schema]) Search(params *SearchParams) (SearchResult[Schema], err
 	return SearchResult[Schema]{Hits: results[start:stop], Count: len(results)}, nil
 }
 
-func (db *MemDB[Schema]) indexDocument(id string, document map[string]string, language tokenizer.Language) {
+func (db *Search[Schema]) indexDocument(id string, document map[string]string, language tokenizer.Language) {
 	for propName, index := range db.indexes {
 		tokens, _ := tokenizer.Tokenize(&tokenizer.TokenizeParams{
 			Text:            document[propName],
@@ -324,7 +324,7 @@ func (db *MemDB[Schema]) indexDocument(id string, document map[string]string, la
 	}
 }
 
-func (db *MemDB[Schema]) deindexDocument(id string, document map[string]string, language tokenizer.Language) {
+func (db *Search[Schema]) deindexDocument(id string, document map[string]string, language tokenizer.Language) {
 	for propName, index := range db.indexes {
 		tokens, _ := tokenizer.Tokenize(&tokenizer.TokenizeParams{
 			Text:            document[propName],
@@ -340,7 +340,7 @@ func (db *MemDB[Schema]) deindexDocument(id string, document map[string]string, 
 	}
 }
 
-func flattenSchema(obj any, prefix ...string) map[string]string {
+func (db *Search[Schema]) flattenSchema(obj any, prefix ...string) map[string]string {
 	if obj == nil {
 		return nil
 	}
@@ -350,7 +350,7 @@ func flattenSchema(obj any, prefix ...string) map[string]string {
 		rules := make(map[string]bool)
 		for field, val := range obj {
 			if reflect.TypeOf(field).Kind() == reflect.Map {
-				for key, value := range flattenSchema(val, field) {
+				for key, value := range db.flattenSchema(val, field) {
 					fields[key] = value
 				}
 			} else {
@@ -370,7 +370,7 @@ func flattenSchema(obj any, prefix ...string) map[string]string {
 			rules := make(map[string]bool)
 			for field, val := range obj {
 				if reflect.TypeOf(field).Kind() == reflect.Map {
-					for key, value := range flattenSchema(val, field) {
+					for key, value := range db.flattenSchema(val, field) {
 						fields[key] = value
 					}
 				} else {
@@ -396,7 +396,7 @@ func flattenSchema(obj any, prefix ...string) map[string]string {
 					}
 
 					if field.Type.Kind() == reflect.Struct {
-						for key, value := range flattenSchema(v.Field(i).Interface(), propName) {
+						for key, value := range db.flattenSchema(v.Field(i).Interface(), propName) {
 							fields[key] = value
 						}
 					} else {
@@ -413,7 +413,7 @@ func flattenSchema(obj any, prefix ...string) map[string]string {
 					}
 
 					if field.Type.Kind() == reflect.Struct {
-						for key, value := range flattenSchema(v.Field(i).Interface(), propName) {
+						for key, value := range db.flattenSchema(v.Field(i).Interface(), propName) {
 							fields[key] = value
 						}
 					} else {
@@ -436,7 +436,7 @@ func flattenSchema(obj any, prefix ...string) map[string]string {
 				}
 
 				if field.Type.Kind() == reflect.Struct {
-					for key, value := range flattenSchema(v.Field(i).Interface(), propName) {
+					for key, value := range db.flattenSchema(v.Field(i).Interface(), propName) {
 						fields[key] = value
 					}
 				} else {
@@ -453,7 +453,7 @@ func flattenSchema(obj any, prefix ...string) map[string]string {
 				}
 
 				if field.Type.Kind() == reflect.Struct {
-					for key, value := range flattenSchema(v.Field(i).Interface(), propName) {
+					for key, value := range db.flattenSchema(v.Field(i).Interface(), propName) {
 						fields[key] = value
 					}
 				} else {
@@ -464,29 +464,4 @@ func flattenSchema(obj any, prefix ...string) map[string]string {
 	}
 
 	return fields
-}
-
-func flattenSchema1(obj any, prefix ...string) map[string]string {
-	m := make(map[string]string)
-	t := reflect.TypeOf(obj)
-	v := reflect.ValueOf(obj)
-	fields := reflect.VisibleFields(t)
-
-	for i, field := range fields {
-		if propName, ok := field.Tag.Lookup("index"); ok {
-			if len(prefix) == 1 {
-				propName = fmt.Sprintf("%s.%s", prefix[0], propName)
-			}
-
-			if field.Type.Kind() == reflect.Struct {
-				for key, value := range flattenSchema1(v.Field(i).Interface(), propName) {
-					m[key] = value
-				}
-			} else {
-				m[propName] = v.Field(i).String()
-			}
-		}
-	}
-
-	return m
 }

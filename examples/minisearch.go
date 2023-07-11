@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/oarkflow/pkg/minisearch/pkg/store"
-	"github.com/oarkflow/pkg/minisearch/pkg/tokenizer"
+	"github.com/oarkflow/pkg/minisearch"
+	"github.com/oarkflow/pkg/minisearch/tokenizer"
 )
 
 type ICD struct {
@@ -44,7 +44,7 @@ func readFileAsMap(file string) (icds []any) {
 
 func main() {
 	data := readFileAsMap("icd10_codes.json")
-	db := store.New[any](&store.Config{
+	db := minisearch.New[any](&minisearch.Config{
 		DefaultLanguage: tokenizer.ENGLISH,
 		TokenizerConfig: &tokenizer.Config{
 			EnableStemming:  true,
@@ -52,7 +52,7 @@ func main() {
 		},
 		IndexKeys: []string{"code", "desc"},
 	})
-	p := store.InsertBatchParams[any]{
+	p := minisearch.InsertBatchParams[any]{
 		Documents: data,
 		BatchSize: 100,
 	}
@@ -61,16 +61,10 @@ func main() {
 		panic(errs)
 	}
 
-	s := store.SearchParams{
-		Query:      "Cholera",
-		Properties: []string{},
-		BoolMode:   store.AND,
-		Limit:      10,
-		Relevance: store.BM25Params{
-			K: 1.2,
-			B: 0.75,
-			D: 0.5,
-		},
+	s := minisearch.SearchParams{
+		Query:    "Cholera",
+		BoolMode: minisearch.AND,
+		Limit:    10,
 	}
 	rs, err := db.Search(&s)
 	if err != nil {
