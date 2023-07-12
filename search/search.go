@@ -189,6 +189,17 @@ func (db *Search[Schema]) Insert(doc Schema, lang ...tokenizer.Language) (Record
 }
 
 func (db *Search[Schema]) InsertBatch(docs []Schema, batchSize int, lang ...tokenizer.Language) []error {
+	docLen := len(docs)
+	if docLen == 0 {
+		return nil
+	}
+	if len(db.indexKeys) == 0 {
+		keys := DocFields(docs[0])
+		for _, key := range keys {
+			db.indexes[key] = NewIndex()
+			db.indexKeys = append(db.indexKeys, key)
+		}
+	}
 	batchCount := int(math.Ceil(float64(len(docs)) / float64(batchSize)))
 	docsChan := make(chan Schema)
 	errsChan := make(chan error)
@@ -452,179 +463,154 @@ func (db *Search[Schema]) deindexDocument(id int64, document map[string]string, 
 	}
 }
 
+func (db *Search[Schema]) getFieldsFromMap(obj map[string]any, prefix ...string) map[string]string {
+	fields := make(map[string]string)
+	rules := make(map[string]bool)
+	if db.rules != nil {
+		rules = db.rules
+	}
+	for field, val := range obj {
+		if reflect.TypeOf(field).Kind() == reflect.Map {
+			for key, value := range db.flattenSchema(val, field) {
+				fields[key] = value
+			}
+		} else {
+			if len(rules) > 0 {
+				if canIndex, ok := rules[field]; ok && canIndex {
+					fields[field] = fmt.Sprintf("%v", val)
+				}
+			} else {
+				fields[field] = fmt.Sprintf("%v", val)
+			}
+		}
+	}
+	return fields
+}
+
+func (db *Search[Schema]) getFieldsFromStruct(obj any, prefix ...string) map[string]string {
+	fields := make(map[string]string)
+	t := reflect.TypeOf(obj)
+	v := reflect.ValueOf(obj)
+	visibleFields := reflect.VisibleFields(t)
+	hasIndexField := false
+	for i, field := range visibleFields {
+		if propName, ok := field.Tag.Lookup("index"); ok {
+			hasIndexField = true
+			if len(prefix) == 1 {
+				propName = fmt.Sprintf("%s.%s", prefix[0], propName)
+			}
+			if field.Type.Kind() == reflect.Struct {
+				for key, value := range db.flattenSchema(v.Field(i).Interface(), propName) {
+					fields[key] = value
+				}
+			} else {
+				fields[propName] = v.Field(i).String()
+			}
+		}
+	}
+	if !hasIndexField {
+		for i, field := range visibleFields {
+			propName := field.Name
+			if len(prefix) == 1 {
+				propName = fmt.Sprintf("%s.%s", prefix[0], propName)
+			}
+
+			if field.Type.Kind() == reflect.Struct {
+				for key, value := range db.flattenSchema(v.Field(i).Interface(), propName) {
+					fields[key] = value
+				}
+			} else {
+				fields[propName] = v.Field(i).String()
+			}
+		}
+	}
+	return fields
+}
+
 func (db *Search[Schema]) flattenSchema(obj any, prefix ...string) map[string]string {
 	if obj == nil {
 		return nil
 	}
 	fields := make(map[string]string)
 	if reflect.TypeOf(obj).Kind() == reflect.Struct {
-		t := reflect.TypeOf(obj)
-		v := reflect.ValueOf(obj)
-		visibleFields := reflect.VisibleFields(t)
-		hasIndexField := false
-		for i, field := range visibleFields {
-			if propName, ok := field.Tag.Lookup("index"); ok {
-				hasIndexField = true
-				if len(prefix) == 1 {
-					propName = fmt.Sprintf("%s.%s", prefix[0], propName)
-				}
-				if field.Type.Kind() == reflect.Struct {
-					for key, value := range db.flattenSchema(v.Field(i).Interface(), propName) {
-						fields[key] = value
-					}
-				} else {
-					fields[propName] = v.Field(i).String()
-				}
-			}
-		}
-		if !hasIndexField {
-			for i, field := range visibleFields {
-				propName := field.Name
-				if len(prefix) == 1 {
-					propName = fmt.Sprintf("%s.%s", prefix[0], propName)
-				}
-
-				if field.Type.Kind() == reflect.Struct {
-					for key, value := range db.flattenSchema(v.Field(i).Interface(), propName) {
-						fields[key] = value
-					}
-				} else {
-					fields[propName] = v.Field(i).String()
-				}
-			}
-		}
-		return fields
+		return db.getFieldsFromStruct(obj, prefix...)
 	} else {
 		switch obj := obj.(type) {
 		case string, bool, time.Time, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64:
 			fields[db.sliceField] = fmt.Sprintf("%v", obj)
-		case map[string]any:
-			rules := make(map[string]bool)
-			if db.rules != nil {
-				rules = db.rules
-			}
-			for field, val := range obj {
-				if reflect.TypeOf(field).Kind() == reflect.Map {
-					for key, value := range db.flattenSchema(val, field) {
-						fields[key] = value
-					}
-				} else {
-					if len(rules) > 0 {
-						if canIndex, ok := rules[field]; ok && canIndex {
-							fields[field] = fmt.Sprintf("%v", val)
-						}
-					} else {
-						fields[field] = fmt.Sprintf("%v", val)
-					}
-				}
-			}
 			return fields
-		case any:
+		case map[string]any:
+			return db.getFieldsFromMap(obj, prefix...)
+		default:
 			switch obj := obj.(type) {
 			case map[string]any:
-				rules := make(map[string]bool)
-				if db.rules != nil {
-					rules = db.rules
-				}
-				for field, val := range obj {
-					if reflect.TypeOf(field).Kind() == reflect.Map {
-						for key, value := range db.flattenSchema(val, field) {
-							fields[key] = value
-						}
-					} else {
-						if len(rules) > 0 {
-							if canIndex, ok := rules[field]; ok && canIndex {
-								fields[field] = fmt.Sprintf("%v", val)
-							}
-						} else {
-							fields[field] = fmt.Sprintf("%v", val)
-						}
-					}
-				}
-				return fields
+				return db.getFieldsFromMap(obj, prefix...)
 			default:
-				t := reflect.TypeOf(obj)
-				v := reflect.ValueOf(obj)
-				visibleFields := reflect.VisibleFields(t)
-				hasIndexField := false
-				for i, field := range visibleFields {
-					if propName, ok := field.Tag.Lookup("index"); ok {
-						hasIndexField = true
-						if len(prefix) == 1 {
-							propName = fmt.Sprintf("%s.%s", prefix[0], propName)
-						}
+				return db.getFieldsFromStruct(obj, prefix...)
+			}
+		}
+	}
+}
 
-						if field.Type.Kind() == reflect.Struct {
-							for key, value := range db.flattenSchema(v.Field(i).Interface(), propName) {
-								fields[key] = value
-							}
-						} else {
-							fields[propName] = v.Field(i).String()
-						}
-					}
+func getFieldsFromMap(obj map[string]any) []string {
+	var fields []string
+	rules := make(map[string]bool)
+	for field, val := range obj {
+		if reflect.TypeOf(field).Kind() == reflect.Map {
+			for _, key := range DocFields(val, field) {
+				fields = append(fields, key)
+			}
+		} else {
+			if len(rules) > 0 {
+				if canIndex, ok := rules[field]; ok && canIndex {
+					fields = append(fields, field)
 				}
-
-				if !hasIndexField {
-					for i, field := range visibleFields {
-						propName := field.Name
-						if len(prefix) == 1 {
-							propName = fmt.Sprintf("%s.%s", prefix[0], propName)
-						}
-
-						if field.Type.Kind() == reflect.Struct {
-							for key, value := range db.flattenSchema(v.Field(i).Interface(), propName) {
-								fields[key] = value
-							}
-						} else {
-							fields[propName] = v.Field(i).String()
-						}
-					}
-				}
-				return fields
+			} else {
+				fields = append(fields, field)
+			}
+		}
+	}
+	return fields
+}
+func getFieldsFromStruct(obj any, prefix ...string) []string {
+	var fields []string
+	t := reflect.TypeOf(obj)
+	v := reflect.ValueOf(obj)
+	visibleFields := reflect.VisibleFields(t)
+	hasIndexField := false
+	for i, field := range visibleFields {
+		if propName, ok := field.Tag.Lookup("index"); ok {
+			hasIndexField = true
+			if len(prefix) == 1 {
+				propName = fmt.Sprintf("%s.%s", prefix[0], propName)
 			}
 
-		default:
-			t := reflect.TypeOf(obj)
-			v := reflect.ValueOf(obj)
-			visibleFields := reflect.VisibleFields(t)
-			hasIndexField := false
-			for i, field := range visibleFields {
-				if propName, ok := field.Tag.Lookup("index"); ok {
-					hasIndexField = true
-					if len(prefix) == 1 {
-						propName = fmt.Sprintf("%s.%s", prefix[0], propName)
-					}
-
-					if field.Type.Kind() == reflect.Struct {
-						for key, value := range db.flattenSchema(v.Field(i).Interface(), propName) {
-							fields[key] = value
-						}
-					} else {
-						fields[propName] = v.Field(i).String()
-					}
+			if field.Type.Kind() == reflect.Struct {
+				for _, key := range DocFields(v.Field(i).Interface(), propName) {
+					fields = append(fields, key)
 				}
+			} else {
+				fields = append(fields, propName)
 			}
-
-			if !hasIndexField {
-				for i, field := range visibleFields {
-					propName := field.Name
-					if len(prefix) == 1 {
-						propName = fmt.Sprintf("%s.%s", prefix[0], propName)
-					}
-
-					if field.Type.Kind() == reflect.Struct {
-						for key, value := range db.flattenSchema(v.Field(i).Interface(), propName) {
-							fields[key] = value
-						}
-					} else {
-						fields[propName] = v.Field(i).String()
-					}
-				}
-			}
-			return fields
 		}
 	}
 
+	if !hasIndexField {
+		for i, field := range visibleFields {
+			propName := field.Name
+			if len(prefix) == 1 {
+				propName = fmt.Sprintf("%s.%s", prefix[0], propName)
+			}
+
+			if field.Type.Kind() == reflect.Struct {
+				for _, key := range DocFields(v.Field(i).Interface(), propName) {
+					fields = append(fields, key)
+				}
+			} else {
+				fields = append(fields, propName)
+			}
+		}
+	}
 	return fields
 }
 
@@ -632,125 +618,16 @@ func DocFields(obj any, prefix ...string) []string {
 	if obj == nil {
 		return nil
 	}
-	var fields []string
+
 	switch obj := obj.(type) {
 	case map[string]any:
-		rules := make(map[string]bool)
-		for field, val := range obj {
-			if reflect.TypeOf(field).Kind() == reflect.Map {
-				for _, key := range DocFields(val, field) {
-					fields = append(fields, key)
-				}
-			} else {
-				if len(rules) > 0 {
-					if canIndex, ok := rules[field]; ok && canIndex {
-						fields = append(fields, field)
-					}
-				} else {
-					fields = append(fields, field)
-				}
-			}
-		}
-		return fields
-	case any:
+		return getFieldsFromMap(obj)
+	default:
 		switch obj := obj.(type) {
 		case map[string]any:
-			rules := make(map[string]bool)
-			for field, val := range obj {
-				if reflect.TypeOf(field).Kind() == reflect.Map {
-					for _, key := range DocFields(val, field) {
-						fields = append(fields, key)
-					}
-				} else {
-					if len(rules) > 0 {
-						if canIndex, ok := rules[field]; ok && canIndex {
-							fields = append(fields, field)
-						}
-					} else {
-						fields = append(fields, field)
-					}
-				}
-			}
-			return fields
+			return getFieldsFromMap(obj)
 		default:
-			t := reflect.TypeOf(obj)
-			v := reflect.ValueOf(obj)
-			visibleFields := reflect.VisibleFields(t)
-			hasIndexField := false
-			for i, field := range visibleFields {
-				if propName, ok := field.Tag.Lookup("index"); ok {
-					hasIndexField = true
-					if len(prefix) == 1 {
-						propName = fmt.Sprintf("%s.%s", prefix[0], propName)
-					}
-
-					if field.Type.Kind() == reflect.Struct {
-						for _, key := range DocFields(v.Field(i).Interface(), propName) {
-							fields = append(fields, key)
-						}
-					} else {
-						fields = append(fields, propName)
-					}
-				}
-			}
-
-			if !hasIndexField {
-				for i, field := range visibleFields {
-					propName := field.Name
-					if len(prefix) == 1 {
-						propName = fmt.Sprintf("%s.%s", prefix[0], propName)
-					}
-
-					if field.Type.Kind() == reflect.Struct {
-						for _, key := range DocFields(v.Field(i).Interface(), propName) {
-							fields = append(fields, key)
-						}
-					} else {
-						fields = append(fields, propName)
-					}
-				}
-			}
-		}
-
-	default:
-		t := reflect.TypeOf(obj)
-		v := reflect.ValueOf(obj)
-		visibleFields := reflect.VisibleFields(t)
-		hasIndexField := false
-		for i, field := range visibleFields {
-			if propName, ok := field.Tag.Lookup("index"); ok {
-				hasIndexField = true
-				if len(prefix) == 1 {
-					propName = fmt.Sprintf("%s.%s", prefix[0], propName)
-				}
-
-				if field.Type.Kind() == reflect.Struct {
-					for _, key := range DocFields(v.Field(i).Interface(), propName) {
-						fields = append(fields, key)
-					}
-				} else {
-					fields = append(fields, propName)
-				}
-			}
-		}
-
-		if !hasIndexField {
-			for i, field := range visibleFields {
-				propName := field.Name
-				if len(prefix) == 1 {
-					propName = fmt.Sprintf("%s.%s", prefix[0], propName)
-				}
-
-				if field.Type.Kind() == reflect.Struct {
-					for _, key := range DocFields(v.Field(i).Interface(), propName) {
-						fields = append(fields, key)
-					}
-				} else {
-					fields = append(fields, propName)
-				}
-			}
+			return getFieldsFromStruct(obj, prefix...)
 		}
 	}
-
-	return fields
 }

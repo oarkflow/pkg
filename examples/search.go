@@ -12,8 +12,8 @@ import (
 
 func main() {
 	testMap()
-	testStruct()
-	testString()
+	// testStruct()
+	// testString()
 }
 
 type ICD struct {
@@ -72,7 +72,6 @@ func testMap() {
 			EnableStemming:  true,
 			EnableStopWords: true,
 		},
-		IndexKeys: search.DocFields(data[0]),
 	})
 	errs := db.InsertBatch(data, 100)
 	if len(errs) > 0 {
