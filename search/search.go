@@ -14,7 +14,6 @@ import (
 
 	"github.com/oarkflow/pkg/search/lib"
 	"github.com/oarkflow/pkg/search/tokenizer"
-
 	"github.com/oarkflow/pkg/str"
 	"github.com/oarkflow/pkg/utils"
 )
@@ -412,10 +411,12 @@ func (db *Search[Schema]) Search(params *Params) (Result[Schema], error) {
 			for _, k := range commonKeys {
 				keys = append(keys, k)
 			}
-			d := utils.Intersection(keys...)
-			for id, _ := range idScores {
-				if !str.Contains(d, id) {
-					delete(idScores, id)
+			if len(keys) > 0 {
+				d := utils.Intersection(keys...)
+				for id, _ := range idScores {
+					if !str.Contains(d, id) {
+						delete(idScores, id)
+					}
 				}
 			}
 		}
