@@ -369,7 +369,7 @@ func (db *Search[Schema]) Search(params *Params) (Result[Schema], error) {
 	}
 	cachedKey := params.ToInt64()
 	if cachedKey != 0 {
-		if score, ok := db.cache[cachedKey]; ok {
+		if score, ok := db.cache[cachedKey]; ok && len(score) > 0 {
 			return db.prepareResult(score, params)
 		}
 	}
@@ -412,21 +412,18 @@ func (db *Search[Schema]) Search(params *Params) (Result[Schema], error) {
 			for _, k := range commonKeys {
 				keys = append(keys, k)
 			}
-			commonKeys = nil
-			if len(keys) != len(params.Extra) {
-				return Result[Schema]{}, nil
-			}
 			d := utils.Intersection(keys...)
 			for id, _ := range idScores {
 				if !str.Contains(d, id) {
 					delete(idScores, id)
 				}
 			}
-			if cachedKey != 0 {
-				db.cache[cachedKey] = idScores
-			}
-			return db.prepareResult(idScores, params)
 		}
+		commonKeys = nil
+		if cachedKey != 0 {
+			db.cache[cachedKey] = idScores
+		}
+		return db.prepareResult(idScores, params)
 	}
 	return db.prepareResult(allIdScores, params)
 }
