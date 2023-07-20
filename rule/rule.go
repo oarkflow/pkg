@@ -633,6 +633,14 @@ func (condition *Condition) checkNotIn(data Data) bool {
 			return true
 		}
 		return false
+	case interface{}:
+		switch nested := val.(type) {
+		case []interface{}:
+			switch target := condition.Value.(type) {
+			case []interface{}:
+				return !searchDeeplyNestedSlice(nested, target)
+			}
+		}
 	}
 
 	return false
