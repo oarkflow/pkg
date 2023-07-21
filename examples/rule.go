@@ -37,30 +37,59 @@ var requestData = []byte(`
     "patient": {
         "dob": "2003-04-10"
     },
-    "em": {
-        "code": "123",
-        "encounter_uid": 1,
-        "work_item_uid": 2, 
-        "billing_provider": "Test provider",
-        "resident_provider": "Test Resident Provider"
+  "coding": [
+    {
+      "em": {
+          "code": "123",
+          "encounter_uid": 1,
+          "work_item_uid": 2, 
+          "billing_provider": "Test provider",
+          "resident_provider": "Test Resident Provider"
+      },
+      "cpt": [
+          {
+              "billing_provider": "Test provider",
+              "resident_provider": "Test Resident Provider"
+          },
+          {
+              "code": "OBS011",
+              "billing_provider": "Test provider",
+              "resident_provider": "Test Resident Provider"
+          },
+          {
+              "code": "OBS011",
+              "billing_provider": "Test provider",
+              "resident_provider": "Test Resident Provider"
+          }
+      ]
     },
-    "cpt": [
-        {
-            "code": "OBS011",
-            "billing_provider": "Test provider",
-            "resident_provider": "Test Resident Provider"
-        },
-        {
-            "code": "OBS011",
-            "billing_provider": "Test provider",
-            "resident_provider": "Test Resident Provider"
-        },
-        {
-            "code": "SU002",
-            "billing_provider": "Test provider",
-            "resident_provider": "Test Resident Provider"
-        }
-    ]
+    {
+      "em": {
+          "code": "123",
+          "encounter_uid": 1,
+          "work_item_uid": 2, 
+          "billing_provider": "Test provider",
+          "resident_provider": "Test Resident Provider"
+      },
+      "cpt": [
+          {
+              "code": "OBS01",
+              "billing_provider": "Test provider",
+              "resident_provider": "Test Resident Provider"
+          },
+          {
+              "code": "OBS011",
+              "billing_provider": "Test provider",
+              "resident_provider": "Test Resident Provider"
+          },
+          {
+              "code": "OBS011",
+              "billing_provider": "Test provider",
+              "resident_provider": "Test Resident Provider"
+          }
+      ]
+    }
+  ]
 }
 `)
 
@@ -72,9 +101,8 @@ var jsonSchema = []byte(`
 				"condition": [
 					{
 						"key": "check-blacklist-cpt-by-age",
-						"field": "cpt.[].code",
-						"operator": "gte_count",
-						"value": 1,
+						"field": "coding.#.cpt.#.code",
+						"operator": "in",
 						"filter": {
 							"key": ".[].code",
 							"lookup_data": [
@@ -107,7 +135,7 @@ var jsonSchema = []byte(`
 					"condition": [
 						{
 							"key": "check-greater-than-two-obs",
-							"field": "cpt.[].code",
+							"field": "coding.#.cpt.#.code",
 							"operator": "gte_count",
 							"value": "2",
 							"filter": {
@@ -133,7 +161,7 @@ var jsonSchema = []byte(`
 					"condition": [
 						{
 							"key": "check-one-obs-cpt",
-							"field": "cpt.[].code",
+							"field": "coding.#.cpt.#.code",
 							"operator": "eq_count",
 							"value": "1",
 							"filter": {
@@ -187,7 +215,6 @@ func builtinAge(ctx evaluate.EvalContext) (interface{}, error) {
 }
 
 func twoConditionsWithAndOp() {
-
 	// Applying expression rules:
 	// 1) When using rule to count values, use expression in filter->condition
 	// 2) When checking for values within specific lookup sources, use expression as value in condition

@@ -11,11 +11,13 @@ import (
 	"sync"
 
 	"github.com/oarkflow/frame/pkg/common/xid"
+	"golang.org/x/exp/slices"
 
 	"github.com/oarkflow/pkg/dipper"
 	"github.com/oarkflow/pkg/evaluate"
 	"github.com/oarkflow/pkg/jet"
 	"github.com/oarkflow/pkg/maputil"
+	"github.com/oarkflow/pkg/sjson"
 	"github.com/oarkflow/pkg/str"
 	"github.com/oarkflow/pkg/timeutil"
 )
@@ -275,7 +277,13 @@ func (condition *Condition) checkNeq(val any) bool {
 }
 
 func (condition *Condition) checkGt(data Data) bool {
-	switch val := dipper.Get(data, condition.Field).(type) {
+	// use sjson to get the Value
+	dataJson, err := json.Marshal(data)
+	if err != nil {
+		return false
+	}
+	result := sjson.GetBytes(dataJson, condition.Field).Value()
+	switch val := result.(type) {
 	case string:
 		from, err := timeutil.ParseTime(val)
 		if err != nil {
@@ -312,7 +320,13 @@ func (condition *Condition) checkGt(data Data) bool {
 }
 
 func (condition *Condition) checkLt(data Data) bool {
-	switch val := dipper.Get(data, condition.Field).(type) {
+	// use sjson to get the Value
+	dataJson, err := json.Marshal(data)
+	if err != nil {
+		return false
+	}
+	result := sjson.GetBytes(dataJson, condition.Field).Value()
+	switch val := result.(type) {
 	case string:
 		from, err := timeutil.ParseTime(val)
 		if err != nil {
@@ -351,7 +365,13 @@ func (condition *Condition) checkLt(data Data) bool {
 }
 
 func (condition *Condition) checkGte(data Data) bool {
-	switch val := dipper.Get(data, condition.Field).(type) {
+	// use sjson to get the Value
+	dataJson, err := json.Marshal(data)
+	if err != nil {
+		return false
+	}
+	result := sjson.GetBytes(dataJson, condition.Field).Value()
+	switch val := result.(type) {
 	case string:
 		from, err := timeutil.ParseTime(val)
 		if err != nil {
@@ -387,7 +407,13 @@ func (condition *Condition) checkGte(data Data) bool {
 }
 
 func (condition *Condition) checkLte(data Data) bool {
-	switch val := dipper.Get(data, condition.Field).(type) {
+	// use sjson to get the Value
+	dataJson, err := json.Marshal(data)
+	if err != nil {
+		return false
+	}
+	result := sjson.GetBytes(dataJson, condition.Field).Value()
+	switch val := result.(type) {
 	case string:
 		from, err := timeutil.ParseTime(val)
 		if err != nil {
@@ -424,7 +450,13 @@ func (condition *Condition) checkLte(data Data) bool {
 }
 
 func (condition *Condition) checkBetween(data Data) bool {
-	switch val := dipper.Get(data, condition.Field).(type) {
+	// use sjson to get the Value
+	dataJson, err := json.Marshal(data)
+	if err != nil {
+		return false
+	}
+	result := sjson.GetBytes(dataJson, condition.Field).Value()
+	switch val := result.(type) {
 	case string:
 		switch gtVal := condition.Value.(type) {
 		case []string:
@@ -465,7 +497,13 @@ func (condition *Condition) checkBetween(data Data) bool {
 }
 
 func (condition *Condition) checkIn(data Data) bool {
-	switch val := dipper.Get(data, condition.Field).(type) {
+	// use sjson to get the Value
+	dataJson, err := json.Marshal(data)
+	if err != nil {
+		return false
+	}
+	result := sjson.GetBytes(dataJson, condition.Field).Value()
+	switch val := result.(type) {
 	case string:
 		switch gtVal := condition.Value.(type) {
 		case []string:
@@ -520,13 +558,27 @@ func (condition *Condition) checkIn(data Data) bool {
 			return false
 		}
 		return false
+	case interface{}:
+		switch nested := val.(type) {
+		case []interface{}:
+			switch target := condition.Value.(type) {
+			case []interface{}:
+				return searchDeeplyNestedSlice(nested, target)
+			}
+		}
 	}
 
 	return false
 }
 
 func (condition *Condition) checkNotIn(data Data) bool {
-	switch val := dipper.Get(data, condition.Field).(type) {
+	// use sjson to get the Value
+	dataJson, err := json.Marshal(data)
+	if err != nil {
+		return false
+	}
+	result := sjson.GetBytes(dataJson, condition.Field).Value()
+	switch val := result.(type) {
 	case string:
 		switch gtVal := condition.Value.(type) {
 		case []string:
@@ -581,13 +633,27 @@ func (condition *Condition) checkNotIn(data Data) bool {
 			return true
 		}
 		return false
+	case interface{}:
+		switch nested := val.(type) {
+		case []interface{}:
+			switch target := condition.Value.(type) {
+			case []interface{}:
+				return !searchDeeplyNestedSlice(nested, target)
+			}
+		}
 	}
 
 	return false
 }
 
 func (condition *Condition) checkContains(data Data) bool {
-	switch val := dipper.Get(data, condition.Field).(type) {
+	// use sjson to get the Value
+	dataJson, err := json.Marshal(data)
+	if err != nil {
+		return false
+	}
+	result := sjson.GetBytes(dataJson, condition.Field).Value()
+	switch val := result.(type) {
 	case string:
 		switch gtVal := condition.Value.(type) {
 		case string:
@@ -600,7 +666,13 @@ func (condition *Condition) checkContains(data Data) bool {
 }
 
 func (condition *Condition) checkNotContains(data Data) bool {
-	switch val := dipper.Get(data, condition.Field).(type) {
+	// use sjson to get the Value
+	dataJson, err := json.Marshal(data)
+	if err != nil {
+		return false
+	}
+	result := sjson.GetBytes(dataJson, condition.Field).Value()
+	switch val := result.(type) {
 	case string:
 		switch gtVal := condition.Value.(type) {
 		case string:
@@ -612,7 +684,13 @@ func (condition *Condition) checkNotContains(data Data) bool {
 }
 
 func (condition *Condition) checkStartsWith(data Data) bool {
-	switch val := dipper.Get(data, condition.Field).(type) {
+	// use sjson to get the Value
+	dataJson, err := json.Marshal(data)
+	if err != nil {
+		return false
+	}
+	result := sjson.GetBytes(dataJson, condition.Field).Value()
+	switch val := result.(type) {
 	case string:
 		switch gtVal := condition.Value.(type) {
 		case string:
@@ -624,7 +702,13 @@ func (condition *Condition) checkStartsWith(data Data) bool {
 }
 
 func (condition *Condition) checkEndsWith(data Data) bool {
-	switch val := dipper.Get(data, condition.Field).(type) {
+	// use sjson to get the Value
+	dataJson, err := json.Marshal(data)
+	if err != nil {
+		return false
+	}
+	result := sjson.GetBytes(dataJson, condition.Field).Value()
+	switch val := result.(type) {
 	case string:
 		switch gtVal := condition.Value.(type) {
 		case string:
@@ -637,9 +721,14 @@ func (condition *Condition) checkEndsWith(data Data) bool {
 
 func (condition *Condition) checkEqCount(data Data) bool {
 	var d any
-	t := dipper.Get(data, condition.Field)
-	if dipper.Error(t) == nil {
-		d = t
+	// use sjson to get the Value
+	dataJson, err := json.Marshal(data)
+	if err != nil {
+		return false
+	}
+	result := sjson.GetBytes(dataJson, condition.Field)
+	if result.Exists() {
+		d = result.Value()
 	} else {
 		d = []string{}
 	}
@@ -668,9 +757,14 @@ func (condition *Condition) checkEqCount(data Data) bool {
 
 func (condition *Condition) checkNeqCount(data Data) bool {
 	var d any
-	t := dipper.Get(data, condition.Field)
-	if dipper.Error(t) == nil {
-		d = t
+	// use sjson to get the Value
+	dataJson, err := json.Marshal(data)
+	if err != nil {
+		return false
+	}
+	result := sjson.GetBytes(dataJson, condition.Field)
+	if result.Exists() {
+		d = result.Value()
 	} else {
 		d = []string{}
 	}
@@ -699,9 +793,14 @@ func (condition *Condition) checkNeqCount(data Data) bool {
 
 func (condition *Condition) checkGtCount(data Data) bool {
 	var d any
-	t := dipper.Get(data, condition.Field)
-	if dipper.Error(t) == nil {
-		d = t
+	// use sjson to get the Value
+	dataJson, err := json.Marshal(data)
+	if err != nil {
+		return false
+	}
+	result := sjson.GetBytes(dataJson, condition.Field)
+	if result.Exists() {
+		d = result.Value()
 	} else {
 		d = []string{}
 	}
@@ -730,9 +829,14 @@ func (condition *Condition) checkGtCount(data Data) bool {
 
 func (condition *Condition) checkGteCount(data Data) bool {
 	var d any
-	t := dipper.Get(data, condition.Field)
-	if dipper.Error(t) == nil {
-		d = t
+	// use sjson to get the Value
+	dataJson, err := json.Marshal(data)
+	if err != nil {
+		return false
+	}
+	result := sjson.GetBytes(dataJson, condition.Field)
+	if result.Exists() {
+		d = result.Value()
 	} else {
 		d = []string{}
 	}
@@ -761,9 +865,14 @@ func (condition *Condition) checkGteCount(data Data) bool {
 
 func (condition *Condition) checkLtCount(data Data) bool {
 	var d any
-	t := dipper.Get(data, condition.Field)
-	if dipper.Error(t) == nil {
-		d = t
+	// use sjson to get the Value
+	dataJson, err := json.Marshal(data)
+	if err != nil {
+		return false
+	}
+	result := sjson.GetBytes(dataJson, condition.Field)
+	if result.Exists() {
+		d = result.Value()
 	} else {
 		d = []string{}
 	}
@@ -792,9 +901,14 @@ func (condition *Condition) checkLtCount(data Data) bool {
 
 func (condition *Condition) checkLteCount(data Data) bool {
 	var d any
-	t := dipper.Get(data, condition.Field)
-	if dipper.Error(t) == nil {
-		d = t
+	// use sjson to get the Value
+	dataJson, err := json.Marshal(data)
+	if err != nil {
+		return false
+	}
+	result := sjson.GetBytes(dataJson, condition.Field)
+	if result.Exists() {
+		d = result.Value()
 	} else {
 		d = []string{}
 	}
@@ -821,87 +935,134 @@ func (condition *Condition) checkLteCount(data Data) bool {
 	return valKind.Len() <= gtVal && valKind.Len() != 0
 }
 
-func (condition *Condition) Validate(data Data) bool {
-	switch data := data.(type) {
-	case map[string]any:
-		val := dipper.Get(data, condition.Field)
-		if val == nil {
+func (condition *Condition) checkNotNull(data Data) bool {
+	// use sjon to get the Value
+	dataJson, err := json.Marshal(data)
+	if err != nil {
+		return false
+	}
+	val := sjson.GetBytes(dataJson, condition.Field)
+	if val.Type == sjson.JSON {
+		// this is the case when we have # in the condition.Field
+		// so we need to check if any of the values in the slice is nil
+		flat := flattenSlice(val.Value().([]interface{}))
+		if slices.Contains(flat, nil) {
+			// if the slice contains nil, we know it is not notnull
 			return false
 		}
+		if len(flat) == 0 {
+			// if all the values are missing, then we get this case
+			return false
+		} else {
+			// this is for the case when one of the values is missing in the slice
+			// remove everything after last # with multiple #s in condition.Field
+			// to get the count of the slice
+			conditions := strings.Split(condition.Field, "#")
+			conditionCount := strings.Join(conditions[:len(conditions)-1], "#") + "#"
+			// valCount here is the number of values in the slice
+			valCount := sjson.GetBytes(dataJson, conditionCount)
+			switch valCount.Type {
+			case sjson.JSON:
+				// if we have a nested slice, we get a nested count
+				// so we need to flatten the slice and check if the count matches
+				// len(flat) is the number of values in the slice
+				// sumIntSlice(flatCount) is the number of values that should be in the slice
+				flatCount := flattenSlice(valCount.Value().([]interface{}))
+				return sumIntSlice(flatCount) == len(flat)
+			case sjson.Number:
+				// if we have a flat slice, we get a flat count
+				// here len(val.Value().([]interface{})) is the number of values in the slice
+				// int(valCount.Value().(float64)) is the number of values that should be in the slice
+				return int(valCount.Value().(float64)) == len(val.Value().([]interface{}))
+			}
+		}
+	}
+	return val.Value() != nil
+}
 
-		expr := ""
-		switch v := condition.Value.(type) {
-		case Expr:
-			expr = v.Value
-		case map[string]any:
-			if t, ok := v["expr"]; ok {
-				switch t := t.(type) {
-				case string:
-					expr = t
-				}
-			}
-		}
-		if expr != "" {
-			condition.Filter.Condition = expr
-		}
-		lookupFiltered := condition.filterMap(data)
-		if condition.Filter.Condition != "" {
-			condition.Value = lookupFiltered
-		}
+func (condition *Condition) Validate(data Data) bool {
+	// use sjon to get the Value
+	dataJson, err := json.Marshal(data)
+	if err != nil {
+		return false
+	}
+	val := sjson.GetBytes(dataJson, condition.Field)
+	if !val.Exists() {
 		switch condition.Operator {
-		case EQ:
-			return condition.checkEq(val)
-		case NEQ:
-			return condition.checkNeq(val)
-		case GT:
-			return condition.checkGt(data)
-		case LT:
-			return condition.checkLt(data)
-		case GTE:
-			return condition.checkGte(data)
-		case LTE:
-			return condition.checkLte(data)
-		case BETWEEN:
-			return condition.checkBetween(data)
-		case IN:
-			return condition.checkIn(data)
-		case NotIn:
-			return condition.checkNotIn(data)
-		case CONTAINS:
-			return condition.checkContains(data)
-		case NotContains:
-			return condition.checkNotContains(data)
-		case StartsWith:
-			return condition.checkStartsWith(data)
-		case EndsWith:
-			return condition.checkEndsWith(data)
-		case IsZero:
-			return reflect.ValueOf(dipper.Get(data, condition.Field)).IsZero()
-		case NotZero:
-			return !reflect.ValueOf(dipper.Get(data, condition.Field)).IsZero()
 		case IsNull:
-			return dipper.Get(data, condition.Field) == nil
+			return true
 		case NotNull:
-			val := dipper.Get(data, condition.Field)
-			if err := dipper.Error(val); err != nil {
-				if err == dipper.ErrNotFound {
-					return false
-				}
-			}
-			return val != nil
-		case EqCount:
-			return condition.checkEqCount(data)
-		case NeqCount:
-			return condition.checkNeqCount(data)
-		case GtCount:
-			return condition.checkGtCount(data)
-		case GteCount:
-			return condition.checkGteCount(data)
-		case LtCount:
-			return condition.checkLtCount(data)
-		case LteCount:
-			return condition.checkLteCount(data)
+			return false
 		}
+		return false
+	}
+
+	expr := ""
+	switch v := condition.Value.(type) {
+	case Expr:
+		expr = v.Value
+	case map[string]any:
+		if t, ok := v["expr"]; ok {
+			switch t := t.(type) {
+			case string:
+				expr = t
+			}
+		}
+	}
+	if expr != "" {
+		condition.Filter.Condition = expr
+	}
+	lookupFiltered := condition.filterMap(data)
+	if condition.Filter.Condition != "" {
+		condition.Value = lookupFiltered
+	}
+	switch condition.Operator {
+	case EQ:
+		return condition.checkEq(val.Value())
+	case NEQ:
+		return condition.checkNeq(val.Value())
+	case GT:
+		return condition.checkGt(data)
+	case LT:
+		return condition.checkLt(data)
+	case GTE:
+		return condition.checkGte(data)
+	case LTE:
+		return condition.checkLte(data)
+	case BETWEEN:
+		return condition.checkBetween(data)
+	case IN:
+		return condition.checkIn(data)
+	case NotIn:
+		return condition.checkNotIn(data)
+	case CONTAINS:
+		return condition.checkContains(data)
+	case NotContains:
+		return condition.checkNotContains(data)
+	case StartsWith:
+		return condition.checkStartsWith(data)
+	case EndsWith:
+		return condition.checkEndsWith(data)
+	case IsZero:
+		return reflect.ValueOf(val.Value()).IsZero()
+	case NotZero:
+		return !reflect.ValueOf(val.Value()).IsZero()
+	case IsNull:
+		return val.Value() == nil
+	case NotNull:
+		return condition.checkNotNull(data)
+	case EqCount:
+		return condition.checkEqCount(data)
+	case NeqCount:
+		return condition.checkNeqCount(data)
+	case GtCount:
+		return condition.checkGtCount(data)
+	case GteCount:
+		return condition.checkGteCount(data)
+	case LtCount:
+		return condition.checkLtCount(data)
+	case LteCount:
+		return condition.checkLteCount(data)
 	}
 	return false
 }
