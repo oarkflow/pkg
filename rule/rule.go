@@ -943,38 +943,45 @@ func (condition *Condition) checkNotNull(data Data) bool {
 	}
 	val := sjson.GetBytes(dataJson, condition.Field)
 	if val.Type == sjson.JSON {
-		// this is the case when we have # in the condition.Field
-		// so we need to check if any of the values in the slice is nil
-		flat := flattenSlice(val.Value().([]interface{}))
-		if slices.Contains(flat, nil) {
-			// if the slice contains nil, we know it is not notnull
-			return false
-		}
-		if len(flat) == 0 {
-			// if all the values are missing, then we get this case
-			return false
-		} else {
-			// this is for the case when one of the values is missing in the slice
-			// remove everything after last # with multiple #s in condition.Field
-			// to get the count of the slice
-			conditions := strings.Split(condition.Field, "#")
-			conditionCount := strings.Join(conditions[:len(conditions)-1], "#") + "#"
-			// valCount here is the number of values in the slice
-			valCount := sjson.GetBytes(dataJson, conditionCount)
-			switch valCount.Type {
-			case sjson.JSON:
-				// if we have a nested slice, we get a nested count
-				// so we need to flatten the slice and check if the count matches
-				// len(flat) is the number of values in the slice
-				// sumIntSlice(flatCount) is the number of values that should be in the slice
-				flatCount := flattenSlice(valCount.Value().([]interface{}))
-				return sumIntSlice(flatCount) == len(flat)
-			case sjson.Number:
-				// if we have a flat slice, we get a flat count
-				// here len(val.Value().([]interface{})) is the number of values in the slice
-				// int(valCount.Value().(float64)) is the number of values that should be in the slice
-				return int(valCount.Value().(float64)) == len(val.Value().([]interface{}))
+		switch val.Value().(type) {
+		case []interface{}:
+			// this is the case when we have # in the condition.Field
+			// so we need to check if any of the values in the slice is nil
+			flat := flattenSlice(val.Value().([]interface{}))
+			if slices.Contains(flat, nil) {
+				// if the slice contains nil, we know it is not notnull
+				return false
 			}
+			if len(flat) == 0 {
+				// if all the values are missing, then we get this case
+				return false
+			} else {
+				// this is for the case when one of the values is missing in the slice
+				// remove everything after last # with multiple #s in condition.Field
+				// to get the count of the slice
+				conditions := strings.Split(condition.Field, "#")
+				conditionCount := strings.Join(conditions[:len(conditions)-1], "#") + "#"
+				// valCount here is the number of values in the slice
+				valCount := sjson.GetBytes(dataJson, conditionCount)
+				switch valCount.Type {
+				case sjson.JSON:
+					// if we have a nested slice, we get a nested count
+					// so we need to flatten the slice and check if the count matches
+					// len(flat) is the number of values in the slice
+					// sumIntSlice(flatCount) is the number of values that should be in the slice
+					flatCount := flattenSlice(valCount.Value().([]interface{}))
+					return sumIntSlice(flatCount) == len(flat)
+				case sjson.Number:
+					// if we have a flat slice, we get a flat count
+					// here len(val.Value().([]interface{})) is the number of values in the slice
+					// int(valCount.Value().(float64)) is the number of values that should be in the slice
+					return int(valCount.Value().(float64)) == len(val.Value().([]interface{}))
+				}
+			}
+		case map[string]interface{}:
+			// when the value is a map, we need to check if the map is empty
+			// if the map is empty, then we know it is not notnull
+			return len(val.Value().(map[string]interface{})) != 0
 		}
 	}
 	return val.Value() != nil
