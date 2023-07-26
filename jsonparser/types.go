@@ -1,8 +1,8 @@
 package jsonparser
 
 import (
+	json "encoding/json"
 	"fmt"
-	json "github.com/bytedance/sonic"
 )
 
 type Enum any

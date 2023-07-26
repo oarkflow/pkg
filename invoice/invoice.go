@@ -17,7 +17,7 @@ import (
 	"strings"
 	"time"
 
-	json "github.com/bytedance/sonic"
+	json "encoding/json"
 
 	"github.com/skip2/go-qrcode"
 	"golang.org/x/text/language"

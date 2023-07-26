@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"unsafe"
 
-	jsongo "github.com/bytedance/sonic"
+	json "encoding/json"
 )
 
 type errorType struct {
@@ -122,7 +122,7 @@ func mustMarshalString(s string) bool {
 // appendStringify makes a json string and appends to buf.
 func appendStringify(buf []byte, s string) []byte {
 	if mustMarshalString(s) {
-		b, _ := jsongo.Marshal(s)
+		b, _ := json.Marshal(s)
 		return append(buf, b...)
 	}
 	buf = append(buf, '"')
@@ -636,19 +636,19 @@ func SetOptions(json, path string, value interface{},
 // SetBytesOptions sets a json value for the specified path with options.
 // If working with bytes, this method preferred over
 // SetOptions(string(data), path, value)
-func SetBytesOptions(json []byte, path string, value interface{},
+func SetBytesOptions(js []byte, path string, value interface{},
 	opts *Options) ([]byte, error) {
 	var optimistic, inplace bool
 	if opts != nil {
 		optimistic = opts.Optimistic
 		inplace = opts.ReplaceInPlace
 	}
-	jstr := *(*string)(unsafe.Pointer(&json))
+	jstr := *(*string)(unsafe.Pointer(&js))
 	var res []byte
 	var err error
 	switch v := value.(type) {
 	default:
-		b, merr := jsongo.Marshal(value)
+		b, merr := json.Marshal(value)
 		if merr != nil {
 			return nil, merr
 		}
@@ -699,7 +699,7 @@ func SetBytesOptions(json []byte, path string, value interface{},
 			false, false, optimistic, inplace)
 	}
 	if err == errNoChange {
-		return json, nil
+		return js, nil
 	}
 	return res, err
 }

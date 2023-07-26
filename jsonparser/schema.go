@@ -2,8 +2,8 @@ package jsonparser
 
 import (
 	"bytes"
+	json "encoding/json"
 	"fmt"
-	json "github.com/bytedance/sonic"
 )
 
 // Schema is a JSON Schema draft-07 document (as specified in

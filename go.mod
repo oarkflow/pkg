@@ -2,9 +2,10 @@ module github.com/oarkflow/pkg
 
 go 1.20
 
+replace github.com/casbin/casbin/v2 => github.com/sujit-baniya/casbin/v2 v2.69.0
+
 require (
 	github.com/boombuler/barcode v1.0.1
-	github.com/bytedance/sonic v1.10.0-rc
 	github.com/carlmjohnson/deque v0.22.0
 	github.com/casbin/casbin/v2 v2.68.0
 	github.com/go-playground/validator/v10 v10.14.1
@@ -41,6 +42,7 @@ require (
 	github.com/andeya/goutil v1.0.1 // indirect
 	github.com/bytedance/go-tagexpr/v2 v2.9.8 // indirect
 	github.com/bytedance/gopkg v0.0.0-20230531144706-a12972768317 // indirect
+	github.com/bytedance/sonic v1.10.0-rc // indirect
 	github.com/chenzhuoyu/base64x v0.0.0-20230717121745-296ad89f973d // indirect
 	github.com/chenzhuoyu/iasm v0.9.0 // indirect
 	github.com/cloudwego/netpoll v0.4.0 // indirect

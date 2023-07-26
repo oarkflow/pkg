@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	json "github.com/bytedance/sonic"
+	json "encoding/json"
 	"github.com/oarkflow/xid"
 
 	"github.com/oarkflow/pkg/search/lib"

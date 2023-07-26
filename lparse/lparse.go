@@ -2,7 +2,7 @@ package lparse
 
 import (
 	"bufio"
-	json "github.com/bytedance/sonic"
+	json "encoding/json"
 	"github.com/oarkflow/pkg/str"
 	"github.com/sourcegraph/conc/iter"
 	"github.com/sourcegraph/conc/pool"

@@ -4,7 +4,7 @@ import (
 	"os"
 	"sync"
 
-	json "github.com/bytedance/sonic"
+	json "encoding/json"
 
 	"github.com/oarkflow/pkg/flat"
 )

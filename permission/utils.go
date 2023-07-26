@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"reflect"
 
-	json "github.com/bytedance/sonic"
+	json "encoding/json"
 	"github.com/casbin/casbin/v2/model"
 	"github.com/oarkflow/govaluate"
 	"gopkg.in/yaml.v3"

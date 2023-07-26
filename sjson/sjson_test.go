@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	json "github.com/bytedance/sonic"
+	json "encoding/json"
 )
 
 func BenchmarkSet(b *testing.B) {
