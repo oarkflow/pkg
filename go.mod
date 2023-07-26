@@ -2,11 +2,6 @@ module github.com/oarkflow/pkg
 
 go 1.20
 
-replace (
-	github.com/bytedance/sonic => github.com/sujit-baniya/sonic v1.10.1
-	github.com/casbin/casbin/v2 => github.com/sujit-baniya/casbin/v2 v2.69.0
-)
-
 require (
 	github.com/boombuler/barcode v1.0.1
 	github.com/bytedance/sonic v1.10.0-rc
