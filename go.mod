@@ -2,11 +2,14 @@ module github.com/oarkflow/pkg
 
 go 1.20
 
-replace github.com/casbin/casbin/v2 => github.com/sujit-baniya/casbin/v2 v2.69.0
+replace (
+	github.com/bytedance/sonic => github.com/sujit-baniya/sonic v1.10.1
+	github.com/casbin/casbin/v2 => github.com/sujit-baniya/casbin/v2 v2.69.0
+)
 
 require (
 	github.com/boombuler/barcode v1.0.1
-	github.com/bytedance/sonic v1.9.2
+	github.com/bytedance/sonic v1.10.0-rc
 	github.com/carlmjohnson/deque v0.22.0
 	github.com/casbin/casbin/v2 v2.68.0
 	github.com/go-playground/validator/v10 v10.14.1
@@ -28,7 +31,7 @@ require (
 	github.com/sourcegraph/conc v0.3.0
 	github.com/tidwall/pretty v1.2.1
 	golang.org/x/crypto v0.11.0
-	golang.org/x/exp v0.0.0-20230626212559-97b1e661b5df
+	golang.org/x/exp v0.0.0-20230725093048-515e97ebf090
 	golang.org/x/image v0.9.0
 	golang.org/x/net v0.12.0
 	golang.org/x/text v0.11.0
@@ -43,7 +46,8 @@ require (
 	github.com/andeya/goutil v1.0.1 // indirect
 	github.com/bytedance/go-tagexpr/v2 v2.9.8 // indirect
 	github.com/bytedance/gopkg v0.0.0-20230531144706-a12972768317 // indirect
-	github.com/chenzhuoyu/base64x v0.0.0-20221115062448-fe3a3abad311 // indirect
+	github.com/chenzhuoyu/base64x v0.0.0-20230717121745-296ad89f973d // indirect
+	github.com/chenzhuoyu/iasm v0.9.0 // indirect
 	github.com/cloudwego/netpoll v0.4.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.2 // indirect
@@ -60,7 +64,7 @@ require (
 	github.com/jackc/pgx/v5 v5.3.1 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
-	github.com/klauspost/cpuid/v2 v2.2.4 // indirect
+	github.com/klauspost/cpuid/v2 v2.2.5 // indirect
 	github.com/leodido/go-urn v1.2.4 // indirect
 	github.com/mattn/go-isatty v0.0.18 // indirect
 	github.com/microsoft/go-mssqldb v0.21.0 // indirect
@@ -71,7 +75,7 @@ require (
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
-	golang.org/x/arch v0.2.0 // indirect
+	golang.org/x/arch v0.4.0 // indirect
 	golang.org/x/sys v0.10.0 // indirect
 	google.golang.org/protobuf v1.30.0 // indirect
 	gorm.io/driver/mysql v1.5.0 // indirect
