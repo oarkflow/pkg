@@ -1259,15 +1259,74 @@ func matchLimit(str, pattern string) bool {
 	return matched
 }
 
+func falseish(t Result) bool {
+	switch t.Type {
+	case Null:
+		return true
+	case False:
+		return true
+	case String:
+		b, err := strconv.ParseBool(strings.ToLower(t.Str))
+		if err != nil {
+			return false
+		}
+		return !b
+	case Number:
+		return t.Num == 0
+	default:
+		return false
+	}
+}
+
+func trueish(t Result) bool {
+	switch t.Type {
+	case True:
+		return true
+	case String:
+		b, err := strconv.ParseBool(strings.ToLower(t.Str))
+		if err != nil {
+			return false
+		}
+		return b
+	case Number:
+		return t.Num != 0
+	default:
+		return false
+	}
+}
+
+func nullish(t Result) bool {
+	return t.Type == Null
+}
+
 func queryMatches(rp *arrayPathResult, value Result) bool {
 	rpv := rp.query.value
-	if len(rpv) > 0 && rpv[0] == '~' {
-		// convert to bool
-		rpv = rpv[1:]
-		if value.Truthy() {
-			value = Result{Type: True}
-		} else {
-			value = Result{Type: False}
+	if len(rpv) > 0 {
+		if rpv[0] == '~' {
+			// convert to bool
+			rpv = rpv[1:]
+			var ish, ok bool
+			switch rpv {
+			case "*":
+				ish, ok = value.Exists(), true
+			case "null":
+				ish, ok = nullish(value), true
+			case "true":
+				ish, ok = trueish(value), true
+			case "false":
+				ish, ok = falseish(value), true
+			}
+			if ok {
+				rpv = "true"
+				if ish {
+					value = Result{Type: True}
+				} else {
+					value = Result{Type: False}
+				}
+			} else {
+				rpv = ""
+				value = Result{}
+			}
 		}
 	}
 	if !value.Exists() {
