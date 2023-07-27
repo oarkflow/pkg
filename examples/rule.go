@@ -34,60 +34,83 @@ var data2 = map[string]any{
 
 var requestData = []byte(`
 {
-    "patient": {
-        "dob": "2003-04-10"
+  "company_id": 1,
+  "work_item_client_refs": [
+    {
+      "work_item_id": 40,
+      "client_ref": "SOMETHING"
     },
+    {
+      "work_item_id": 41,
+      "client_ref": "41SOMETHING"
+    },
+    {
+      "work_item_id": 66,
+      "client_ref": null
+    },
+    {
+      "work_item_id": 48
+    }
+  ],
+  "first_name": "John",
+  "middle_name": "P",
+  "last_name": "Doeh",
+  "provider_type_id": 1,
+  "title": null,
+  "display_name": "Doeh, John P - MD",
+  "provider_lov": "Doeh, John P - MD",
+  "npi": 123498765,
+  "provider_email": "jpdoeh@gmail.com",
+  "valid_for_report": true
+}
+`)
+
+var requestData3 = []byte(`
+{
+  "patient_header": {
+    "patient_status": "Inpatient",
+    "admit_date": null,
+    "injury_date": null,
+    "status": "COMPLETE"
+  },
   "coding": [
     {
-      "em": {
-          "code": "123",
-          "encounter_uid": 1,
-          "work_item_uid": 2, 
-          "billing_provider": "Test provider",
-          "resident_provider": "Test Resident Provider"
-      },
-      "cpt": [
-          {
-              "billing_provider": "Test provider",
-              "resident_provider": "Test Resident Provider"
+      "dos": "2020/01/01",
+      "details": {
+        "pro": {
+          "em": {
+            "em_level": "993851",
+            "billing_provider": "Burnett, Brett",
+            "em_downcode": false,
+            "shared": false
           },
-          {
-              "code": "OBS011",
-              "billing_provider": "Test provider",
-              "resident_provider": "Test Resident Provider"
-          },
-          {
-              "code": "OBS011",
-              "billing_provider": "Test provider",
-              "resident_provider": "Test Resident Provider"
-          }
-      ]
-    },
-    {
-      "em": {
-          "code": "123",
-          "encounter_uid": 1,
-          "work_item_uid": 2, 
-          "billing_provider": "Test provider",
-          "resident_provider": "Test Resident Provider"
-      },
-      "cpt": [
-          {
-              "code": "OBS01",
-              "billing_provider": "Test provider",
-              "resident_provider": "Test Resident Provider"
-          },
-          {
-              "code": "OBS011",
-              "billing_provider": "Test provider",
-              "resident_provider": "Test Resident Provider"
-          },
-          {
-              "code": "OBS011",
-              "billing_provider": "Test provider",
-              "resident_provider": "Test Resident Provider"
-          }
-      ]
+          "downcode": [],
+          "special": [],
+          "cpt": [],
+          "hcpcs": []
+        },
+        "dx": {
+          "pro": [
+            {
+              "dx_reason": "Principal",
+              "code": "L89013"
+            },
+            {
+              "dx_reason": "Admitting"
+            },
+            {
+              "dx_reason": "Additional"
+            },
+            {
+              "dx_reason": "Additional"
+            }
+          ]
+        },
+        "cdi": {
+          "pro": []
+        },
+        "notes": []
+      }
     }
   ]
 }
@@ -128,72 +151,105 @@ var jsonSchema = []byte(`
 		"error_msg": "Invalid CPT/ICD Code by age",
 		"error_action": "DENY"
 	},
-	{
+{
+    "error_msg": "Client reference is required for some work items provided.",
+    "error_action": "DENY",
+    "conditions": [
+      {
+        "operator": "AND",
+        "condition": [
+          {
+            "filter": {
+              "lookup_data": [
+                {
+                  "work_item_id": 48,
+                  "client_ref_req_ind": "false"
+                },
+                {
+                  "work_item_id": 49,
+                  "client_ref_req_ind": "false"
+                },
+                {
+                  "work_item_id": 65,
+                  "client_ref_req_ind": "false"
+                },
+                {
+                  "work_item_id": 66,
+                  "client_ref_req_ind": "true"
+                },
+                {
+                  "work_item_id": 145,
+                  "client_ref_req_ind": "false"
+                }
+              ],
+              "key": "#.work_item_id",
+              "condition": "client_ref_req_ind == 'true' && work_item_id in [data.work_item_client_refs.#(client_ref==~false)#.work_item_id]",
+              "lookup_source": "vw_wi_client_ref"
+            },
+            "value": null,
+            "key": "check-client-ref-for-work-item-wi",
+            "condition_key": "",
+            "field": "work_item_client_refs.#.work_item_id",
+            "operator": "in"
+          }
+        ],
+        "reverse": true
+      }
+    ],
+    "groups": null,
+    "joins": null
+  },
+{
 		"groups": [
 			{
 				"left": {
 					"condition": [
-						{
-							"key": "check-greater-than-two-obs",
-							"field": "coding.#.cpt.#.code",
-							"operator": "gte_count",
-							"value": "2",
-							"filter": {
-								"key": ".[].code",
-								"lookup_data": [
-									{
-										"code": "OBS01",
-										"no_charge": "1"
-									},
-									{
-										"code": "JUS01",
-										"no_charge": "1"
-									}
-								]
-							}
-						}
+	{
+		"key": "check-greater-than-two-obs-in-cpt-pro",
+		"field": "coding.#.details.pro.cpt.#.procedure_num",
+		"operator": "gte_count",
+		"value": "2",
+		"filter": {
+			"key": ".[].code",
+			"lookup_data": [],
+			"condition": "charge_type == 'ED_PROFEE' && [data.request_param.wid] == string(work_item_id)"
+		}
+	}
 					],
 					"operator": "AND",
 					"reverse": true
 				},
-				"operator": "OR",
+				"operator": "AND",
 				"right": {
 					"condition": [
-						{
-							"key": "check-one-obs-cpt",
-							"field": "coding.#.cpt.#.code",
-							"operator": "eq_count",
-							"value": "1",
-							"filter": {
-								"key": ".[].code",
-								"lookup_data": [
-									{
-										"code": "OBS01",
-										"no_charge": "1"
-									},
-									{
-										"code": "JUS01",
-										"no_charge": "1"
-									}
-								]
-							}
-						},
-						{
-							"key": "check-atleast-one-obs-cpt-in-em",
-							"field": "em.code",
-							"operator": "in",
-							"value": [
-								"OBS01",
-								"JUS01"
-							]
-						}
+	{
+		"key": "check-one-obs-in-cpt-pro",
+		"field": "coding.#.details.pro.cpt.#.procedure_num",
+		"operator": "eq_count",
+		"value": "1",
+		"filter": {
+			"key": ".[].code",
+  "lookup_data": [],
+			"condition": "charge_type == 'ED_PROFEE' && [data.request_param.wid] == string(work_item_id)"
+		}
+	},
+	{
+		"key": "check-obs-in-em-pro",
+		"field": "coding.#.details.pro.em.em_level",
+		"operator": "in",
+		"filter": {
+			"key": ".[].code",
+      "lookup_data": [],
+			"condition": "charge_type == 'ED_PROFEE' && [data.request_param.wid] == string(work_item_id)"
+		}
+	}
 					],
 					"operator": "AND",
 					"reverse": true
 				}
 			}
 		],
-		"error_msg": "Invalid Code",
+		"error_msg": "Multiple OBS codes found on same DOS. Please review and correct coding.",
 		"error_action": "DENY"
 	}
 ]
@@ -291,9 +347,22 @@ func jsonConditions() {
 
 func main() {
 	evaluate.AddCustomOperator("age", builtinAge)
+	evaluate.AddCustomOperator("string", ToString)
 	// twoConditionsWithAndOp()
 	// groupConditions()
 	start := time.Now()
 	jsonConditions()
 	fmt.Printf("%s", time.Since(start))
+}
+
+// ToString converts the given value to a string.
+func ToString(ctx evaluate.EvalContext) (interface{}, error) {
+	if err := ctx.CheckArgCount(1); err != nil {
+		return nil, err
+	}
+	left, err := ctx.Arg(0)
+	if err != nil {
+		return nil, err
+	}
+	return fmt.Sprintf("%v", left), nil
 }

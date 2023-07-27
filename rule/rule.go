@@ -99,6 +99,11 @@ func unique(s []string) []string {
 }
 
 func (condition *Condition) filterMap(data Data) any {
+	// use sjson to get the Value
+	dataJson, err := json.Marshal(data)
+	if err != nil {
+		return false
+	}
 	if condition.Filter.Key == "" {
 		return nil
 	}
@@ -115,8 +120,12 @@ func (condition *Condition) filterMap(data Data) any {
 			for _, tag := range tags {
 				if strings.Contains(tag, "[data.") {
 					dField := strings.ReplaceAll(strings.ReplaceAll(tag, "[data.", ""), "]", "")
-					v := dipper.Get(data, dField)
-					c = strings.ReplaceAll(c, tag, fmt.Sprintf("'%v'", v))
+					v := sjson.Get(string(dataJson), dField)
+					if v.Type == sjson.JSON {
+						c = strings.ReplaceAll(c, tag, fmt.Sprintf("%v", v))
+					} else {
+						c = strings.ReplaceAll(c, tag, fmt.Sprintf("'%v'", v))
+					}
 				}
 			}
 			eval, err := evaluate.Parse(c)
@@ -152,7 +161,11 @@ func (condition *Condition) filterMap(data Data) any {
 				}
 			}
 		}
-		lookupData = dipper.Get(lookupData, condition.Filter.Key)
+		lookupJSON, err := json.Marshal(lookupData)
+		if err != nil {
+			return false
+		}
+		lookupData = sjson.GetBytes(lookupJSON, condition.Filter.Key).Value()
 		switch lookupData := lookupData.(type) {
 		case []any:
 			if len(lookupData) > 0 {
