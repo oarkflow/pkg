@@ -38,11 +38,11 @@ var requestData = []byte(`
   "work_item_client_refs": [
     {
       "work_item_id": 40,
-      "client_ref": "SOMETHING"
+      "client_ref": "0"
     },
     {
       "work_item_id": 41,
-      "client_ref": "41SOMETHING"
+      "client_ref": "false"
     },
     {
       "work_item_id": 66,
@@ -183,7 +183,7 @@ var jsonSchema = []byte(`
                 }
               ],
               "key": "#.work_item_id",
-              "condition": "client_ref_req_ind == 'true' && work_item_id in [data.work_item_client_refs.#(client_ref==~false)#.work_item_id]",
+              "condition": "client_ref_req_ind == 'true' && work_item_id in [data.work_item_client_refs.#(client_ref==~null)#.work_item_id]",
               "lookup_source": "vw_wi_client_ref"
             },
             "value": null,
