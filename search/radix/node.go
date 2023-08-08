@@ -1,7 +1,6 @@
 package radix
 
 import (
-	"log"
 	"sort"
 
 	"github.com/oarkflow/pkg/search/lib"
@@ -77,7 +76,6 @@ func findAllRecordInfos(n *node, word []rune, term []rune, tolerance int, exact 
 		}
 
 		if tolerance > 0 {
-			log.Println(string(currWord), string(term), tolerance)
 			if _, isBounded := lib.BoundedLevenshtein(currWord, term, tolerance); isBounded {
 				results = append(results, currNode.infos...)
 			}

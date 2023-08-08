@@ -79,27 +79,8 @@ func testMap() {
 	}
 
 	s, err := db.Search(&search.Params{
-		Extra: map[string]any{
-			"code": "A000",
-		},
-	})
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println(s.Hits)
-
-	s, err = db.Search(&search.Params{
-		Query: "Cholera due to Vibrio cholerae",
-		Extra: map[string]any{
-			"code": "A001",
-		},
-	})
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println(s.Hits)
-	s, err = db.Search(&search.Params{
-		Query: "Cholera",
+		Query:    "Cholera",
+		BoolMode: search.AND,
 	})
 	if err != nil {
 		panic(err)

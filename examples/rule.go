@@ -34,34 +34,58 @@ var data2 = map[string]any{
 
 var requestData = []byte(`
 {
-  "company_id": 1,
-  "work_item_client_refs": [
-    {
-      "work_item_id": 40,
-      "client_ref": "0"
+    "patient_header": {
+        "disch_disp": null,
+        "transfer_dest": null,
+        "patient_status": null,
+        "admit_date": null,
+        "injury_date": null,
+        "lmp_date": null,
+        "status": "IN_PROGRESS",
+        "message": null,
+        "patient_dob": "2019-05-02",
+        "patient_sex": "M"
     },
-    {
-      "work_item_id": 41,
-      "client_ref": "false"
-    },
-    {
-      "work_item_id": 66,
-      "client_ref": null
-    },
-    {
-      "work_item_id": 48
-    }
-  ],
-  "first_name": "John",
-  "middle_name": "P",
-  "last_name": "Doeh",
-  "provider_type_id": 1,
-  "title": null,
-  "display_name": "Doeh, John P - MD",
-  "provider_lov": "Doeh, John P - MD",
-  "npi": 123498765,
-  "provider_email": "jpdoeh@gmail.com",
-  "valid_for_report": true
+    "coding": [
+        {
+            "dos": "2020/01/01",
+            "details": {
+                "pro": {
+                    "em": {
+                        "em_modifier1": "8",
+                        "em_downcode": false,
+                        "shared": false
+                    },
+                    "downcode": [],
+                    "special": [],
+                    "cpt": [
+                        {
+                            "procedure_num": "AN65450",
+                            "procedure_qty": 1,
+                            "billing_provider": null,
+                            "secondary_provider": null
+                        }
+                    ],
+                    "hcpcs": []
+                },
+                "fac": {
+                    "em": null,
+                    "special": [],
+                    "cpt": [],
+                    "hcpcs": []
+                },
+                "dx": {
+                    "pro": [],
+                    "fac": []
+                },
+                "cdi": {
+                    "pro": [],
+                    "fac": []
+                },
+                "notes": []
+            }
+        }
+    ]
 }
 `)
 
@@ -117,142 +141,8 @@ var requestData3 = []byte(`
 `)
 
 var jsonSchema = []byte(`
-[
-	{
-		"conditions": [
-			{
-				"condition": [
-					{
-						"key": "check-blacklist-cpt-by-age",
-						"field": "coding.#.cpt.#.code",
-						"operator": "in",
-						"filter": {
-							"key": ".[].code",
-							"lookup_data": [
-								{
-									"code": "OBS01",
-									"min_age": 18,
-									"max_age": 54
-								},
-								{
-									"code": "JUS01",
-									"min_age": 34,
-									"max_age": 54
-								}
-							],
-							"condition": "age([data.patient.dob]) >= min_age && age([data.patient.dob]) <= max_age"
-						}
-					}
-				],
-				"operator": "AND",
-				"reverse": true
-			}
-		],
-		"error_msg": "Invalid CPT/ICD Code by age",
-		"error_action": "DENY"
-	},
-{
-    "error_msg": "Client reference is required for some work items provided.",
-    "error_action": "DENY",
-    "conditions": [
-      {
-        "operator": "AND",
-        "condition": [
-          {
-            "filter": {
-              "lookup_data": [
-                {
-                  "work_item_id": 48,
-                  "client_ref_req_ind": "false"
-                },
-                {
-                  "work_item_id": 49,
-                  "client_ref_req_ind": "false"
-                },
-                {
-                  "work_item_id": 65,
-                  "client_ref_req_ind": "false"
-                },
-                {
-                  "work_item_id": 66,
-                  "client_ref_req_ind": "true"
-                },
-                {
-                  "work_item_id": 145,
-                  "client_ref_req_ind": "false"
-                }
-              ],
-              "key": "#.work_item_id",
-              "condition": "client_ref_req_ind == 'true' && work_item_id in [data.work_item_client_refs.#(client_ref==~null)#.work_item_id]",
-              "lookup_source": "vw_wi_client_ref"
-            },
-            "value": null,
-            "key": "check-client-ref-for-work-item-wi",
-            "condition_key": "",
-            "field": "work_item_client_refs.#.work_item_id",
-            "operator": "in"
-          }
-        ],
-        "reverse": true
-      }
-    ],
-    "groups": null,
-    "joins": null
-  },
-{
-		"groups": [
-			{
-				"left": {
-					"condition": [
-	{
-		"key": "check-greater-than-two-obs-in-cpt-pro",
-		"field": "coding.#.details.pro.cpt.#.procedure_num",
-		"operator": "gte_count",
-		"value": "2",
-		"filter": {
-			"key": ".[].code",
-			"lookup_data": [],
-			"condition": "charge_type == 'ED_PROFEE' && [data.request_param.wid] == string(work_item_id)"
-		}
-	}
-					],
-					"operator": "AND",
-					"reverse": true
-				},
-				"operator": "AND",
-				"right": {
-					"condition": [
-	{
-		"key": "check-one-obs-in-cpt-pro",
-		"field": "coding.#.details.pro.cpt.#.procedure_num",
-		"operator": "eq_count",
-		"value": "1",
-		"filter": {
-			"key": ".[].code",
-  "lookup_data": [],
-			"condition": "charge_type == 'ED_PROFEE' && [data.request_param.wid] == string(work_item_id)"
-		}
-	},
-	{
-		"key": "check-obs-in-em-pro",
-		"field": "coding.#.details.pro.em.em_level",
-		"operator": "in",
-		"filter": {
-			"key": ".[].code",
-      "lookup_data": [],
-			"condition": "charge_type == 'ED_PROFEE' && [data.request_param.wid] == string(work_item_id)"
-		}
-	}
-					],
-					"operator": "AND",
-					"reverse": true
-				}
-			}
-		],
-		"error_msg": "Multiple OBS codes found on same DOS. Please review and correct coding.",
-		"error_action": "DENY"
-	}
-]
+[{},{"joins":null,"groups":null,"error_msg":"Invalid CPT Code by age","conditions":[{"reverse":true,"operator":"OR","condition":[{"key":"","field":"","value":null,"filter":{"key":"","condition":"","lookup_data":null,"lookup_source":""},"operator":"","condition_key":"check-blacklist-cpt-by-age"}]}],"error_action":"DENY"},{"joins":null,"groups":null,"error_msg":"Invalid CPT Code by gender","conditions":
+[{"reverse":true,"operator":"OR","condition":[{"key":"","field":"","value":null,"filter":{"key":"","condition":"","lookup_data":null,"lookup_source":""},"operator":"","condition_key":"check-blacklist-cpt-by-gender"}]}],"error_action":"DENY"},{"joins":null,"groups":null,"error_msg":"Invalid CPT Code by age","conditions":[{"reverse":true,"operator":"OR","condition":[{"key":"","field":"","value":null,"filter":{"key":"","condition":"","lookup_data":null,"lookup_source":""},"operator":"","condition_key":"check-blacklist-cpt-by-age-pro"},{"key":"","field":"","value":null,"filter":{"key":"","condition":"","lookup_data":null,"lookup_source":""},"operator":"","condition_key":"check-blacklist-cpt-by-age-fac"}]}],"error_action":"DENY"},{"joins":null,"groups":null,"error_msg":"Invalid ICD10 Code by gender","conditions":[{"reverse":true,"operator":"OR","condition":[{"key":"","field":"","value":null,"filter":{"key":"","condition":"","lookup_data":null,"lookup_source":""},"operator":"","condition_key":"check-blacklist-icd10-by-gender-pro"},{"key":"","field":"","value":null,"filter":{"key":"","condition":"","lookup_data":null,"lookup_source":""},"operator":"","condition_key":"check-blacklist-icd10-by-gender-fac"}]}],"error_action":"DENY"},{"joins":null,"groups":null,"error_msg":"Invalid CPT Code by gender","conditions":[{"reverse":true,"operator":"OR","condition":[{"key":"","field":"","value":null,"filter":{"key":"","condition":"","lookup_data":null,"lookup_source":""},"operator":"","condition_key":"check-blacklist-cpt-by-gender-pro"},{"key":"","field":"","value":null,"filter":{"key":"","condition":"","lookup_data":null,"lookup_source":""},"operator":"","condition_key":"check-blacklist-cpt-by-gender-fac"}]}],"error_action":"DENY"},{"joins":null,"groups":null,"error_msg":"Invalid ICD10 Code by age","conditions":[{"reverse":true,"operator":"OR","condition":[{"key":"","field":"","value":null,"filter":{"key":"","condition":"","lookup_data":null,"lookup_source":""},"operator":"","condition_key":"check-blacklist-icd10-by-age-pro"},{"key":"","field":"","value":null,"filter":{"key":"","condition":"","lookup_data":null,"lookup_source":""},"operator":"","condition_key":"check-blacklist-icd10-by-age-fac"}]}],"error_action":"DENY"},{"joins":null,"groups":[{"left":{"reverse":true,"operator":"AND","condition":[{"key":"","field":"","value":null,"filter":{"key":"","condition":"","lookup_data":null,"lookup_source":""},"operator":"","condition_key":"check-greater-than-two-obs-in-cpt-pro"}]},"right":{"reverse":true,"operator":"AND","condition":[{"key":"","field":"","value":null,"filter":{"key":"","condition":"","lookup_data":null,"lookup_source":""},"operator":"","condition_key":"check-one-obs-in-cpt-pro"},{"key":"","field":"","value":null,"filter":{"key":"","condition":"","lookup_data":null,"lookup_source":""},"operator":"","condition_key":"check-obs-in-em-pro"}]},"operator":"AND"}],"error_msg":"Multiple OBS codes found on same DOS. Please review and correct coding.","conditions":null,"error_action":"DENY"},{"joins":null,"groups":null,"error_msg":"Two E/M codes were identified on same DOS. Please validate this is NOT a Medicare patient before completing this encounter.","conditions":[{"reverse":true,"operator":"AND","condition":[{"key":"","field":"","value":null,"filter":{"key":"","condition":"","lookup_data":null,"lookup_source":""},"operator":"","condition_key":"check-one-obs-in-cpt-fac"},{"key":"","field":"","value":null,"filter":{"key":"","condition":"","lookup_data":null,"lookup_source":""},"operator":"","condition_key":"check-no-obs-in-em-fac"}]}],"error_action":"WARN"},{"joins":null,"groups":null,"error_msg":"Two E/M codes were identified on same DOS. Please validate this is NOT a Medicare patient before completing this encounter.","conditions":[{"reverse":true,"operator":"AND","condition":[{"key":"","field":"","value":null,"filter":{"key":"","condition":"","lookup_data":null,"lookup_source":""},"operator":"","condition_key":"check-one-obs-in-cpt-pro"},{"key":"","field":"","value":null,"filter":{"key":"","condition":"","lookup_data":null,"lookup_source":""},"operator":"","condition_key":"check-no-obs-in-em-pro"}]}],"error_action":"WARN"},{"joins":null,"groups":[{"left":{"reverse":true,"operator":"AND","condition":[{"key":"","field":"","value":null,"filter":{"key":"","condition":"","lookup_data":null,"lookup_source":""},"operator":"","condition_key":"check-greater-than-two-obs-in-cpt--fac"}]},"right":{"reverse":true,"operator":"AND","condition":[{"key":"","field":"","value":null,"filter":{"key":"","condition":"","lookup_data":null,"lookup_source":""},"operator":"","condition_key":"check-one-obs-in-cpt-fac"},{"key":"","field":"","value":null,"filter":{"key":"","condition":"","lookup_data":null,"lookup_source":""},"operator":"","condition_key":"check-obs-in-em-fac"}]},"operator":"AND"}],"error_msg":"Multiple OBS codes found on same DOS. Please review and correct coding.","conditions":null,"error_action":"DENY"}]
 `)
 
 func builtinAge(ctx evaluate.EvalContext) (interface{}, error) {

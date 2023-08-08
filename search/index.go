@@ -3,6 +3,8 @@ package search
 import (
 	"github.com/oarkflow/pkg/search/lib"
 	"github.com/oarkflow/pkg/search/radix"
+	"github.com/oarkflow/pkg/str"
+	"github.com/oarkflow/pkg/utils"
 )
 
 type FindParams struct {
@@ -71,7 +73,7 @@ func (idx *Index) Delete(params *IndexParams) {
 func (idx *Index) Find(params *FindParams) map[int64]float64 {
 	idScores := make(map[int64]float64)
 	idTokensCount := make(map[int64]int)
-
+	commonKeys := make(map[string][]int64)
 	for _, token := range params.Tokens {
 		infos := idx.data.Find(&radix.FindParams{
 			Term:      token,
@@ -79,6 +81,9 @@ func (idx *Index) Find(params *FindParams) map[int64]float64 {
 			Exact:     params.Exact,
 		})
 		for _, info := range infos {
+			if params.BoolMode == AND {
+				commonKeys[token] = append(commonKeys[token], info.Id)
+			}
 			idScores[info.Id] += lib.BM25(
 				info.TermFrequency,
 				idx.tokenOccurrences[token],
@@ -92,12 +97,25 @@ func (idx *Index) Find(params *FindParams) map[int64]float64 {
 			idTokensCount[info.Id]++
 		}
 	}
+	if params.BoolMode == AND {
+		var keys [][]int64
+		for _, k := range commonKeys {
+			keys = append(keys, k)
+		}
+		if len(keys) > 0 {
+			d := utils.Intersection(keys...)
+			for id, _ := range idScores {
+				if !str.Contains(d, id) {
+					delete(idScores, id)
+				}
+			}
+		}
 
-	for id, tokensCount := range idTokensCount {
-		if params.BoolMode == AND && tokensCount != len(params.Tokens) {
-			delete(idScores, id)
+		for id, tokensCount := range idTokensCount {
+			if tokensCount != len(params.Tokens) {
+				delete(idScores, id)
+			}
 		}
 	}
-
 	return idScores
 }
