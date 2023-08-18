@@ -1,14 +1,14 @@
 module github.com/oarkflow/pkg
 
-go 1.21
+go 1.21.0
 
-replace github.com/casbin/casbin/v2 => github.com/sujit-baniya/casbin/v2 v2.69.0
+replace github.com/casbin/casbin/v2 => github.com/sujit-baniya/casbin/v2 v2.70.0
 
 require (
 	github.com/boombuler/barcode v1.0.1
 	github.com/carlmjohnson/deque v0.23.1
 	github.com/casbin/casbin/v2 v2.68.0
-	github.com/go-playground/validator/v10 v10.15.0
+	github.com/go-playground/validator/v10 v10.15.1
 	github.com/goccy/go-reflect v1.2.0
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/securecookie v1.1.1
@@ -16,7 +16,7 @@ require (
 	github.com/klauspost/compress v1.16.7
 	github.com/klauspost/pgzip v1.2.6
 	github.com/kljensen/snowball v0.8.0
-	github.com/oarkflow/frame v0.0.52
+	github.com/oarkflow/frame v0.0.53
 	github.com/oarkflow/gorm-adapter v0.0.7
 	github.com/oarkflow/govaluate v0.0.1
 	github.com/oarkflow/xid v1.2.5
@@ -27,7 +27,7 @@ require (
 	github.com/sourcegraph/conc v0.3.0
 	github.com/tidwall/pretty v1.2.1
 	golang.org/x/crypto v0.12.0
-	golang.org/x/exp v0.0.0-20230810033253-352e893a4cad
+	golang.org/x/exp v0.0.0-20230817173708-d852ddb80c63
 	golang.org/x/image v0.11.0
 	golang.org/x/net v0.14.0
 	golang.org/x/text v0.12.0
@@ -62,8 +62,9 @@ require (
 	github.com/mattn/go-isatty v0.0.18 // indirect
 	github.com/microsoft/go-mssqldb v0.21.0 // indirect
 	github.com/nyaruka/phonenumbers v1.1.8 // indirect
-	github.com/oarkflow/log v1.0.73 // indirect
+	github.com/oarkflow/log v1.0.74 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
+	github.com/tidwall/gjson v1.16.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
