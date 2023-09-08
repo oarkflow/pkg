@@ -1,6 +1,7 @@
 package search
 
 import (
+	"encoding/json"
 	"fmt"
 	"hash/fnv"
 	"math"
@@ -9,7 +10,6 @@ import (
 	"sync"
 	"time"
 
-	json "encoding/json"
 	"github.com/oarkflow/xid"
 
 	"github.com/oarkflow/pkg/search/lib"
@@ -128,6 +128,15 @@ type Search[Schema SchemaProps] struct {
 }
 
 func New[Schema SchemaProps](c *Config) *Search[Schema] {
+	if c.TokenizerConfig == nil {
+		c.TokenizerConfig = &tokenizer.Config{
+			EnableStemming:  true,
+			EnableStopWords: true,
+		}
+	}
+	if c.DefaultLanguage == "" {
+		c.DefaultLanguage = tokenizer.ENGLISH
+	}
 	db := &Search[Schema]{
 		key:             c.Key,
 		documents:       make(map[int64]Schema),
@@ -620,10 +629,22 @@ func DocFields(obj any, prefix ...string) []string {
 	switch obj := obj.(type) {
 	case map[string]any:
 		return getFieldsFromMap(obj)
+	case map[string]string:
+		data := make(map[string]any)
+		for k, v := range obj {
+			data[k] = v
+		}
+		return getFieldsFromMap(data)
 	default:
 		switch obj := obj.(type) {
 		case map[string]any:
 			return getFieldsFromMap(obj)
+		case map[string]string:
+			data := make(map[string]any)
+			for k, v := range obj {
+				data[k] = v
+			}
+			return getFieldsFromMap(data)
 		default:
 			return getFieldsFromStruct(obj, prefix...)
 		}
