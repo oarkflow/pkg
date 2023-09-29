@@ -8,12 +8,12 @@ require (
 	github.com/boombuler/barcode v1.0.1
 	github.com/carlmjohnson/deque v0.23.1
 	github.com/casbin/casbin/v2 v2.68.0
-	github.com/go-playground/validator/v10 v10.15.3
+	github.com/go-playground/validator/v10 v10.15.4
 	github.com/goccy/go-reflect v1.2.0
 	github.com/google/uuid v1.3.1
 	github.com/gorilla/securecookie v1.1.1
 	github.com/gorilla/sessions v1.2.1
-	github.com/klauspost/compress v1.16.7
+	github.com/klauspost/compress v1.17.0
 	github.com/klauspost/pgzip v1.2.6
 	github.com/kljensen/snowball v0.8.0
 	github.com/oarkflow/frame v0.0.53

@@ -22,7 +22,7 @@ const (
 )
 
 var splitRules = map[Language]*regexp.Regexp{
-	ENGLISH:   regexp.MustCompile(`[^A-Za-zàèéìòóù0-9_'-:]`),
+	ENGLISH:   regexp.MustCompile(`[^A-Za-zàèéìòóù0-9_'-:.]`),
 	FRENCH:    regexp.MustCompile(`[^a-z0-9äâàéèëêïîöôùüûœç-]`),
 	HUNGARIAN: regexp.MustCompile(`[^a-z0-9áéíóöőúüűÁÉÍÓÖŐÚÜŰ]`),
 	NORWEGIAN: regexp.MustCompile(`[^a-z0-9_æøåÆØÅäÄöÖüÜ]`),

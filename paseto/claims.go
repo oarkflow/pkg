@@ -17,7 +17,7 @@ const (
 	ValidationErrorClaimsInvalid // generic validation error
 )
 
-// Claims is everything that can be checked for validity.
+// Claims are everything that can be checked for validity.
 type Claims interface {
 	Valid() error
 }
@@ -72,14 +72,12 @@ func (e *ValidationError) HasGenericValidationErr() bool {
 	return e.Errors&ValidationErrorClaimsInvalid != 0
 }
 
-func (e ValidationError) Error() string { return e.Inner.Error() }
+func (e *ValidationError) Error() string { return e.Inner.Error() }
 
 // Valid Validates time-based claims "exp, iat, nbf".
 // If any of the above claims are not in the token, it will still be considered a valid claim.
 func (c *RegisteredClaims) Valid() error {
-
 	t := time.Now()
-
 	validationErr := &ValidationError{}
 
 	if c.Expiration != nil && !c.Expiration.IsZero() && t.After(*c.Expiration) {
