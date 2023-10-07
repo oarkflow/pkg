@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"time"
-
+	
 	"github.com/oarkflow/pkg/enc"
 	"github.com/oarkflow/pkg/str"
 )
@@ -144,5 +144,6 @@ func encTest() {
 }
 
 func main() {
+	// fmt.Println(hash.Make(secret))
 	encTest()
 }
