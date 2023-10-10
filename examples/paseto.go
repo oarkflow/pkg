@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"time"
 
+	"github.com/oarkflow/pkg/key"
 	"github.com/oarkflow/pkg/paseto"
 )
 
@@ -61,17 +61,15 @@ var data10 = []byte(`
 `)
 
 func main() {
-	start := time.Now()
-	var secret = "OdR4DlWhZk6osDd0qXLdVT88lHOvj14K"
-	token, err := GenerateApiKey(secret, data10)
+	var secret = "OdR4DlWhZk6osDd0qXLdVT88lHOvj143"
+	token := `KSmyIbv3l7rmKsNBvLtd0hNSQjh1PZdXXOkSPtFkpfq2jlHgqw_B2iZUve-HucnOKBPqSXzkdmji46VxgjZLCe89pogAfg`
+	/*token, err := key.Generate(secret, []byte(`1`))
 	if err != nil {
 		panic(err)
 	}
-	validatedKey := ValidateApiKey(secret, token)
-	if validatedKey.Error != nil {
-		panic(validatedKey.Error)
-	}
-	fmt.Println(time.Since(start))
+	fmt.Println(token)*/
+	fmt.Println(key.Validate(secret, token))
+
 }
 
 func GenerateApiKey(secret string, payload []byte) (string, error) {
