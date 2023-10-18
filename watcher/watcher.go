@@ -13,6 +13,12 @@ import (
 	"time"
 )
 
+type Option struct {
+	Path     []string      `json:"path"`
+	Interval time.Duration `json:"interval"`
+	Events   []Op          `json:"events"`
+}
+
 var (
 	// ErrDurationTooShort occurs when calling the watcher's Start
 	// method with a duration that's less than 1 nanosecond.
@@ -45,6 +51,8 @@ const (
 	Chmod
 	Move
 )
+
+var opsList = []Op{Create, Write, Remove, Rename, Chmod, Move}
 
 var ops = map[Op]string{
 	Create: "CREATE",
@@ -112,6 +120,8 @@ func RegexFilterHook(r *regexp.Regexp, useFullPath bool) FilterFileHookFunc {
 	}
 }
 
+type Handler func(event Event)
+
 // Watcher describes a process that watches files for changes.
 type Watcher struct {
 	Event  chan Event
@@ -121,24 +131,37 @@ type Watcher struct {
 	wg     *sync.WaitGroup
 
 	// mu protects the following.
-	mu           *sync.Mutex
-	ffh          []FilterFileHookFunc
-	running      bool
-	names        map[string]bool        // bool for recursive or not.
-	files        map[string]os.FileInfo // map of files.
-	ignored      map[string]struct{}    // ignored files or directories.
-	ops          map[Op]struct{}        // Op filtering.
-	ignoreHidden bool                   // ignore hidden files or not.
-	maxEvents    int                    // max sent events per cycle
+	mu                 *sync.Mutex
+	ffh                []FilterFileHookFunc
+	running            bool
+	names              map[string]bool        // bool for recursive or not.
+	files              map[string]os.FileInfo // map of files.
+	ignored            map[string]struct{}    // ignored files or directories.
+	ops                map[Op]struct{}        // Op filtering.
+	ignoreHidden       bool                   // ignore hidden files or not.
+	maxEvents          int                    // max sent events per cycle
+	opt                *Option
+	onAnyEvent         Handler
+	onCreate           Handler
+	onWrite            Handler
+	onRemove           Handler
+	onRename           Handler
+	onPermissionChange Handler
+	onMove             Handler
+	onError            func(error)
+	onClose            func()
 }
 
 // New creates a new Watcher.
-func New() *Watcher {
+func New(opt *Option) (*Watcher, error) {
+	if len(opt.Path) == 0 {
+		return nil, errors.New("path not provided")
+	}
 	// Set up the WaitGroup for w.Wait().
 	var wg sync.WaitGroup
 	wg.Add(1)
 
-	return &Watcher{
+	ws := &Watcher{
 		Event:   make(chan Event),
 		Error:   make(chan error),
 		Closed:  make(chan struct{}),
@@ -148,7 +171,27 @@ func New() *Watcher {
 		files:   make(map[string]os.FileInfo),
 		ignored: make(map[string]struct{}),
 		names:   make(map[string]bool),
+		opt:     opt,
 	}
+	if opt.Interval == 0 {
+		opt.Interval = time.Millisecond * 100
+	}
+	for _, path := range opt.Path {
+		if err := ws.AddRecursive(path); err != nil {
+			return nil, err
+		}
+	}
+	go func(ws *Watcher, opt *Option) {
+		ws.Wait()
+		if len(opt.Events) > 0 {
+			for _, ev := range opt.Events {
+				ws.TriggerEvent(ev, nil)
+			}
+		} else {
+			ws.TriggerAllEvents()
+		}
+	}(ws, opt)
+	return ws, nil
 }
 
 // SetMaxEvents controls the maximum amount of events that are sent on
@@ -485,11 +528,19 @@ func (fs *fileInfo) Sys() interface{} {
 // TriggerEvent is a method that can be used to trigger an event, separate to
 // the file watching process.
 func (w *Watcher) TriggerEvent(eventType Op, file os.FileInfo) {
-	w.Wait()
 	if file == nil {
-		file = &fileInfo{name: "triggered event", modTime: time.Now()}
+		file = &fileInfo{name: "triggered event: " + eventType.String(), modTime: time.Now()}
 	}
 	w.Event <- Event{Op: eventType, Path: "-", FileInfo: file}
+}
+
+// TriggerAllEvents is a method that can be used to trigger an event, separate to
+// the file watching process.
+func (w *Watcher) TriggerAllEvents() {
+	for _, f := range opsList {
+		file := &fileInfo{name: "triggered event: " + f.String(), modTime: time.Now()}
+		w.Event <- Event{Op: f, Path: "-", FileInfo: file}
+	}
 }
 
 func (w *Watcher) retrieveFileList() (map[string]os.FileInfo, map[string]os.FileInfo) {
@@ -543,14 +594,92 @@ func (w *Watcher) retrieveFileList() (map[string]os.FileInfo, map[string]os.File
 	return currFiles, newFiles
 }
 
+func (w *Watcher) OnAnyEvent(handler Handler) {
+	w.onAnyEvent = handler
+}
+
+func (w *Watcher) OnCreate(handler Handler) {
+	w.onCreate = handler
+}
+
+func (w *Watcher) OnWrite(handler Handler) {
+	w.onWrite = handler
+}
+
+func (w *Watcher) OnRemove(handler Handler) {
+	w.onRemove = handler
+}
+
+func (w *Watcher) OnRename(handler Handler) {
+	w.onRename = handler
+}
+
+func (w *Watcher) OnMove(handler Handler) {
+	w.onMove = handler
+}
+
+func (w *Watcher) OnPermissionChange(handler Handler) {
+	w.onPermissionChange = handler
+}
+
+func (w *Watcher) OnError(handler func(err error)) {
+	w.onError = handler
+}
+
+func (w *Watcher) OnClose(handler func()) {
+	w.onClose = handler
+}
+
 // Start begins the polling cycle which repeats every specified
 // duration until Close is called.
-func (w *Watcher) Start(d time.Duration) error {
-	// Return an error if d is less than 1 nanosecond.
-	if d < time.Nanosecond {
-		return ErrDurationTooShort
-	}
-
+func (w *Watcher) Start() error {
+	go func() {
+		for {
+			select {
+			case event := <-w.Event:
+				if w.onAnyEvent != nil {
+					w.onAnyEvent(event)
+				}
+				switch event.Op {
+				case Create:
+					if w.onCreate != nil {
+						w.onCreate(event)
+					}
+				case Write:
+					if w.onWrite != nil {
+						w.onWrite(event)
+					}
+				case Remove:
+					if w.onRemove != nil {
+						w.onRemove(event)
+					}
+				case Rename:
+					if w.onRename != nil {
+						w.onRename(event)
+					}
+				case Chmod:
+					if w.onPermissionChange != nil {
+						w.onPermissionChange(event)
+					}
+				case Move:
+					if w.onMove != nil {
+						w.onMove(event)
+					}
+				}
+			case err := <-w.Error:
+				if w.onError != nil {
+					w.onError(err)
+				} else {
+					fmt.Println("Error watching: ", err.Error())
+				}
+			case <-w.Closed:
+				if w.onClose != nil {
+					w.onClose()
+				}
+				return
+			}
+		}
+	}()
 	// Make sure the Watcher is not already running.
 	w.mu.Lock()
 	if w.running {
@@ -618,7 +747,7 @@ func (w *Watcher) Start(d time.Duration) error {
 		w.mu.Unlock()
 
 		// Sleep and then continue to the next loop iteration.
-		time.Sleep(d)
+		time.Sleep(w.opt.Interval)
 	}
 }
 
