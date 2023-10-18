@@ -176,19 +176,17 @@ func New(opt *Option) (*Watcher, error) {
 	if opt.Interval == 0 {
 		opt.Interval = time.Millisecond * 100
 	}
+	if len(opt.Events) > 0 {
+		ws.FilterOps(opt.Events...)
+	}
 	for _, path := range opt.Path {
 		if err := ws.AddRecursive(path); err != nil {
 			return nil, err
 		}
 	}
-	go func(ws *Watcher, opt *Option) {
+	go func(ws *Watcher) {
 		ws.Wait()
-		if len(opt.Events) > 0 {
-			for _, ev := range opt.Events {
-				ws.TriggerEvent(ev, nil)
-			}
-		}
-	}(ws, opt)
+	}(ws)
 	return ws, nil
 }
 
@@ -196,9 +194,7 @@ func New(opt *Option) (*Watcher, error) {
 // the Event channel per watching cycle. If max events is less than 1, there is
 // no limit, which is the default.
 func (w *Watcher) SetMaxEvents(delta int) {
-	w.mu.Lock()
 	w.maxEvents = delta
-	w.mu.Unlock()
 }
 
 // AddFilterHook
@@ -211,20 +207,17 @@ func (w *Watcher) AddFilterHook(f FilterFileHookFunc) {
 // IgnoreHiddenFiles sets the watcher to ignore any file or directory
 // that starts with a dot.
 func (w *Watcher) IgnoreHiddenFiles(ignore bool) {
-	w.mu.Lock()
 	w.ignoreHidden = ignore
-	w.mu.Unlock()
 }
 
 // FilterOps filters which event op types should be returned
 // when an event occurs.
 func (w *Watcher) FilterOps(ops ...Op) {
-	w.mu.Lock()
-	w.ops = make(map[Op]struct{})
+	o := make(map[Op]struct{})
 	for _, op := range ops {
-		w.ops[op] = struct{}{}
+		o[op] = struct{}{}
 	}
-	w.mu.Unlock()
+	w.ops = o
 }
 
 // Add adds either a single file or directory to the file list.
@@ -532,15 +525,6 @@ func (w *Watcher) TriggerEvent(eventType Op, file os.FileInfo) {
 	w.Event <- Event{Op: eventType, Path: "-", FileInfo: file}
 }
 
-// TriggerAllEvents is a method that can be used to trigger an event, separate to
-// the file watching process.
-func (w *Watcher) TriggerAllEvents() {
-	for _, f := range opsList {
-		file := &fileInfo{name: "triggered event: " + f.String(), modTime: time.Now()}
-		w.Event <- Event{Op: f, Path: "-", FileInfo: file}
-	}
-}
-
 func (w *Watcher) retrieveFileList() (map[string]os.FileInfo, map[string]os.FileInfo) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
@@ -628,9 +612,7 @@ func (w *Watcher) OnClose(handler func()) {
 	w.onClose = handler
 }
 
-// Start begins the polling cycle which repeats every specified
-// duration until Close is called.
-func (w *Watcher) Start() error {
+func (w *Watcher) watchEvents() {
 	go func() {
 		for {
 			select {
@@ -678,14 +660,17 @@ func (w *Watcher) Start() error {
 			}
 		}
 	}()
+}
+
+// Start begins the polling cycle which repeats every specified
+// duration until Close is called.
+func (w *Watcher) Start() error {
+	w.watchEvents()
 	// Make sure the Watcher is not already running.
-	w.mu.Lock()
 	if w.running {
-		w.mu.Unlock()
 		return ErrWatcherRunning
 	}
 	w.running = true
-	w.mu.Unlock()
 
 	// Unblock w.Wait().
 	w.wg.Done()
