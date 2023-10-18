@@ -26,7 +26,6 @@ func main() {
 	w.OnAnyEvent(func(event watcher.Event) {
 		fmt.Println(event)
 	})
-	// Start the watching process - it'll check for changes every 100ms.
 	if err := w.Start(); err != nil {
 		log.Fatalln(err)
 	}

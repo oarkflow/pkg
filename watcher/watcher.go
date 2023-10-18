@@ -187,8 +187,6 @@ func New(opt *Option) (*Watcher, error) {
 			for _, ev := range opt.Events {
 				ws.TriggerEvent(ev, nil)
 			}
-		} else {
-			ws.TriggerAllEvents()
 		}
 	}(ws, opt)
 	return ws, nil
