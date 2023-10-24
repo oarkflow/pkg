@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"html"
 	"io"
-	"io/ioutil"
 	"net/url"
 	"reflect"
 	"strings"
@@ -122,7 +121,7 @@ func init() {
 
 			w := a.runtime.Writer
 			defer func() { a.runtime.Writer = w }()
-			a.runtime.Writer = ioutil.Discard
+			a.runtime.Writer = io.Discard
 
 			a.runtime.blocks = t.processedBlocks
 			root := t.Root

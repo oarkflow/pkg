@@ -4,9 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"sync"
 )
 
@@ -107,7 +108,7 @@ func HTTPSchemaLoader(ctx context.Context, uri *url.URL, schema *Schema) error {
 	if err != nil {
 		return err
 	}
-	body, err := ioutil.ReadAll(res.Body)
+	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		return err
 	}
@@ -119,7 +120,7 @@ func HTTPSchemaLoader(ctx context.Context, uri *url.URL, schema *Schema) error {
 
 // FileSchemaLoader loads a schema from a file URI
 func FileSchemaLoader(ctx context.Context, uri *url.URL, schema *Schema) error {
-	body, err := ioutil.ReadFile(uri.Path)
+	body, err := os.ReadFile(uri.Path)
 	if err != nil {
 		return err
 	}

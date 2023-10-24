@@ -9,13 +9,13 @@ import (
 	"encoding/binary"
 	"fmt"
 	"go/format"
-	"io/ioutil"
+	"os"
 	"strconv"
 	"strings"
 )
 
 func main() {
-	data, err := ioutil.ReadFile("table.txt")
+	data, err := os.ReadFile("table.txt")
 	if err != nil {
 		panic(err)
 	}
@@ -74,7 +74,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	if err := ioutil.WriteFile("table.go", dst, 0644); err != nil {
+	if err := os.WriteFile("table.go", dst, 0644); err != nil {
 		panic(err)
 	}
 }

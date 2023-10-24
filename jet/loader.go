@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -119,7 +118,7 @@ func (l *InMemLoader) Open(templatePath string) (io.ReadCloser, error) {
 		return nil, fmt.Errorf("%s does not exist", templatePath)
 	}
 
-	return ioutil.NopCloser(bytes.NewReader(f)), nil
+	return io.NopCloser(bytes.NewReader(f)), nil
 }
 
 // Exists returns whether or not a template is indexed under this path.

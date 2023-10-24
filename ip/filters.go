@@ -2,7 +2,6 @@ package ip
 
 import (
 	"context"
-	"io/ioutil"
 	"log"
 	"net"
 	"sync"
@@ -66,7 +65,7 @@ func NewFilter(cfg ...Config) func(ctx context.Context, c *frame.Context) {
 	}
 	if opts.Logger == nil {
 		// disable logging by default
-		opts.Logger = log.New(ioutil.Discard, "", 0)
+		opts.Logger = log.New(io.Discard, "", 0)
 	}
 	filter = &Filter{
 		opts:           opts,

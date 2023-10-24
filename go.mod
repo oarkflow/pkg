@@ -13,10 +13,10 @@ require (
 	github.com/google/uuid v1.3.1
 	github.com/gorilla/securecookie v1.1.1
 	github.com/gorilla/sessions v1.2.1
-	github.com/klauspost/compress v1.17.1
+	github.com/klauspost/compress v1.17.2
 	github.com/klauspost/pgzip v1.2.6
 	github.com/kljensen/snowball v0.8.0
-	github.com/oarkflow/frame v0.0.54
+	github.com/oarkflow/frame v0.0.55
 	github.com/oarkflow/gorm-adapter v0.0.7
 	github.com/oarkflow/govaluate v0.0.1
 	github.com/oarkflow/xid v1.2.5
@@ -40,9 +40,9 @@ require (
 require (
 	github.com/andeya/ameda v1.5.3 // indirect
 	github.com/andeya/goutil v1.0.1 // indirect
-	github.com/bytedance/go-tagexpr/v2 v2.9.9 // indirect
+	github.com/bytedance/go-tagexpr/v2 v2.9.11 // indirect
 	github.com/bytedance/gopkg v0.0.0-20230728082804-614d0af6619b // indirect
-	github.com/cloudwego/netpoll v0.5.0 // indirect
+	github.com/cloudwego/netpoll v0.5.1 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.2 // indirect
 	github.com/glebarez/go-sqlite v1.21.1 // indirect
