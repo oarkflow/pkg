@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -274,7 +275,7 @@ func (w *Watcher) list(name string) (map[string]os.FileInfo, error) {
 	}
 
 	// It's a directory.
-	fInfoList, err := os.ReadDir(name)
+	fInfoList, err := ioutil.ReadDir(name)
 	if err != nil {
 		return nil, err
 	}
