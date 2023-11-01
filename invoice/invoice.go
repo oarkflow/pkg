@@ -3,6 +3,7 @@ package invoice
 import (
 	"bytes"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -17,14 +18,13 @@ import (
 	"strings"
 	"time"
 
-	json "encoding/json"
-
 	"github.com/skip2/go-qrcode"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 
 	_ "github.com/skip2/go-qrcode"
 
+	"github.com/oarkflow/pkg/checksum"
 	"github.com/oarkflow/pkg/decimal"
 	"github.com/oarkflow/pkg/pdfs"
 	"github.com/oarkflow/pkg/pdfs/color"
@@ -73,13 +73,19 @@ type BankDetail struct {
 	SwiftCode     string `json:"swift_code"`
 }
 
+type Esewa struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
 type Business struct {
-	Details      Contact    `json:"details"`
-	BankDetail   BankDetail `json:"bank_detail"`
-	PayPal       string     `json:"paypal"`
-	ContactName  string     `json:"contact_name"`
-	ContactEmail string     `json:"contact_email"`
-	ContactPhone string     `json:"contact_phone"`
+	Details      Contact     `json:"details"`
+	BankDetail   *BankDetail `json:"bank_detail"`
+	Esewa        *Esewa      `json:"esewa"`
+	PayPal       string      `json:"paypal"`
+	ContactName  string      `json:"contact_name"`
+	ContactEmail string      `json:"contact_email"`
+	ContactPhone string      `json:"contact_phone"`
 }
 
 type Customer struct {
@@ -207,6 +213,7 @@ type Config struct {
 	Margin      *Margin            `json:"margin"`
 	Orientation consts.Orientation `json:"orientation"`
 	PaperSize   consts.PageSize    `json:"paper_size"`
+	Secret      string             `json:"secret"`
 }
 
 type logo struct {
@@ -295,6 +302,34 @@ func (i *Invoice) Create(detail *Detail) *Invoice {
 	return i
 }
 
+func (i *Invoice) String(detail *Detail) string {
+	return str.FromByte(i.Byte(detail))
+}
+
+func (i *Invoice) Byte(detail *Detail) []byte {
+	qrData := map[string]any{
+		"amount": detail.TotalAmount,
+		"number": detail.InvoiceNumber,
+		"date":   detail.Date,
+		"url":    detail.InvoiceURL,
+		"from":   i.config.Business.Details.Name,
+		"to":     detail.Customer.Details.Name,
+		"items":  len(detail.items),
+	}
+	if i.config.Business.Esewa != nil {
+		qrData["eSewa_id"] = i.config.Business.Esewa.ID
+		qrData["name"] = i.config.Business.Esewa.Name
+	}
+	if i.config.Business.BankDetail != nil {
+		qrData["bankCode"] = i.config.Business.BankDetail.SwiftCode
+		qrData["accountName"] = i.config.Business.BankDetail.AccountName
+		qrData["accountNumber"] = i.config.Business.BankDetail.AccountNumber
+		qrData["remarks"] = "Invoice #" + detail.InvoiceNumber
+	}
+	bt, _ := json.Marshal(qrData)
+	return bt
+}
+
 func (i *Invoice) RenderToFile(outFileName ...string) error {
 	var file string
 	if len(outFileName) > 0 {
@@ -311,7 +346,7 @@ func (i *Invoice) Render() (bytes.Buffer, error) {
 
 func (i *Invoice) init(detail *Detail) {
 	i.prepareHeader(detail)
-	i.prepareFooter()
+	i.prepareFooter(detail)
 	i.engine.SetAliasNbPages("{nb}")
 	i.engine.SetFirstPageNb(1)
 	i.prepareItemTable(detail)
@@ -577,17 +612,8 @@ func (i *Invoice) prepareHeader(detail *Detail) {
 			if detail.InvoiceURL == "" {
 				detail.InvoiceURL = "https://orgwareconstruct.com"
 			}
-			qrData := map[string]any{
-				"amount": detail.TotalAmount,
-				"number": detail.InvoiceNumber,
-				"date":   detail.Date,
-				"url":    detail.InvoiceURL,
-				"from":   i.config.Business.Details.Name,
-				"to":     detail.Customer.Details.Name,
-				"items":  len(detail.items),
-			}
-			bt, _ := json.Marshal(qrData)
-			png, _ := qrcode.Encode(base64.StdEncoding.EncodeToString(bt), qrcode.Medium, 1024)
+			qrData := i.String(detail)
+			png, _ := qrcode.Encode(qrData, qrcode.Medium, 1024)
 			i.engine.Col(2, func() {
 				i.engine.Base64Image(base64.StdEncoding.EncodeToString(png), "png", props.Rect{
 					Percent: 100,
@@ -751,8 +777,8 @@ func (i *Invoice) prepareDetail(detail *Detail) {
 	i.engine.Row(5, func() {})
 }
 
-func (i *Invoice) prepareFooter() {
-	detail := i.config.Business.Details
+func (i *Invoice) prepareFooter(detail *Detail) {
+	businessDetails := i.config.Business.Details
 	paypal := i.config.Business.PayPal
 	bankDetail := i.config.Business.BankDetail
 	contactName := i.config.Business.ContactName
@@ -912,26 +938,26 @@ func (i *Invoice) prepareFooter() {
 				}
 			})
 			i.engine.Col(4, func() {
-				i.engine.Text(detail.Name, props.Text{
+				i.engine.Text(businessDetails.Name, props.Text{
 					Top:   0,
 					Align: consts.Right,
 					Size:  10,
 					Style: consts.Bold,
 					Color: *primaryColor,
 				})
-				i.engine.Text(detail.Address1, props.Text{
+				i.engine.Text(businessDetails.Address1, props.Text{
 					Top:   4,
 					Align: consts.Right,
 					Size:  8,
 				})
 			})
 			i.engine.Col(4, func() {
-				i.engine.Text("Tel: "+detail.Telephone, props.Text{
+				i.engine.Text("Tel: "+businessDetails.Telephone, props.Text{
 					Top:   0,
 					Align: consts.Right,
 					Size:  8,
 				})
-				i.engine.Text(detail.Email, props.Text{
+				i.engine.Text(businessDetails.Email, props.Text{
 					Top:   4,
 					Align: consts.Right,
 					Size:  8,
@@ -942,6 +968,21 @@ func (i *Invoice) prepareFooter() {
 					Align: consts.Right,
 					Size:  8,
 				})
+			})
+		})
+		i.engine.Row(3, func() {
+			i.engine.Col(12, func() {
+				if i.config.Secret != "" {
+					bt := i.Byte(detail)
+					checksum.Default(str.ToByte(i.config.Secret))
+					signature := checksum.Make(bt)
+					i.engine.Text(signature, props.Text{
+						Top:         4,
+						Align:       consts.Center,
+						Size:        1.5,
+						Extrapolate: true,
+					})
+				}
 			})
 		})
 	})

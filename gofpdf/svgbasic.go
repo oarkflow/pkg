@@ -19,6 +19,7 @@ package gofpdf
 import (
 	"encoding/xml"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 )
