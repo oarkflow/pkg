@@ -591,7 +591,6 @@ func (i *Invoice) prepareHeader(detail *Detail) {
 						Percent: 100,
 					})
 				})
-
 				i.engine.ColSpace(3)
 			} else {
 				i.engine.ColSpace(7)
