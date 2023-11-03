@@ -2,6 +2,7 @@ package ip
 
 import (
 	"context"
+	"io"
 	"log"
 	"net"
 	"sync"

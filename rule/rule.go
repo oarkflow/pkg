@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
 
 	"github.com/oarkflow/frame/pkg/common/xid"
-	"golang.org/x/exp/slices"
 
 	"github.com/oarkflow/pkg/dipper"
 	"github.com/oarkflow/pkg/evaluate"
