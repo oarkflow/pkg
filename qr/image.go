@@ -1,6 +1,8 @@
 package qr
 
 import (
+	"bytes"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"image"
@@ -66,6 +68,22 @@ func (q *QrCode) SaveAsPNG(dest string, cfg ...ImageConfig) error {
 	}
 
 	return SaveAsPNG(result, dest)
+}
+
+// The Base64PNG method converts a QR Code into a PNG image with the given scale and border.
+func (q *QrCode) Base64PNG(cfg ...ImageConfig) (string, error) {
+	result, err := q.Image(cfg...)
+	if err != nil {
+		return "", err
+	}
+	buf := new(bytes.Buffer)
+	err = png.Encode(buf, result)
+	b := buf.Bytes()
+	return "data:image/png;base64," + toBase64(b), nil
+}
+
+func toBase64(b []byte) string {
+	return base64.StdEncoding.EncodeToString(b)
 }
 
 func (q *QrCode) SaveAsSVG(dest string, cfg ...ImageConfig) error {
