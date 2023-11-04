@@ -307,27 +307,33 @@ func (i *Invoice) String(detail *Detail) string {
 }
 
 func (i *Invoice) Byte(detail *Detail) []byte {
-	qrData := map[string]any{
-		"amount": detail.TotalAmount,
-		"number": detail.InvoiceNumber,
-		"date":   detail.Date,
-		"url":    detail.InvoiceURL,
-		"from":   i.config.Business.Details.Name,
-		"to":     detail.Customer.Details.Name,
-		"items":  len(detail.items),
-	}
 	if i.config.Business.Esewa != nil {
+		qrData := map[string]any{
+			"amount": detail.TotalAmount,
+		}
 		qrData["eSewa_id"] = i.config.Business.Esewa.ID
 		qrData["name"] = i.config.Business.Esewa.Name
+		bt, _ := json.Marshal(qrData)
+		return bt
 	}
 	if i.config.Business.BankDetail != nil {
+		qrData := map[string]any{
+			"amount": detail.TotalAmount,
+			"number": detail.InvoiceNumber,
+			"date":   detail.Date,
+			"url":    detail.InvoiceURL,
+			"from":   i.config.Business.Details.Name,
+			"to":     detail.Customer.Details.Name,
+			"items":  len(detail.items),
+		}
 		qrData["bankCode"] = i.config.Business.BankDetail.SwiftCode
 		qrData["accountName"] = i.config.Business.BankDetail.AccountName
 		qrData["accountNumber"] = i.config.Business.BankDetail.AccountNumber
 		qrData["remarks"] = "Invoice #" + detail.InvoiceNumber
+		bt, _ := json.Marshal(qrData)
+		return bt
 	}
-	bt, _ := json.Marshal(qrData)
-	return bt
+	return nil
 }
 
 func (i *Invoice) RenderToFile(outFileName ...string) error {
@@ -805,35 +811,50 @@ func (i *Invoice) prepareFooter(detail *Detail) {
 					})
 					top += 5
 				}
-				i.engine.Text("BENEFICIARY NAME:", props.Text{
-					Top:   top,
-					Align: consts.Left,
-					Size:  10,
-				})
-				top += 5
-				i.engine.Text("BENEFICIARY ACCOUNT NUMBER:", props.Text{
-					Top:   top,
-					Align: consts.Left,
-					Size:  10,
-				})
-				top += 5
-				i.engine.Text("BANK NAME:", props.Text{
-					Top:   top,
-					Align: consts.Left,
-					Size:  10,
-				})
-				top += 5
-				i.engine.Text("BANK ADDRESS:", props.Text{
-					Top:   top,
-					Align: consts.Left,
-					Size:  10,
-				})
-				top += 5
-				i.engine.Text("BANK SWIFT CODE:", props.Text{
-					Top:   top,
-					Align: consts.Left,
-					Size:  10,
-				})
+				if bankDetail != nil {
+					i.engine.Text("BENEFICIARY NAME:", props.Text{
+						Top:   top,
+						Align: consts.Left,
+						Size:  10,
+					})
+					top += 5
+					i.engine.Text("BENEFICIARY ACCOUNT NUMBER:", props.Text{
+						Top:   top,
+						Align: consts.Left,
+						Size:  10,
+					})
+					top += 5
+					i.engine.Text("BANK NAME:", props.Text{
+						Top:   top,
+						Align: consts.Left,
+						Size:  10,
+					})
+					top += 5
+					i.engine.Text("BANK ADDRESS:", props.Text{
+						Top:   top,
+						Align: consts.Left,
+						Size:  10,
+					})
+					top += 5
+					i.engine.Text("BANK SWIFT CODE:", props.Text{
+						Top:   top,
+						Align: consts.Left,
+						Size:  10,
+					})
+				}
+				if i.config.Business.Esewa != nil {
+					i.engine.Text("ESEWA NAME:", props.Text{
+						Top:   top,
+						Align: consts.Left,
+						Size:  10,
+					})
+					top += 5
+					i.engine.Text("ESEWA ID:", props.Text{
+						Top:   top,
+						Align: consts.Left,
+						Size:  10,
+					})
+				}
 			})
 
 			i.engine.Col(4, func() {
@@ -858,45 +879,64 @@ func (i *Invoice) prepareFooter(detail *Detail) {
 					})
 					top += 5
 				}
-				i.engine.Text(bankDetail.AccountName, props.Text{
-					Top:   top,
-					Align: consts.Left,
-					Style: consts.Bold,
-					Size:  10,
-					Color: *primaryColor,
-				})
-				top += 5
-				i.engine.Text(bankDetail.AccountNumber, props.Text{
-					Top:   top,
-					Align: consts.Left,
-					Style: consts.Bold,
-					Size:  10,
-					Color: *primaryColor,
-				})
-				top += 5
-				i.engine.Text(bankDetail.BankName, props.Text{
-					Top:   top,
-					Align: consts.Left,
-					Style: consts.Bold,
-					Size:  10,
-					Color: *primaryColor,
-				})
-				top += 5
-				i.engine.Text(bankDetail.BankAddress, props.Text{
-					Top:   top,
-					Align: consts.Left,
-					Style: consts.Bold,
-					Size:  10,
-					Color: *primaryColor,
-				})
-				top += 5
-				i.engine.Text(bankDetail.SwiftCode, props.Text{
-					Top:   top,
-					Align: consts.Left,
-					Style: consts.Bold,
-					Size:  10,
-					Color: *primaryColor,
-				})
+				if bankDetail != nil {
+					i.engine.Text(bankDetail.AccountName, props.Text{
+						Top:   top,
+						Align: consts.Left,
+						Style: consts.Bold,
+						Size:  10,
+						Color: *primaryColor,
+					})
+					top += 5
+					i.engine.Text(bankDetail.AccountNumber, props.Text{
+						Top:   top,
+						Align: consts.Left,
+						Style: consts.Bold,
+						Size:  10,
+						Color: *primaryColor,
+					})
+					top += 5
+					i.engine.Text(bankDetail.BankName, props.Text{
+						Top:   top,
+						Align: consts.Left,
+						Style: consts.Bold,
+						Size:  10,
+						Color: *primaryColor,
+					})
+					top += 5
+					i.engine.Text(bankDetail.BankAddress, props.Text{
+						Top:   top,
+						Align: consts.Left,
+						Style: consts.Bold,
+						Size:  10,
+						Color: *primaryColor,
+					})
+					top += 5
+					i.engine.Text(bankDetail.SwiftCode, props.Text{
+						Top:   top,
+						Align: consts.Left,
+						Style: consts.Bold,
+						Size:  10,
+						Color: *primaryColor,
+					})
+				}
+				if i.config.Business.Esewa != nil {
+					i.engine.Text(i.config.Business.Esewa.ID, props.Text{
+						Top:   top,
+						Align: consts.Left,
+						Style: consts.Bold,
+						Size:  10,
+						Color: *primaryColor,
+					})
+					top += 5
+					i.engine.Text(i.config.Business.Esewa.Name, props.Text{
+						Top:   top,
+						Align: consts.Left,
+						Style: consts.Bold,
+						Size:  10,
+						Color: *primaryColor,
+					})
+				}
 			})
 			i.engine.Col(4, func() {
 				i.engine.Text("Contact Information:", props.Text{
