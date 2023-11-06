@@ -2,12 +2,12 @@ module github.com/oarkflow/pkg
 
 go 1.21.0
 
-replace github.com/casbin/casbin/v2 => github.com/sujit-baniya/casbin/v2 v2.70.1
+replace github.com/casbin/casbin/v2 => github.com/sujit-baniya/casbin/v2 v2.77.2
 
 require (
 	github.com/boombuler/barcode v1.0.1
 	github.com/carlmjohnson/deque v0.23.1
-	github.com/casbin/casbin/v2 v2.68.0
+	github.com/casbin/casbin/v2 v2.77.2
 	github.com/go-playground/validator/v10 v10.15.5
 	github.com/goccy/go-reflect v1.2.0
 	github.com/google/uuid v1.3.1
@@ -65,7 +65,7 @@ require (
 	github.com/nyaruka/phonenumbers v1.1.8 // indirect
 	github.com/oarkflow/log v1.0.74 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
-	github.com/tidwall/gjson v1.14.4 // indirect
+	github.com/tidwall/gjson v1.17.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
