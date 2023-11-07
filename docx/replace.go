@@ -1,6 +1,7 @@
 package docx
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"html"
@@ -8,8 +9,10 @@ import (
 	"sync"
 )
 
-// ErrPlaceholderNotFound is returned if there is no placeholder inside the document.
-var ErrPlaceholderNotFound = errors.New("placeholder not found in document")
+var (
+	// ErrPlaceholderNotFound is returned if there is no placeholder inside the document.
+	ErrPlaceholderNotFound = errors.New("placeholder not found in document")
+)
 
 // Replacer is the key struct which works on the parsed DOCX document.
 type Replacer struct {
@@ -54,9 +57,12 @@ func (r *Replacer) Replace(placeholderKey string, value string) error {
 			// ensure html escaping of special chars
 			// reassign to prevent overwriting the actual value which would cause multiple-escapes
 			tmpVal := html.EscapeString(value)
+			valueInBytes := bytes.Replace(
+				[]byte(tmpVal),
+				[]byte("\n"), []byte("</w:t><w:br/><w:t>"), -1)
 
 			// replace text of the placeholder'str first fragment with the actual value
-			r.replaceFragmentValue(placeholder.Fragments[0], tmpVal)
+			r.replaceFragmentValue(placeholder.Fragments[0], string(valueInBytes))
 
 			// the other fragments of the placeholder are cut, leaving only the value inside the document.
 			for i := 1; i < len(placeholder.Fragments); i++ {
@@ -183,6 +189,7 @@ func (r *Replacer) cutFragment(fragment *PlaceholderFragment) {
 	r.document = docBytes
 	r.BytesChanged -= cutLength
 	r.shiftFollowingFragments(fragment, -cutLength)
+
 }
 
 // fragmentsFromPosition will return all fragments where: fragment.Run.OpenTag.Start > startingFrom

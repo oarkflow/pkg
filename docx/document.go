@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -190,12 +189,13 @@ func unique(intSlice []string) []string {
 	return list
 }
 
-// Replace will create a parser on the given bytes, execute it and replace every placeholders found with the data
+// replace will create a parser on the given bytes, execute it and replace every placeholders found with the data
 // from the placeholderMap.
 func (d *Document) replace(placeholderMap PlaceholderMap, file string) ([]byte, error) {
 	if _, ok := d.runParsers[file]; !ok {
 		return nil, fmt.Errorf("no parser for file %s", file)
 	}
+	placeholderCount := d.CountPlaceholders(file, placeholderMap)
 	placeholders := d.filePlaceholders[file]
 	replacer := d.fileReplacers[file]
 
@@ -208,6 +208,11 @@ func (d *Document) replace(placeholderMap PlaceholderMap, file string) ([]byte, 
 				return nil, err
 			}
 		}
+	}
+
+	// ensure that all placeholders have been replaced
+	if placeholderCount != replacer.ReplaceCount {
+		return nil, fmt.Errorf("not all placeholders were replaced, want=%d, have=%d", placeholderCount, replacer.ReplaceCount)
 	}
 
 	d.fileReplacers[file] = replacer
@@ -338,7 +343,7 @@ func (d *Document) WriteToFile(file string) error {
 		return fmt.Errorf("WriteToFile cannot write into the original docx archive while it'str open")
 	}
 
-	err := os.MkdirAll(filepath.Dir(file), 0o755)
+	err := os.MkdirAll(filepath.Dir(file), 0755)
 	if err != nil {
 		return fmt.Errorf("unable to ensure path directories: %s", err)
 	}
@@ -419,13 +424,14 @@ func (d *Document) isModifiedFile(searchFileName string) bool {
 }
 
 // Close will close everything :)
-func (d *Document) Close() {
+func (d *Document) Close() error {
 	if d.docxFile != nil {
 		err := d.docxFile.Close()
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 	}
+	return nil
 }
 
 // FileMap is just a convenience type for the map of fileName => fileBytes

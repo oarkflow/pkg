@@ -2,7 +2,9 @@ package docx
 
 import "fmt"
 
-var fragmentId = 0 // global fragment id counter, incremented on NewPlaceholderFragment
+var (
+	fragmentId = 0 // global fragment id counter, incremented on NewPlaceholderFragment
+)
 
 // PlaceholderFragment is a part of a placeholder within the document.xml
 // If the full placeholder is e.g. '{foo-bar}', the placeholder might be ripped
@@ -15,7 +17,7 @@ type PlaceholderFragment struct {
 	Run      *Run
 }
 
-// NewPlaceholderFragment returns an initialized PlaceholderFragment with a new, auto-incremented, id.
+// NewPlaceholderFragment returns an initialized PlaceholderFragment with a new, auto-incremented, ID.
 func NewPlaceholderFragment(number int, pos Position, run *Run) *PlaceholderFragment {
 	return &PlaceholderFragment{
 		ID:       NewFragmentID(),
@@ -110,7 +112,7 @@ func (p PlaceholderFragment) Valid() bool {
 		p.Position.Valid()
 }
 
-// NewFragmentID returns the next Fragment.id
+// NewFragmentID returns the next Fragment.ID
 func NewFragmentID() int {
 	fragmentId += 1
 	return fragmentId

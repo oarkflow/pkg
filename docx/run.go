@@ -2,7 +2,9 @@ package docx
 
 import "fmt"
 
-var runId = 0 // global Run id counter. Incremented by NewRun()
+var (
+	runId = 0 // global Run ID counter. Incremented by NewRun()
+)
 
 // TagPair describes an opening and closing tag position.
 type TagPair struct {
@@ -20,7 +22,7 @@ type Run struct {
 	HasText bool
 }
 
-// NewEmptyRun returns a new, empty run which has only an id set.
+// NewEmptyRun returns a new, empty run which has only an ID set.
 func NewEmptyRun() *Run {
 	return &Run{
 		ID: NewRunID(),
@@ -91,7 +93,7 @@ func (dr *DocumentRuns) Pop() *Run {
 	return ret
 }
 
-// NewRunID returns the next Fragment.id
+// NewRunID returns the next Fragment.ID
 func NewRunID() int {
 	runId += 1
 	return runId
