@@ -23,7 +23,7 @@ var (
 	}
 )
 
-func main() {
+func m2ain() {
 	fmt.Println(domainutil.Domain("keep.google.co.uk"))
 	fmt.Println(domainutil.Subdomain("google.co.uk"))
 	fmt.Println(domainutil.SplitDomain("keep.google.co.uk"))
@@ -31,21 +31,29 @@ func main() {
 	fmt.Println(domainutil.DomainPrefix("keep.google.co.uk"))
 	// country()
 }
-func jetTest() {
-	jetParse()
-	jetTemplateParse()
+func main() {
+	jet.DefaultSet(jet.WithDelims("<", ">"))
+	// jetParse()
+	exprParse()
+	// jetTemplateParse()
 }
 
 func jetParse() {
 	start := time.Now()
-	fmt.Println(jet.Parse("Hi Mr. {{ address.city }}", data3))
-	fmt.Println(jet.Parse("Hi Mr. {{ address.city }}", data4))
+	fmt.Println(jet.Parse("Hi Mr. <address.city>", data3))
+	fmt.Println(jet.Parse("Hi Mr. <address.city>", data4))
+	fmt.Println(fmt.Sprintf("%s", time.Since(start)))
+}
+
+func exprParse() {
+	start := time.Now()
+	fmt.Println(jet.Placeholders("Hi Mr. <address.city>"))
 	fmt.Println(fmt.Sprintf("%s", time.Since(start)))
 }
 
 func jetTemplateParse() {
 	start := time.Now()
-	tmpl, err := jet.NewTemplate("Hi Mr. {{ address.city }}")
+	tmpl, err := jet.NewTemplate("Hi Mr. <address.city>")
 	if err != nil {
 		panic(err)
 	}

@@ -96,6 +96,10 @@ var _ Loader = (*InMemLoader)(nil)
 
 var defaultSet = NewSet(NewInMemLoader())
 
+func DefaultSet(opts ...Option) {
+	defaultSet = NewSet(NewInMemLoader(), opts...)
+}
+
 // NewInMemLoader return a new InMemLoader.
 func NewInMemLoader() *InMemLoader {
 	return &InMemLoader{

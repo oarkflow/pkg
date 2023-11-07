@@ -8,6 +8,7 @@ import (
 	"path"
 	"path/filepath"
 	"reflect"
+	"regexp"
 	"sync"
 	"text/template"
 
@@ -17,15 +18,16 @@ import (
 // Set is responsible to load, parse and cache templates.
 // Every Jet template is associated with a Set.
 type Set struct {
-	loader          Loader
-	cache           Cache
-	escapee         SafeWriter    // escapee to use at runtime
-	globals         VarMap        // global scope for this template set
-	gmx             *sync.RWMutex // global variables map mutex
-	extensions      []string
-	developmentMode bool
-	leftDelim       string
-	rightDelim      string
+	loader            Loader
+	cache             Cache
+	escapee           SafeWriter    // escapee to use at runtime
+	globals           VarMap        // global scope for this template set
+	gmx               *sync.RWMutex // global variables map mutex
+	extensions        []string
+	developmentMode   bool
+	leftDelim         string
+	rightDelim        string
+	placeholderParser *regexp.Regexp
 }
 
 // Option is the type of option functions that can be used in NewSet().
@@ -49,7 +51,14 @@ func NewSet(loader Loader, opts ...Option) *Set {
 	for _, opt := range opts {
 		opt(s)
 	}
-
+	if s.leftDelim == "" {
+		s.leftDelim = "{"
+	}
+	if s.rightDelim == "" {
+		s.rightDelim = "}"
+	}
+	pattern := fmt.Sprintf(`\%s([^}]+)\%s`, s.leftDelim, s.rightDelim)
+	s.placeholderParser = regexp.MustCompile(pattern)
 	return s
 }
 
@@ -236,6 +245,14 @@ func (tmpl *Tmpl) Parse(data any, asMap ...bool) (result string, err error) {
 		return
 	}
 	return
+}
+
+func Placeholders(template string) []string {
+	tmpl, err := defaultSet.parse("", template, false)
+	if err != nil {
+		return nil
+	}
+	return tmpl.placeholders
 }
 
 func Parse(template string, data any, asMap ...bool) (result string, err error) {

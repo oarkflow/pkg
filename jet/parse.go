@@ -38,13 +38,17 @@ type Template struct {
 	processedBlocks map[string]*BlockNode
 	passedBlocks    map[string]*BlockNode
 	Root            *ListNode // top-level root of the tree.
-
-	text string // text parsed to create the template (or its parent)
+	placeholders    []string
+	text            string // text parsed to create the template (or its parent)
 
 	// Parsing only; cleared after parse.
 	lex       *lexer
 	token     [3]item // three-token lookahead for parser.
 	peekCount int
+}
+
+func (t *Template) Placeholders() []string {
+	return t.placeholders
 }
 
 func (t *Template) String() (template string) {
@@ -214,11 +218,17 @@ func (t *Template) recover(errp *error) {
 }
 
 func (s *Set) parse(name, text string, cacheAfterParsing bool) (t *Template, err error) {
+	var placeholders []string
+	matches := s.placeholderParser.FindAllStringSubmatch(text, -1)
+	for _, match := range matches {
+		placeholders = append(placeholders, strings.TrimSpace(match[1]))
+	}
 	t = &Template{
 		Name:         name,
 		ParseName:    name,
 		text:         text,
 		set:          s,
+		placeholders: placeholders,
 		passedBlocks: make(map[string]*BlockNode),
 	}
 	defer t.recover(&err)
