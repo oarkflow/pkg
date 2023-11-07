@@ -17,18 +17,18 @@ package jet
 import (
 	"bytes"
 	"fmt"
-	"path/filepath"
+
+	"github.com/oarkflow/pkg/jet/utils/e"
 )
 
-var textFormat = "%s" //Changed to "%q" in tests for better error messages.
+var textFormat = "%s" // Changed to "%q" in tests for better error messages.
 
 type Node interface {
 	Type() NodeType
 	String() string
 	Position() Pos
 	line() int
-	error(error)
-	errorf(string, ...interface{})
+	error(e.Reason, e.Message) e.Error
 }
 
 type Expression interface {
@@ -53,16 +53,20 @@ type NodeBase struct {
 	Pos
 }
 
-func (node *NodeBase) line() int {
-	return node.Line
+func (n *NodeBase) line() int {
+	return n.Line
 }
 
-func (node *NodeBase) error(err error) {
-	node.errorf("%s", err)
-}
-
-func (node *NodeBase) errorf(format string, v ...interface{}) {
-	panic(fmt.Errorf("Jet Runtime Error (%q:%d): %s", filepath.ToSlash(node.TemplatePath), node.Line, fmt.Sprintf(format, v...)))
+func (n *NodeBase) error(reason e.Reason, message e.Message) e.Error {
+	if reason == "" {
+		reason = e.RuntimeErrorReason
+	}
+	return e.Build(
+		reason,
+		n.TemplatePath,
+		message,
+		&e.Position{L: n.Line, C: 0},
+	)
 }
 
 // Type returns itself and provides an easy default implementation
@@ -72,33 +76,33 @@ func (t NodeType) Type() NodeType {
 }
 
 const (
-	NodeText       NodeType = iota //Plain text.
-	NodeAction                     //A non-control action such as a field evaluation.
-	NodeChain                      //A sequence of field accesses.
-	NodeCommand                    //An element of a pipeline.
-	NodeField                      //A field or method name.
-	NodeIdentifier                 //An identifier; always a function name.
-	NodeUnderscore                 //An underscore (discard in assignment, or slot in argument list for piped value)
-	NodeList                       //A list of Nodes.
-	NodePipe                       //A pipeline of commands.
+	NodeText       NodeType = iota // Plain text.
+	NodeAction                     // A non-control action such as a field evaluation.
+	NodeChain                      // A sequence of field accesses.
+	NodeCommand                    // An element of a pipeline.
+	NodeField                      // A field or method name.
+	NodeIdentifier                 // An identifier; always a function name.
+	NodeUnderscore                 // An underscore (discard in assignment, or slot in argument list for piped value)
+	NodeList                       // A list of Nodes.
+	NodePipe                       // A pipeline of commands.
 	NodeSet
-	//NodeWith                       //A with action.
+	// NodeWith                       //A with action.
 	NodeInclude
 	NodeBlock
-	nodeEnd //An end action. Not added to tree.
+	nodeEnd // An end action. Not added to tree.
 	NodeYield
 	nodeContent
-	NodeIf    //An if action.
-	nodeElse  //An else action. Not added to tree.
-	NodeRange //A range action.
+	NodeIf    // An if action.
+	nodeElse  // An else action. Not added to tree.
+	NodeRange // A range action.
 	NodeTry
 	nodeCatch
 	NodeReturn
 	beginExpressions
-	NodeString //A string constant.
-	NodeNil    //An untyped nil constant.
-	NodeNumber //A numerical constant.
-	NodeBool   //A boolean constant.
+	NodeString // A string constant.
+	NodeNil    // An untyped nil constant.
+	NodeNumber // A numerical constant.
+	NodeBool   // A boolean constant.
 	NodeAdditiveExpr
 	NodeMultiplicativeExpr
 	NodeComparativeExpr
@@ -117,7 +121,7 @@ const (
 // ListNode holds a sequence of nodes.
 type ListNode struct {
 	NodeBase
-	Nodes []Node //The element nodes in lexical order.
+	Nodes []Node // The element nodes in lexical order.
 }
 
 func (l *ListNode) append(n Node) {
@@ -144,8 +148,8 @@ func (t *TextNode) String() string {
 
 // PipeNode holds a pipeline with optional declaration
 type PipeNode struct {
-	NodeBase                //The line number in the input. Deprecated: Kept for compatibility.
-	Cmds     []*CommandNode //The commands in lexical order.
+	NodeBase                // The line number in the input. Deprecated: Kept for compatibility.
+	Cmds     []*CommandNode // The commands in lexical order.
 }
 
 func (p *PipeNode) append(command *CommandNode) {
@@ -210,7 +214,7 @@ func (c *CommandNode) String() string {
 // IdentifierNode holds an identifier.
 type IdentifierNode struct {
 	NodeBase
-	Ident string //The identifier's name.
+	Ident string // The identifier's name.
 }
 
 func (i *IdentifierNode) String() string {
@@ -242,13 +246,34 @@ func (n *NilNode) String() string {
 // The period is dropped from each ident.
 type FieldNode struct {
 	NodeBase
-	Ident []string //The identifiers in lexical order.
+	Idents Idents // The identifiers in lexical order.
+}
+
+type Ident struct {
+	name string
+	lax  bool
+}
+
+type Idents []Ident
+
+func (i Idents) names() []string {
+	names := make([]string, 0, len(i))
+	for _, id := range i {
+		names = append(names, id.name)
+	}
+	return names
 }
 
 func (f *FieldNode) String() string {
 	s := ""
-	for _, id := range f.Ident {
-		s += "." + id
+	for _, id := range f.Idents {
+
+		if id.lax {
+			s += "?."
+		} else {
+			s += "."
+		}
+		s += id.name
 	}
 	return s
 }
@@ -259,19 +284,31 @@ func (f *FieldNode) String() string {
 type ChainNode struct {
 	NodeBase
 	Node  Node
-	Field []string //The identifiers in lexical order.
+	Field Idents // The identifiers in lexical order.
 }
 
 // Add adds the named field (which should start with a period) to the end of the chain.
 func (c *ChainNode) Add(field string) {
-	if len(field) == 0 || field[0] != '.' {
+	var nullable bool
+	if len(field) == 0 || (field[0] != '.' && (field[0] != '?' && field[1] != '.')) {
 		panic("no dot in field")
 	}
-	field = field[1:] //Remove leading dot.
+	if field[0] == '?' && field[1] == '.' {
+		nullable = true
+	}
+	// todo
+	if nullable {
+		field = field[2:] // Remove leading dot.
+	} else {
+		field = field[1:] // Remove leading dot.
+	}
 	if field == "" {
 		panic("empty field")
 	}
-	c.Field = append(c.Field, field)
+	c.Field = append(c.Field, Ident{
+		name: field,
+		lax:  nullable,
+	})
 }
 
 func (c *ChainNode) String() string {
@@ -279,8 +316,11 @@ func (c *ChainNode) String() string {
 	if _, ok := c.Node.(*PipeNode); ok {
 		s = "(" + s + ")"
 	}
-	for _, field := range c.Field {
-		s += "." + field
+	for _, id := range c.Field {
+		if id.lax {
+			s += "?"
+		}
+		s += "." + id.name
 	}
 	return s
 }
@@ -288,7 +328,7 @@ func (c *ChainNode) String() string {
 // BoolNode holds a boolean constant.
 type BoolNode struct {
 	NodeBase
-	True bool //The value of the boolean constant.
+	True bool // The value of the boolean constant.
 }
 
 func (b *BoolNode) String() string {
@@ -304,15 +344,15 @@ func (b *BoolNode) String() string {
 type NumberNode struct {
 	NodeBase
 
-	IsInt      bool       //Number has an integral value.
-	IsUint     bool       //Number has an unsigned integral value.
-	IsFloat    bool       //Number has a floating-point value.
-	IsComplex  bool       //Number is complex.
-	Int64      int64      //The signed integer value.
-	Uint64     uint64     //The unsigned integer value.
-	Float64    float64    //The floating-point value.
-	Complex128 complex128 //The complex value.
-	Text       string     //The original textual representation from the input.
+	IsInt      bool       // Number has an integral value.
+	IsUint     bool       // Number has an unsigned integral value.
+	IsFloat    bool       // Number has a floating-point value.
+	IsComplex  bool       // Number is complex.
+	Int64      int64      // The signed integer value.
+	Uint64     uint64     // The unsigned integer value.
+	Float64    float64    // The floating-point value.
+	Complex128 complex128 // The complex value.
+	Text       string     // The original textual representation from the input.
 }
 
 // simplifyComplex pulls out any other types that are represented by the complex number.
@@ -340,8 +380,8 @@ func (n *NumberNode) String() string {
 type StringNode struct {
 	NodeBase
 
-	Quoted string //The original text of the string, with quotes.
-	Text   string //The string, after quote processing.
+	Quoted string // The original text of the string, with quotes.
+	Text   string // The string, after quote processing.
 }
 
 func (s *StringNode) String() string {
@@ -370,7 +410,7 @@ func (e *contentNode) String() string {
 
 // elseNode represents an {{else}} action. Does not appear in the final tree.
 type elseNode struct {
-	NodeBase //The line number in the input. Deprecated: Kept for compatibility.
+	NodeBase // The line number in the input. Deprecated: Kept for compatibility.
 }
 
 func (e *elseNode) String() string {
@@ -387,7 +427,7 @@ type SetNode struct {
 }
 
 func (set *SetNode) String() string {
-	var s = ""
+	s := ""
 
 	for i, v := range set.Left {
 		if i > 0 {
@@ -422,7 +462,6 @@ type BranchNode struct {
 }
 
 func (b *BranchNode) String() string {
-
 	if b.NodeType == NodeRange {
 		s := ""
 		if b.Set != nil {
@@ -498,11 +537,11 @@ func (bplist *BlockParameterList) String() (str string) {
 
 // BlockNode represents a {{block }} action.
 type BlockNode struct {
-	NodeBase        //The line number in the input. Deprecated: Kept for compatibility.
-	Name     string //The name of the template (unquoted).
+	NodeBase        // The line number in the input. Deprecated: Kept for compatibility.
+	Name     string // The name of the template (unquoted).
 
 	Parameters *BlockParameterList
-	Expression Expression //The command to evaluate as dot for the template.
+	Expression Expression // The command to evaluate as dot for the template.
 
 	List    *ListNode
 	Content *ListNode
@@ -523,10 +562,10 @@ func (t *BlockNode) String() string {
 
 // YieldNode represents a {{yield}} action
 type YieldNode struct {
-	NodeBase          //The line number in the input. Deprecated: Kept for compatibility.
-	Name       string //The name of the template (unquoted).
+	NodeBase          // The line number in the input. Deprecated: Kept for compatibility.
+	Name       string // The name of the template (unquoted).
 	Parameters *BlockParameterList
-	Expression Expression //The command to evaluate as dot for the template.
+	Expression Expression // The command to evaluate as dot for the template.
 	Content    *ListNode
 	IsContent  bool
 }
@@ -654,12 +693,17 @@ func (s *TernaryExprNode) String() string {
 
 type IndexExprNode struct {
 	NodeBase
-	Base  Expression
-	Index Expression
+	Base     Expression
+	Index    Expression
+	Nullable bool
 }
 
 func (s *IndexExprNode) String() string {
-	return fmt.Sprintf("%s[%s]", s.Base, s.Index)
+	nullable := ""
+	if s.Nullable {
+		nullable = "?"
+	}
+	return fmt.Sprintf("%s%s[%s]", s.Base, nullable, s.Index)
 }
 
 type SliceExprNode struct {

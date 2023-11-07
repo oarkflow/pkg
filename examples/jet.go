@@ -33,7 +33,7 @@ func m2ain() {
 }
 func main() {
 	jet.DefaultSet(jet.WithDelims("<", ">"))
-	// jetParse()
+	jetParse()
 	exprParse()
 	// jetTemplateParse()
 }

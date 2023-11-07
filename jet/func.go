@@ -18,6 +18,8 @@ import (
 	"fmt"
 	"reflect"
 	"time"
+
+	"github.com/oarkflow/pkg/jet/utils/e"
 )
 
 // Arguments holds the arguments passed to jet.Func.
@@ -33,7 +35,11 @@ func (a *Arguments) IsSet(argumentIndex int) bool {
 		if a.args.Exprs[argumentIndex].Type() == NodeUnderscore {
 			return a.pipedVal != nil
 		}
-		return a.runtime.isSet(a.args.Exprs[argumentIndex])
+		isSet, err := a.runtime.isSet(a.args.Exprs[argumentIndex])
+		if err != nil {
+			panic(err)
+		}
+		return isSet
 	}
 	if len(a.args.Exprs) == 0 && argumentIndex == 0 {
 		return a.pipedVal != nil
@@ -47,7 +53,11 @@ func (a *Arguments) Get(argumentIndex int) reflect.Value {
 		if a.args.Exprs[argumentIndex].Type() == NodeUnderscore {
 			return *a.pipedVal
 		}
-		return a.runtime.evalPrimaryExpressionGroup(a.args.Exprs[argumentIndex])
+		val, err := a.runtime.evalPrimaryExpressionGroup(a.args.Exprs[argumentIndex])
+		if err != nil {
+			panic(err)
+		}
+		return val
 	}
 	if len(a.args.Exprs) == 0 && argumentIndex == 0 {
 		return *a.pipedVal
@@ -64,10 +74,11 @@ func (a *Arguments) Panicf(format string, v ...interface{}) {
 // In case there is no minimum pass -1, in case there is no maximum pass -1 respectively.
 func (a *Arguments) RequireNumOfArguments(funcname string, min, max int) {
 	num := a.NumOfArguments()
-	if min >= 0 && num < min {
-		a.Panicf("unexpected number of arguments in a call to %s", funcname)
-	} else if max >= 0 && num > max {
-		a.Panicf("unexpected number of arguments in a call to %s", funcname)
+	if (min >= 0 && num < min) || (max >= 0 && num > max) {
+		a.Panicf(e.New().
+			WithReason("unexpected.number_of_arguments").
+			WithMessage(fmt.Sprintf("unexpected number of arguments in a call to %s", funcname)).Error(),
+		)
 	}
 }
 
@@ -91,9 +102,11 @@ func (a *Arguments) Runtime() *Runtime {
 // Allowed pointer types are pointers to interface{}, int, int64, float64, bool, string,  time.Time, reflect.Value, []interface{},
 // map[string]interface{}. If a pointer to a reflect.Value is passed in, the argument be assigned as-is to the value pointed to. For
 // pointers to int or float types, type conversion is performed automatically if necessary.
-func (a *Arguments) ParseInto(ptrs ...interface{}) error {
+func (a *Arguments) ParseInto(ptrs ...interface{}) e.Error {
 	if len(ptrs) < a.NumOfArguments() {
-		return fmt.Errorf("have %d arguments, but only %d pointers to parse into", a.NumOfArguments(), len(ptrs))
+		return e.New().
+			WithReason("invalid.number_of_arguments").
+			WithMessage(fmt.Sprintf("have %d arguments, but only %d pointers to parse into", a.NumOfArguments(), len(ptrs)))
 	}
 
 	for i := 0; i < a.NumOfArguments(); i++ {
@@ -101,8 +114,12 @@ func (a *Arguments) ParseInto(ptrs ...interface{}) error {
 		ok := false
 
 		if !arg.IsValid() {
-			return fmt.Errorf("argument at position %d is not a valid value", i)
+			return e.InvalidValueErr.
+				WithMessage(fmt.Sprintf("argument at position %d is not a valid value", i))
 		}
+
+		couldNotParseErr := e.InvalidValueErr.
+			WithMessage(fmt.Sprintf("could not parse %v (%s) into %v (%T)", arg, arg.Type(), ptr, ptr))
 
 		switch p := ptr.(type) {
 		case *reflect.Value:
@@ -114,7 +131,7 @@ func (a *Arguments) ParseInto(ptrs ...interface{}) error {
 			case reflect.Float32, reflect.Float64:
 				*p, ok = int(arg.Float()), true
 			default:
-				return fmt.Errorf("could not parse %v (%s) into %v (%T)", arg, arg.Type(), ptr, ptr)
+				return couldNotParseErr
 			}
 		case *int64:
 			switch arg.Kind() {
@@ -123,7 +140,7 @@ func (a *Arguments) ParseInto(ptrs ...interface{}) error {
 			case reflect.Float32, reflect.Float64:
 				*p, ok = int64(arg.Float()), true
 			default:
-				return fmt.Errorf("could not parse %v (%s) into %v (%T)", arg, arg.Type(), ptr, ptr)
+				return couldNotParseErr
 			}
 		case *float64:
 			switch arg.Kind() {
@@ -132,7 +149,7 @@ func (a *Arguments) ParseInto(ptrs ...interface{}) error {
 			case reflect.Float32, reflect.Float64:
 				*p, ok = arg.Float(), true
 			default:
-				return fmt.Errorf("could not parse %v (%s) into %v (%T)", arg, arg.Type(), ptr, ptr)
+				return couldNotParseErr
 			}
 		}
 
@@ -141,7 +158,8 @@ func (a *Arguments) ParseInto(ptrs ...interface{}) error {
 		}
 
 		if !arg.CanInterface() {
-			return fmt.Errorf("argument at position %d can't be accessed via Interface()", i)
+			return e.InvalidValueErr.
+				WithMessage(fmt.Sprintf("argument at position %d can't be accessed via Interface()", i))
 		}
 		val := arg.Interface()
 
@@ -159,11 +177,13 @@ func (a *Arguments) ParseInto(ptrs ...interface{}) error {
 		case *map[string]interface{}:
 			*p, ok = val.(map[string]interface{})
 		default:
-			return fmt.Errorf("trying to parse %v into %v: unhandled value type %T", arg, p, val)
+			return e.New().
+				WithReason("invalid.value.type").
+				WithMessage(fmt.Sprintf("trying to parse %v into %v: unhandled value type %T", arg, p, val))
 		}
 
 		if !ok {
-			return fmt.Errorf("could not parse %v (%s) into %v (%T)", arg, arg.Type(), ptr, ptr)
+			return couldNotParseErr
 		}
 	}
 

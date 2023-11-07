@@ -40,12 +40,17 @@ func NewSet(loader Loader, opts ...Option) *Set {
 	}
 
 	s := &Set{
-		loader:     loader,
-		cache:      &cache{},
-		escapee:    template.HTMLEscape,
-		globals:    VarMap{},
-		gmx:        &sync.RWMutex{},
-		extensions: defaultExtensions,
+		loader:  loader,
+		cache:   &cache{},
+		escapee: template.HTMLEscape,
+		globals: VarMap{},
+		gmx:     &sync.RWMutex{},
+		extensions: []string{
+			"", // in case the path is given with the correct extension already
+			".jet",
+			".html.jet",
+			".jet.html",
+		},
 	}
 
 	for _, opt := range opts {

@@ -42,7 +42,7 @@ func (i item) String() string {
 	return fmt.Sprintf("%q", i.val)
 }
 
-// itemType identifies the type of lex items.
+// itemType identifies the type of newLexer items.
 type itemType int
 
 const (
@@ -53,6 +53,7 @@ const (
 	itemComplex                      // complex constant (1+2i); imaginary is just a number
 	itemEOF
 	itemField      // alphanumeric identifier starting with '.'
+	itemLaxField   // alphanumeric identifier starting with '?.'
 	itemIdentifier // alphanumeric identifier not starting with '.'
 	itemLeftDelim  // left action delimiter
 	itemLeftParen  // '(' inside action
@@ -61,7 +62,7 @@ const (
 	itemRawString  // raw quoted string (includes quotes)
 	itemRightDelim // right action delimiter
 	itemRightParen // ')' inside action
-	itemSpace      // run of spaces separating arguments
+	itemSpace      // lex of spaces separating arguments
 	itemString     // quoted string (includes quotes)
 	itemText       // plain text
 	itemAssign
@@ -81,6 +82,7 @@ const (
 	itemColon
 	itemTernary
 	itemLeftBrackets
+	itemLeftLaxBrackets
 	itemRightBrackets
 	itemUnderscore
 	// Keywords appear after all the rest.
@@ -153,15 +155,16 @@ type stateFn func(*lexer) stateFn
 
 // lexer holds the state of the scanner.
 type lexer struct {
-	name           string    // the name of the input; used only for error reports
-	input          string    // the string being scanned
-	state          stateFn   // the next lexing function to enter
-	pos            Pos       // current position in the input
-	start          Pos       // start position of this item
-	width          Pos       // width of last rune read from input
-	lastPos        Pos       // position of most recent item returned by nextItem
-	items          chan item // channel of scanned items
-	parenDepth     int       // nesting depth of ( ) exprs
+	name           string  // the name of the input; used only for error reports
+	input          string  // the string being scanned
+	state          stateFn // the next lexing function to enter
+	pos            Pos     // current position in the input
+	start          Pos     // start position of this item
+	width          Pos     // width of last rune read from input
+	lastPos        Pos     // position of most recent item returned by nextItem
+	curItem        Pos     // position of current item
+	items          []item  // slice of scanned items
+	parenDepth     int     // nesting depth of ( ) exprs
 	lastType       itemType
 	leftDelim      string
 	rightDelim     string
@@ -204,7 +207,7 @@ func (l *lexer) backup() {
 // emit passes an item back to the client.
 func (l *lexer) emit(t itemType) {
 	l.lastType = t
-	l.items <- item{t, l.start, l.input[l.start:l.pos]}
+	l.items = append(l.items, item{t, l.start, l.input[l.start:l.pos]})
 	l.start = l.pos
 }
 
@@ -222,7 +225,7 @@ func (l *lexer) accept(valid string) bool {
 	return false
 }
 
-// acceptRun consumes a run of runes from the valid set.
+// acceptRun consumes a lex of runes from the valid set.
 func (l *lexer) acceptRun(valid string) {
 	for strings.IndexRune(valid, l.next()) >= 0 {
 	}
@@ -239,14 +242,15 @@ func (l *lexer) lineNumber() int {
 // errorf returns an error token and terminates the scan by passing
 // back a nil pointer that will be the next state, terminating l.nextItem.
 func (l *lexer) errorf(format string, args ...interface{}) stateFn {
-	l.items <- item{itemError, l.start, fmt.Sprintf(format, args...)}
+	l.items = append(l.items, item{itemError, l.start, fmt.Sprintf(format, args...)})
 	return nil
 }
 
 // nextItem returns the next item from the input.
 // Called by the parser, not in the lexing goroutine.
 func (l *lexer) nextItem() item {
-	item := <-l.items
+	item := l.items[l.curItem]
+	l.curItem++
 	l.lastPos = item.pos
 	return item
 }
@@ -258,30 +262,27 @@ func (l *lexer) drain() {
 	}
 }
 
-// lex creates a new scanner for the input string.
-func lex(name, input string, run bool) *lexer {
+// newLexer creates a new scanner for the input string.
+func newLexer(name, input string, run bool) *lexer {
 	l := &lexer{
 		name:           name,
 		input:          input,
-		items:          make(chan item),
+		items:          make([]item, 0),
 		leftDelim:      defaultLeftDelim,
 		rightDelim:     defaultRightDelim,
 		trimRightDelim: rightTrimMarker + defaultRightDelim,
 	}
 	if run {
-		l.run()
+		l.lex()
 	}
 	return l
 }
 
-// run runs the state machine for the lexer.
-func (l *lexer) run() {
-	go func() {
-		for l.state = lexText; l.state != nil; {
-			l.state = l.state(l)
-		}
-		close(l.items)
-	}()
+// lex runs the state machine for the lexer.
+func (l *lexer) lex() {
+	for l.state = lexText; l.state != nil; {
+		l.state = l.state(l)
+	}
 }
 
 // state functions
@@ -400,7 +401,6 @@ func lexInsideAction(l *lexer) stateFn {
 	case r == '%':
 		l.emit(itemMod)
 	case r == '-':
-
 		if r := l.peek(); '0' <= r && r <= '9' &&
 			itemAdd != l.lastType &&
 			itemMinus != l.lastType &&
@@ -435,7 +435,21 @@ func lexInsideAction(l *lexer) stateFn {
 		}
 		l.emit(itemAdd)
 	case r == '?':
-		l.emit(itemTernary)
+		switch l.next() {
+		case '[':
+			l.emit(itemLeftLaxBrackets)
+		case '.':
+			// special look-ahead for ".field" so we don't break l.backup().
+			if l.pos < Pos(len(l.input)) {
+				r := l.input[l.pos]
+				if r < '0' || '9' < r {
+					return lexLaxField
+				}
+			}
+		default:
+			l.backup()
+			l.emit(itemTernary)
+		}
 	case r == '&':
 		if l.next() == '&' {
 			l.emit(itemAnd)
@@ -463,7 +477,6 @@ func lexInsideAction(l *lexer) stateFn {
 			l.backup()
 			l.emit(itemNot)
 		}
-
 	case r == '=':
 		if l.next() == '=' {
 			l.emit(itemEquals)
@@ -533,7 +546,7 @@ func lexInsideAction(l *lexer) stateFn {
 	return lexInsideAction
 }
 
-// lexSpace scans a run of space characters.
+// lexSpace scans a lex of space characters.
 // One space has already been seen.
 func lexSpace(l *lexer) stateFn {
 	var numSpaces int
@@ -583,7 +596,6 @@ Loop:
 // lexField scans a field: .Alphanumeric.
 // The . has been scanned.
 func lexField(l *lexer) stateFn {
-
 	if l.atTerminator() {
 		// Nothing interesting follows -> "." or "$".
 		l.emit(itemIdentifier)
@@ -602,6 +614,30 @@ func lexField(l *lexer) stateFn {
 		return l.errorf("bad character %#U", r)
 	}
 	l.emit(itemField)
+	return lexInsideAction
+}
+
+// lexLaxField scans a field: ?.Alphanumeric.
+// The ?. has been scanned.
+func lexLaxField(l *lexer) stateFn {
+	if l.atTerminator() {
+		// Nothing interesting follows -> "." or "$".
+		l.emit(itemIdentifier)
+		return lexInsideAction
+	}
+
+	var r rune
+	for {
+		r = l.next()
+		if !isAlphaNumeric(r) {
+			l.backup()
+			break
+		}
+	}
+	if !l.atTerminator() {
+		return l.errorf("bad character %#U", r)
+	}
+	l.emit(itemLaxField)
 	return lexInsideAction
 }
 
@@ -677,9 +713,9 @@ func (l *lexer) scanNumber() bool {
 		l.accept("+-")
 		l.acceptRun("0123456789")
 	}
-	//Is it imaginary?
+	// Is it imaginary?
 	l.accept("i")
-	//Next thing mustn't be alphanumeric.
+	// Next thing mustn't be alphanumeric.
 	if isAlphaNumeric(l.peek()) {
 		l.next()
 		return false

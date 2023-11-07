@@ -70,6 +70,6 @@ func (t *Template) Execute(w io.Writer, variables VarMap, data interface{}) (err
 		st.context = reflect.ValueOf(data)
 	}
 
-	st.executeList(t.Root)
-	return
+	_, err = st.executeList(t.Root)
+	return err
 }

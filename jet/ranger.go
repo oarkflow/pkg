@@ -64,8 +64,10 @@ type sliceRanger struct {
 	i int
 }
 
-var _ Ranger = &sliceRanger{}
-var _ pooledRanger = &sliceRanger{}
+var (
+	_ Ranger       = &sliceRanger{}
+	_ pooledRanger = &sliceRanger{}
+)
 
 func (r *sliceRanger) Setup(v reflect.Value) {
 	r.i = 0
@@ -90,8 +92,10 @@ type mapRanger struct {
 	hasMore bool
 }
 
-var _ Ranger = &mapRanger{}
-var _ pooledRanger = &mapRanger{}
+var (
+	_ Ranger       = &mapRanger{}
+	_ pooledRanger = &mapRanger{}
+)
 
 func (r *mapRanger) Setup(v reflect.Value) {
 	r.iter = v.MapRange()
@@ -114,8 +118,10 @@ type chanRanger struct {
 	v reflect.Value
 }
 
-var _ Ranger = &chanRanger{}
-var _ pooledRanger = &chanRanger{}
+var (
+	_ Ranger       = &chanRanger{}
+	_ pooledRanger = &chanRanger{}
+)
 
 func (r *chanRanger) Setup(v reflect.Value) {
 	r.v = v
@@ -141,12 +147,12 @@ var (
 	poolsByKind = map[reflect.Kind]*sync.Pool{
 		reflect.Slice: poolSliceRanger,
 		reflect.Array: poolSliceRanger,
-		reflect.Map: &sync.Pool{
+		reflect.Map: {
 			New: func() interface{} {
 				return new(mapRanger)
 			},
 		},
-		reflect.Chan: &sync.Pool{
+		reflect.Chan: {
 			New: func() interface{} {
 				return new(chanRanger)
 			},
