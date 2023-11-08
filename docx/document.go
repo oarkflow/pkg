@@ -3,7 +3,6 @@ package docx
 import (
 	"archive/zip"
 	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -12,10 +11,8 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/oarkflow/expr"
 	"golang.org/x/net/html"
-
-	"github.com/oarkflow/pkg/evaluate"
-	"github.com/oarkflow/pkg/sjson"
 )
 
 const (
@@ -193,7 +190,7 @@ func unique(intSlice []string) []string {
 	return list
 }
 
-var rpl = strings.NewReplacer("{", "", "}", "")
+var rpl = strings.NewReplacer("{", "", "}", "", "$$", "'")
 
 // replace will create a parser on the given bytes, execute it and replace every placeholders found with the data
 // from the placeholderMap.
@@ -208,28 +205,17 @@ func (d *Document) replace(placeholderMap PlaceholderMap, file string) ([]byte, 
 		return nil, err
 	}
 	for _, p := range placeholdersKeys {
-		if strings.Contains(p, "(") {
-			pt := p
-			if strings.Contains(p, "$$") {
-				pt = strings.ReplaceAll(p, "$$", "'")
-			}
-			eval, err := evaluate.Parse(pt, true)
-			if err != nil {
-				return nil, err
-			}
-			data, err := eval.Eval(evaluate.NewEvalParams(placeholderMap))
-			if err != nil {
-				return nil, err
-			}
+		pt := p
+		pt = rpl.Replace(pt)
+		eval, err := expr.Parse(pt)
+		if err != nil {
+			return nil, err
+		}
+		data, err := eval.Eval(placeholderMap)
+		if err != nil {
+			placeholderMap[p] = ""
+		} else {
 			placeholderMap[p] = data
-		} else if strings.Contains(p, ".") {
-			bt, _ := json.Marshal(placeholderMap)
-			rs := sjson.GetBytes(bt, rpl.Replace(p))
-			if !rs.Exists() {
-				placeholderMap[p] = ""
-			} else {
-				placeholderMap[p] = rs.Value()
-			}
 		}
 	}
 	for key, value := range placeholderMap {

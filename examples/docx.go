@@ -4,37 +4,41 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/oarkflow/expr"
+
 	"github.com/oarkflow/pkg/docx"
-	"github.com/oarkflow/pkg/evaluate"
 	"github.com/oarkflow/pkg/gender"
 )
 
 func main() {
-	evaluate.AddCustomOperator("as_gender", func(ctx evaluate.EvalContext) (interface{}, error) {
-		if ctx.ArgCount() == 2 {
-			word, err := ctx.Arg(0)
-			if err != nil {
-				return nil, err
+	expr.AddFunction("current_date", func(params ...any) (any, error) {
+		return time.Now().Format(time.DateOnly), nil
+	})
+	expr.AddFunction("as_gender", func(params ...any) (any, error) {
+		if len(params) == 2 {
+			word := params[0]
+			gen := params[1]
+			if word == nil {
+				word = ""
 			}
-			gen, err := ctx.Arg(1)
-			if err != nil {
-				return nil, err
+			if gen == nil {
+				gen = ""
 			}
 			return gender.Convert(fmt.Sprint(word), fmt.Sprint(gen)), nil
-		} else if ctx.ArgCount() == 3 {
-			word, err := ctx.Arg(0)
-			if err != nil {
-				return nil, err
+		} else if len(params) == 3 {
+			word := params[0]
+			gen := params[1]
+			married := params[2]
+			if word == nil {
+				word = ""
 			}
-			gen, err := ctx.Arg(1)
-			if err != nil {
-				return nil, err
+			if gen == nil {
+				gen = ""
 			}
-			married, err := ctx.BooleanArg(2)
-			if err != nil {
-				return nil, err
+			if married == nil {
+				married = false
 			}
-			return gender.Convert(fmt.Sprint(word), fmt.Sprint(gen), married), nil
+			return gender.Convert(fmt.Sprint(word), fmt.Sprint(gen), married.(bool)), nil
 		}
 		return "", nil
 	})

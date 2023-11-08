@@ -3,7 +3,8 @@ package main
 import (
 	"fmt"
 
-	"github.com/oarkflow/pkg/evaluate"
+	"github.com/oarkflow/expr"
+
 	"github.com/oarkflow/pkg/gender"
 )
 
@@ -23,12 +24,11 @@ func main() {
 		"start_date": "2021-09-01",
 		"end_date":   "2022-09-30",
 	}
-	p, err := evaluate.Parse(`company.A < company.B`, true)
+	p, err := expr.Parse(`company.A > company.B`)
 	if err != nil {
 		panic(err)
 	}
-	pt := evaluate.NewEvalParams(d)
-	fmt.Println(p.Eval(pt))
+	fmt.Println(p.Eval(d))
 	fmt.Println(gender.Convert("his", "male"))
 	fmt.Println(gender.Convert("his", "female"))
 	fmt.Println(gender.Convert("Mr.", "female"))
