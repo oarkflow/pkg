@@ -2,6 +2,7 @@ package evaluate
 
 import (
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 	"unicode"
@@ -112,6 +113,10 @@ func tokenizeIdentifier(input string) ExprToken {
 			nextNonIdent = idx
 			break
 		}
+		/*if unicode.IsPunct(ch) && !isFloat(input) {
+			nextNonIdent = idx
+			return NewExprToken(TokenKindIdentifier, input[nextNonIdent:], len(input))
+		}*/
 	}
 	if nextNonIdent == 0 {
 		return ExprToken{}
@@ -140,6 +145,12 @@ func tokenizeHexNumber(input string) ExprToken {
 		return ExprToken{}
 	}
 	return NewExprToken(TokenKindNumber, float64(value), nextNonDigit)
+}
+
+var floatRegex = regexp.MustCompile(`^(?:[-+]?(?:[0-9]+))?(?:\\.[0-9]*)?(?:[eE][\\+\\-]?(?:[0-9]+))?$`)
+
+func isFloat(str string) bool {
+	return str != "" && floatRegex.MatchString(str)
 }
 
 func tokenizeDecimalNumber(input string) ExprToken {

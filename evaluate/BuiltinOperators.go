@@ -56,6 +56,7 @@ func BuiltinOperators() map[string]Operator {
 
 		"now":          builtinNow,
 		"now_date":     builtinNowDate,
+		"current_date": builtinNowDate,
 		"now_time":     builtinNowTime,
 		"now_datetime": builtinNowDateTime,
 	}

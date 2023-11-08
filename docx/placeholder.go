@@ -14,8 +14,8 @@ var (
 	CloseDelimiter rune = '}'
 )
 
-// ChangeOpenCloseDelimiter is used for change the open and close delimiters
-func ChangeOpenCloseDelimiter(openDelimiter, closeDelimiter rune) {
+// ChangeDelimiter is used for change the open and close delimiters
+func ChangeDelimiter(openDelimiter, closeDelimiter rune) {
 	OpenDelimiter = openDelimiter
 	CloseDelimiter = closeDelimiter
 }

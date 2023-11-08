@@ -15,6 +15,23 @@ func (expr ExprNode) Eval(params EvalParams) (interface{}, error) {
 	case NodeTypeLiteral:
 		return expr.Value, nil
 	case NodeTypeVariable:
+		/*
+			var value any
+				var ok bool
+				if strings.Contains(expr.Name, ".") {
+					bt, _ := json.Marshal(params.Variables)
+					rs := sjson.GetBytes(bt, expr.Name)
+					if !rs.Exists() {
+						value = nil
+						ok = false
+					} else {
+						value = rs.Value()
+						ok = true
+					}
+				} else {
+					value, ok = params.Variables[expr.Name]
+				}
+		*/
 		value, ok := params.Variables[expr.Name]
 		if !ok {
 			return nil, fmt.Errorf("variable undefined: %v [pos=%d; len=%d]", expr.Name, expr.SourcePos, expr.SourceLen)

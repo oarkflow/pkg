@@ -3,6 +3,7 @@ package docx
 import (
 	"archive/zip"
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -12,6 +13,9 @@ import (
 	"strings"
 
 	"golang.org/x/net/html"
+
+	"github.com/oarkflow/pkg/evaluate"
+	"github.com/oarkflow/pkg/sjson"
 )
 
 const (
@@ -189,16 +193,45 @@ func unique(intSlice []string) []string {
 	return list
 }
 
+var rpl = strings.NewReplacer("{", "", "}", "")
+
 // replace will create a parser on the given bytes, execute it and replace every placeholders found with the data
 // from the placeholderMap.
 func (d *Document) replace(placeholderMap PlaceholderMap, file string) ([]byte, error) {
 	if _, ok := d.runParsers[file]; !ok {
 		return nil, fmt.Errorf("no parser for file %s", file)
 	}
-	placeholderCount := d.CountPlaceholders(file, placeholderMap)
 	placeholders := d.filePlaceholders[file]
 	replacer := d.fileReplacers[file]
-
+	placeholdersKeys, err := d.GetPlaceHoldersList()
+	if err != nil {
+		return nil, err
+	}
+	for _, p := range placeholdersKeys {
+		if strings.Contains(p, "(") {
+			pt := p
+			if strings.Contains(p, "$$") {
+				pt = strings.ReplaceAll(p, "$$", "'")
+			}
+			eval, err := evaluate.Parse(pt, true)
+			if err != nil {
+				return nil, err
+			}
+			data, err := eval.Eval(evaluate.NewEvalParams(placeholderMap))
+			if err != nil {
+				return nil, err
+			}
+			placeholderMap[p] = data
+		} else if strings.Contains(p, ".") {
+			bt, _ := json.Marshal(placeholderMap)
+			rs := sjson.GetBytes(bt, rpl.Replace(p))
+			if !rs.Exists() {
+				placeholderMap[p] = ""
+			} else {
+				placeholderMap[p] = rs.Value()
+			}
+		}
+	}
 	for key, value := range placeholderMap {
 		err := replacer.Replace(key, fmt.Sprint(value))
 		if err != nil {
@@ -208,11 +241,6 @@ func (d *Document) replace(placeholderMap PlaceholderMap, file string) ([]byte, 
 				return nil, err
 			}
 		}
-	}
-
-	// ensure that all placeholders have been replaced
-	if placeholderCount != replacer.ReplaceCount {
-		return nil, fmt.Errorf("not all placeholders were replaced, want=%d, have=%d", placeholderCount, replacer.ReplaceCount)
 	}
 
 	d.fileReplacers[file] = replacer

@@ -45,8 +45,8 @@ var (
 	OutputPlaceHolderPattern = `<\w+([\s-_]\w+)*>`
 
 	WordPattern   = `[a-zA-Z]+`
-	IntPattern    = `[+\-]?[0-9]+`
-	FloatPattern  = `[+\-]?\d[\d,]*[\.]?[\d{2}]*`
+	IntPattern    = "^(?:[-+]?(?:0|[1-9][0-9]*))$"
+	FloatPattern  = `^(?:[-+]?(?:[0-9]+))?(?:\\.[0-9]*)?(?:[eE][\\+\\-]?(?:[0-9]+))?$`
 	StringPattern = `.+`
 )
 

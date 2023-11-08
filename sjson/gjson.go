@@ -1,7 +1,7 @@
+// Package sjson provides searching for json strings.
 package sjson
 
 import (
-	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -186,22 +186,6 @@ func (t Result) Time() time.Time {
 	return res
 }
 
-// Truthy returns the truthiness of the value (all values are truthy except false, null, 0, -0, NaN, and "").
-func (t Result) Truthy() bool {
-	switch t.Type {
-	case Null, False:
-		return false
-	case Number:
-		return !math.IsNaN(t.Num) && t.Num != 0
-	case String:
-		return t.Str != ""
-	case True, JSON:
-		return true
-	default:
-		return false
-	}
-}
-
 // Array returns back an array of values.
 // If the result represents a null value or is non-existent, then an empty
 // array will be returned.
@@ -349,7 +333,7 @@ type arrayOrMapResult struct {
 }
 
 func (t Result) arrayOrMap(vc byte, valueize bool) (r arrayOrMapResult) {
-	json := t.Raw
+	var json = t.Raw
 	var i int
 	var value Result
 	var count int
@@ -701,7 +685,7 @@ func (t Result) Value() interface{} {
 }
 
 func parseString(json string, i int) (int, string, bool, bool) {
-	s := i
+	var s = i
 	for ; i < len(json); i++ {
 		if json[i] > '\\' {
 			continue
@@ -739,7 +723,7 @@ func parseString(json string, i int) (int, string, bool, bool) {
 }
 
 func parseNumber(json string, i int) (int, string) {
-	s := i
+	var s = i
 	i++
 	for ; i < len(json); i++ {
 		if json[i] <= ' ' || json[i] == ',' || json[i] == ']' ||
@@ -751,7 +735,7 @@ func parseNumber(json string, i int) (int, string) {
 }
 
 func parseLiteral(json string, i int) (int, string) {
-	s := i
+	var s = i
 	i++
 	for ; i < len(json); i++ {
 		if json[i] < 'a' || json[i] > 'z' {
@@ -808,7 +792,8 @@ func parseArrayPath(path string) (r arrayPathResult) {
 				} else if path[1] == '[' || path[1] == '(' {
 					// query
 					r.query.on = true
-					qpath, op, value, _, fi, vesc, ok := parseQuery(path[i:])
+					qpath, op, value, _, fi, vesc, ok :=
+						parseQuery(path[i:])
 					if !ok {
 						// bad query, end now
 						break
@@ -906,8 +891,8 @@ func parseQuery(query string) (
 		return "", "", "", "", i, false, false
 	}
 	if j > 0 {
-		path = trim(query[2:j])
-		value = trim(query[j:i])
+		path = trimGjson(query[2:j])
+		value = trimGjson(query[j:i])
 		remain = query[i+1:]
 		// parse the compare op from the value
 		var opsz int
@@ -935,12 +920,26 @@ func parseQuery(query string) (
 			opsz = 1
 		}
 		op = value[:opsz]
-		value = trim(value[opsz:])
+		value = trimGjson(value[opsz:])
 	} else {
-		path = trim(query[2:i])
+		path = trimGjson(query[2:i])
 		remain = query[i+1:]
 	}
 	return path, op, value, remain, i + 1, vesc, true
+}
+
+func trimGjson(s string) string {
+left:
+	if len(s) > 0 && s[0] <= ' ' {
+		s = s[1:]
+		goto left
+	}
+right:
+	if len(s) > 0 && s[len(s)-1] <= ' ' {
+		s = s[:len(s)-1]
+		goto right
+	}
+	return s
 }
 
 // peek at the next byte and see if it's a '@', '[', or '{'.
@@ -1103,7 +1102,7 @@ func parseObject(c *parseContext, i int, path string) (int, bool) {
 				// this is slightly different from getting s string value
 				// because we don't need the outer quotes.
 				i++
-				s := i
+				var s = i
 				for ; i < len(c.json); i++ {
 					if c.json[i] > '\\' {
 						continue
@@ -1400,7 +1399,6 @@ func queryMatches(rp *arrayPathResult, value Result) bool {
 	}
 	return false
 }
-
 func parseArray(c *parseContext, i int, path string) (int, bool) {
 	var pmatch, vesc, ok, hit bool
 	var val string
@@ -1620,8 +1618,8 @@ func parseArray(c *parseContext, i int, path string) (int, bool) {
 							c.pipe = right
 							c.piped = true
 						}
-						indexes := make([]int, 0, 64)
-						jsons := make([]byte, 0, 64)
+						var indexes = make([]int, 0, 64)
+						var jsons = make([]byte, 0, 64)
 						jsons = append(jsons, '[')
 						for j, k := 0, 0; j < len(alog); j++ {
 							idx := alog[j]
@@ -2092,7 +2090,7 @@ func Get(json, path string) Result {
 		}
 	}
 	var i int
-	c := &parseContext{json: json}
+	var c = &parseContext{json: json}
 	if len(path) >= 2 && path[0] == '.' && path[1] == '.' {
 		c.lines = true
 		parseArray(c, 0, path[2:])
@@ -2133,7 +2131,7 @@ func runeit(json string) rune {
 
 // unescape unescapes a string
 func unescape(json string) string {
-	str := make([]byte, 0, len(json))
+	var str = make([]byte, 0, len(json))
 	for i := 0; i < len(json); i++ {
 		switch {
 		default:
@@ -2374,7 +2372,6 @@ func validpayload(data []byte, i int) (outi int, ok bool) {
 	}
 	return i, false
 }
-
 func validany(data []byte, i int) (outi int, ok bool) {
 	for ; i < len(data); i++ {
 		switch data[i] {
@@ -2400,7 +2397,6 @@ func validany(data []byte, i int) (outi int, ok bool) {
 	}
 	return i, false
 }
-
 func validobject(data []byte, i int) (outi int, ok bool) {
 	for ; i < len(data); i++ {
 		switch data[i] {
@@ -2443,7 +2439,6 @@ func validobject(data []byte, i int) (outi int, ok bool) {
 	}
 	return i, false
 }
-
 func validcolon(data []byte, i int) (outi int, ok bool) {
 	for ; i < len(data); i++ {
 		switch data[i] {
@@ -2457,7 +2452,6 @@ func validcolon(data []byte, i int) (outi int, ok bool) {
 	}
 	return i, false
 }
-
 func validcomma(data []byte, i int, end byte) (outi int, ok bool) {
 	for ; i < len(data); i++ {
 		switch data[i] {
@@ -2473,7 +2467,6 @@ func validcomma(data []byte, i int, end byte) (outi int, ok bool) {
 	}
 	return i, false
 }
-
 func validarray(data []byte, i int) (outi int, ok bool) {
 	for ; i < len(data); i++ {
 		switch data[i] {
@@ -2497,7 +2490,6 @@ func validarray(data []byte, i int) (outi int, ok bool) {
 	}
 	return i, false
 }
-
 func validstring(data []byte, i int) (outi int, ok bool) {
 	for ; i < len(data); i++ {
 		if data[i] < ' ' {
@@ -2530,7 +2522,6 @@ func validstring(data []byte, i int) (outi int, ok bool) {
 	}
 	return i, false
 }
-
 func validnumber(data []byte, i int) (outi int, ok bool) {
 	i--
 	// sign
@@ -2613,7 +2604,6 @@ func validtrue(data []byte, i int) (outi int, ok bool) {
 	}
 	return i, false
 }
-
 func validfalse(data []byte, i int) (outi int, ok bool) {
 	if i+4 <= len(data) && data[i] == 'a' && data[i+1] == 'l' &&
 		data[i+2] == 's' && data[i+3] == 'e' {
@@ -2621,7 +2611,6 @@ func validfalse(data []byte, i int) (outi int, ok bool) {
 	}
 	return i, false
 }
-
 func validnull(data []byte, i int) (outi int, ok bool) {
 	if i+3 <= len(data) && data[i] == 'u' && data[i+1] == 'l' &&
 		data[i+2] == 'l' {
@@ -2764,6 +2753,7 @@ func execModifier(json, path string) (pathOut, res string, ok bool) {
 			var parsedArgs bool
 			switch pathOut[0] {
 			case '{', '[', '"':
+				// json arg
 				res := Parse(pathOut)
 				if res.Exists() {
 					args = squash(pathOut)
@@ -2772,14 +2762,20 @@ func execModifier(json, path string) (pathOut, res string, ok bool) {
 				}
 			}
 			if !parsedArgs {
-				idx := strings.IndexByte(pathOut, '|')
-				if idx == -1 {
-					args = pathOut
-					pathOut = ""
-				} else {
-					args = pathOut[:idx]
-					pathOut = pathOut[idx:]
+				// simple arg
+				i := 0
+				for ; i < len(pathOut); i++ {
+					if pathOut[i] == '|' {
+						break
+					}
+					switch pathOut[i] {
+					case '{', '[', '"', '(':
+						s := squash(pathOut[i:])
+						i += len(s) - 1
+					}
 				}
+				args = pathOut[:i]
+				pathOut = pathOut[i:]
 			}
 		}
 		return pathOut, fn(json, args), true
@@ -2789,7 +2785,7 @@ func execModifier(json, path string) (pathOut, res string, ok bool) {
 
 // unwrap removes the '[]' or '{}' characters around json
 func unwrap(json string) string {
-	json = trim(json)
+	json = trimGjson(json)
 	if len(json) >= 2 && (json[0] == '[' || json[0] == '{') {
 		json = json[1 : len(json)-1]
 	}
@@ -2799,19 +2795,24 @@ func unwrap(json string) string {
 // DisableModifiers will disable the modifier syntax
 var DisableModifiers = false
 
-var modifiers = map[string]func(json, arg string) string{
-	"pretty":  modPretty,
-	"ugly":    modUgly,
-	"reverse": modReverse,
-	"this":    modThis,
-	"flatten": modFlatten,
-	"join":    modJoin,
-	"valid":   modValid,
-	"keys":    modKeys,
-	"values":  modValues,
-	"tostr":   modToStr,
-	"fromstr": modFromStr,
-	"group":   modGroup,
+var modifiers map[string]func(json, arg string) string
+
+func init() {
+	modifiers = map[string]func(json, arg string) string{
+		"pretty":  modPretty,
+		"ugly":    modUgly,
+		"reverse": modReverse,
+		"this":    modThis,
+		"flatten": modFlatten,
+		"join":    modJoin,
+		"valid":   modValid,
+		"keys":    modKeys,
+		"values":  modValues,
+		"tostr":   modToStr,
+		"fromstr": modFromStr,
+		"group":   modGroup,
+		"dig":     modDig,
+	}
 }
 
 // AddModifier binds a custom modifier command to the GJSON syntax.
@@ -2850,7 +2851,7 @@ func cleanWS(s string) string {
 // @pretty modifier makes the json look nice.
 func modPretty(json, arg string) string {
 	if len(arg) > 0 {
-		opts := *DefaultPrettyOptions
+		opts := *pretty.DefaultOptions
 		Parse(arg).ForEach(func(key, value Result) bool {
 			switch key.String() {
 			case "sortKeys":
@@ -2864,9 +2865,9 @@ func modPretty(json, arg string) string {
 			}
 			return true
 		})
-		return bytesString(NewPrettyOptions(stringBytes(json), &opts))
+		return bytesString(pretty.PrettyOptions(stringBytes(json), &opts))
 	}
-	return bytesString(Pretty(stringBytes(json)))
+	return bytesString(pretty.Pretty(stringBytes(json)))
 }
 
 // @this returns the current element. Can be used to retrieve the root element.
@@ -3408,7 +3409,7 @@ func (t Result) Path(json string) string {
 		if !rcomp.Exists() {
 			goto fail
 		}
-		comp := escapeComp(rcomp.String())
+		comp := Escape(rcomp.String())
 		path = append(path, '.')
 		path = append(path, comp...)
 	}
@@ -3423,17 +3424,31 @@ fail:
 // isSafePathKeyChar returns true if the input character is safe for not
 // needing escaping.
 func isSafePathKeyChar(c byte) bool {
-	return c <= ' ' || c > '~' || c == '_' || c == '-' || c == ':' ||
-		(c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
-		(c >= '0' && c <= '9')
+	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+		(c >= '0' && c <= '9') || c <= ' ' || c > '~' || c == '_' ||
+		c == '-' || c == ':'
 }
 
-// escapeComp escaped a path compontent, making it safe for generating a
-// path for later use.
-func escapeComp(comp string) string {
+// Escape returns an escaped path component.
+//
+//	json := `{
+//	  "user":{
+//	     "first.name": "Janet",
+//	     "last.name": "Prichard"
+//	   }
+//	}`
+//	user := gjson.Get(json, "user")
+//	println(user.Get(gjson.Escape("first.name"))
+//	println(user.Get(gjson.Escape("last.name"))
+//	// Output:
+//	// Janet
+//	// Prichard
+func Escape(comp string) string {
 	for i := 0; i < len(comp); i++ {
 		if !isSafePathKeyChar(comp[i]) {
-			ncomp := []byte(comp[:i])
+			ncomp := make([]byte, len(comp)+1)
+			copy(ncomp, comp[:i])
+			ncomp = ncomp[:i]
 			for ; i < len(comp); i++ {
 				if !isSafePathKeyChar(comp[i]) {
 					ncomp = append(ncomp, '\\')
@@ -3444,4 +3459,31 @@ func escapeComp(comp string) string {
 		}
 	}
 	return comp
+}
+
+func parseRecursiveDescent(all []Result, parent Result, path string) []Result {
+	if res := parent.Get(path); res.Exists() {
+		all = append(all, res)
+	}
+	if parent.IsArray() || parent.IsObject() {
+		parent.ForEach(func(_, val Result) bool {
+			all = parseRecursiveDescent(all, val, path)
+			return true
+		})
+	}
+	return all
+}
+
+func modDig(json, arg string) string {
+	all := parseRecursiveDescent(nil, Parse(json), arg)
+	var out []byte
+	out = append(out, '[')
+	for i, res := range all {
+		if i > 0 {
+			out = append(out, ',')
+		}
+		out = append(out, res.Raw...)
+	}
+	out = append(out, ']')
+	return string(out)
 }
