@@ -25,6 +25,14 @@ func PrepareDocxToFile(file string, data map[string]interface{}, outputFile ...s
 	return doc.WriteToFile(output)
 }
 
+func Placeholders(file string) ([]string, error) {
+	doc, err := Open(file)
+	if err != nil {
+		return nil, err
+	}
+	return doc.GetPlaceHoldersList()
+}
+
 func PrepareDocx(file string, data map[string]interface{}) (*bytes.Buffer, error) {
 	var byteBuffer bytes.Buffer
 	doc, err := Open(file)

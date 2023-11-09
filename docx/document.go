@@ -209,7 +209,7 @@ func (d *Document) replace(placeholderMap PlaceholderMap, file string) ([]byte, 
 		pt = rpl.Replace(pt)
 		data, err := expr.Eval(pt, placeholderMap)
 		if err != nil {
-			placeholderMap[p] = ""
+			placeholderMap[p] = p
 		} else {
 			placeholderMap[p] = data
 		}

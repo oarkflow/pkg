@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -8,11 +9,23 @@ import (
 
 	"github.com/oarkflow/pkg/docx"
 	"github.com/oarkflow/pkg/gender"
+	"github.com/oarkflow/pkg/timeutil"
 )
 
 func main() {
 	expr.AddFunction("current_date", func(params ...any) (any, error) {
 		return time.Now().Format(time.DateOnly), nil
+	})
+	expr.AddFunction("age", func(params ...any) (any, error) {
+		if len(params) != 1 {
+			return nil, errors.New("No data provided")
+		}
+		left := params[0]
+		t, err := timeutil.ParseTime(left)
+		if err != nil {
+			return nil, err
+		}
+		return timeutil.CalculateToNow(t), err
 	})
 	expr.AddFunction("as_gender", func(params ...any) (any, error) {
 		if len(params) == 2 {
@@ -42,8 +55,13 @@ func main() {
 		}
 		return "", nil
 	})
+	doc := "/home/sujit/Projects/paramarsha/frontend/public/test.docx"
+	fmt.Println(docx.Placeholders(doc))
 	start := time.Now()
-	err := docx.PrepareDocxToFile("test.docx", map[string]interface{}{
+	err := docx.PrepareDocxToFile(doc, map[string]interface{}{
+		"customer": map[string]any{
+			"dob": "1989-04-10",
+		},
 		"name": "Sujit Baniya",
 		"address": map[string]any{
 			"city": "Kathmandu",
