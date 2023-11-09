@@ -16,7 +16,7 @@ require (
 	github.com/klauspost/compress v1.17.2
 	github.com/klauspost/pgzip v1.2.6
 	github.com/kljensen/snowball v0.8.0
-	github.com/oarkflow/expr v0.0.3
+	github.com/oarkflow/expr v0.0.5
 	github.com/oarkflow/frame v0.0.55
 	github.com/oarkflow/gorm-adapter v0.0.7
 	github.com/oarkflow/govaluate v0.0.1
