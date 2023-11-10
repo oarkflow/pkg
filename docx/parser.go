@@ -1,12 +1,21 @@
-package main
+package docx
 
 import (
 	"fmt"
 	"go/ast"
 	"go/parser"
-	"reflect"
 	"strings"
 )
+
+func ParseExpr(code string) ([]Function, error) {
+	node, err := parser.ParseExpr(code)
+	if err != nil {
+		return nil, err
+	}
+	var functions []Function
+	findFunctions(node, &functions)
+	return functions, nil
+}
 
 type Argument struct {
 	Name string
@@ -16,52 +25,6 @@ type Argument struct {
 type Function struct {
 	Name      string
 	Arguments []Argument
-}
-
-func ma1n() {
-	code := `true`
-	node, err := parser.ParseExpr(code)
-	if err != nil {
-		fmt.Println("Error parsing code:", err)
-		return
-	}
-	parser1(node)
-}
-
-func parser1(node ast.Node) {
-	switch a := node.(type) {
-	case *ast.BasicLit:
-		fmt.Println("*ast.BasicLit:", a)
-	case *ast.Ident:
-		fmt.Println("*ast.Ident:", a)
-	case *ast.BinaryExpr:
-		fmt.Println("*ast.BinaryExpr:", a)
-	case *ast.CallExpr:
-		fmt.Println("*ast.CallExpr:", a)
-	case *ast.BadExpr:
-		fmt.Println("*ast.BadExpr:", a)
-	case *ast.CompositeLit:
-		fmt.Println("*ast.BadExpr:", a)
-	case *ast.KeyValueExpr:
-		fmt.Println("*ast.KeyValueExpr:", a)
-	case *ast.SelectorExpr:
-		fmt.Println("End", a.Sel)
-		parser1(a.X)
-	default:
-		fmt.Println("Default:", a, reflect.TypeOf(a))
-	}
-}
-
-func main() {
-	code := "func1(arg1, func2(arg2, func3(arg3, a.b)), func4(arg4))"
-	node, err := parser.ParseExpr(code)
-	if err != nil {
-		fmt.Println("Error parsing code:", err)
-		return
-	}
-	var functions []Function
-	findFunctions(node, &functions)
-	fmt.Println(functions)
 }
 
 func findFunctions(node ast.Node, functions *[]Function) {

@@ -2,6 +2,7 @@ package docx
 
 import (
 	"bytes"
+	"go/parser"
 	"path/filepath"
 	"strings"
 )
@@ -25,11 +26,6 @@ func PrepareDocxToFile(file string, data map[string]interface{}, outputFile ...s
 	return doc.WriteToFile(output)
 }
 
-type Argument struct {
-	Type        string `json:"type"`
-	Placeholder string `json:"placeholder"`
-}
-
 type PType struct {
 	Type        string     `json:"type"`
 	Placeholder string     `json:"placeholder"`
@@ -48,51 +44,24 @@ func Placeholders(file string) ([]PType, error) {
 	}
 	for _, placeholder := range placeholders {
 		placeholder = strReplacer.Replace(placeholder)
-
 		if IsFunction(placeholder) {
-			ptypes = append(ptypes, parseFunction(placeholder))
+			functions, err := ParseExpr(placeholder)
+			if err != nil {
+				return nil, err
+			}
+			for _, f := range functions {
+				ptypes = append(ptypes, PType{Type: "function", Placeholder: f.Name, Arguments: f.Arguments})
+			}
 		} else {
-			ptypes = append(ptypes, PType{Type: getType(placeholder), Placeholder: placeholder})
+			node, err := parser.ParseExpr(placeholder)
+			if err != nil {
+				return nil, err
+			}
+			arg := extractArg(node)
+			ptypes = append(ptypes, PType{Type: arg.Type, Placeholder: placeholder})
 		}
 	}
 	return ptypes, nil
-}
-
-func parseFunction(funcStr string) PType {
-	p := PType{
-		Type:        "function",
-		Placeholder: funcStr,
-	}
-	funcParts := strings.Split(funcStr, "(")
-	if len(funcParts) != 2 {
-		return p
-	}
-	p.Placeholder = funcParts[0]
-	arguments := strings.Split(funcParts[1], ")")
-	if len(arguments) != 2 {
-		return p
-	}
-	argStr := arguments[0]
-	if argStr == "" {
-		return p
-	}
-	args := strings.Split(argStr, ",")
-	for _, arg := range args {
-		p.Arguments = append(p.Arguments, Argument{
-			Type:        getType(arg),
-			Placeholder: arg,
-		})
-	}
-	return p
-}
-
-func getType(arg string) string {
-	if strings.HasPrefix(arg, "'") || strings.HasPrefix(arg, `"`) {
-		return "string"
-	} else if IsNumber(arg) {
-		return "number"
-	}
-	return "variable"
 }
 
 func PrepareDocx(file string, data map[string]interface{}) (*bytes.Buffer, error) {
