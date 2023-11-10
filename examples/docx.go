@@ -56,8 +56,8 @@ func main() {
 		return "", nil
 	})
 	doc := "/Users/sujit/Sites/paramarsha/frontend/public/test.docx"
-	fmt.Println(docx.Placeholders(doc))
 	start := time.Now()
+	fmt.Println(docx.Placeholders(doc))
 	err := docx.PrepareDocxToFile(doc, map[string]interface{}{
 		"customer": map[string]any{
 			"dob": "1989-04-10",
