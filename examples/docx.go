@@ -55,7 +55,7 @@ func main() {
 		}
 		return "", nil
 	})
-	doc := "/home/sujit/Projects/paramarsha/frontend/public/test.docx"
+	doc := "/Users/sujit/Sites/paramarsha/frontend/public/test.docx"
 	fmt.Println(docx.Placeholders(doc))
 	start := time.Now()
 	err := docx.PrepareDocxToFile(doc, map[string]interface{}{
@@ -77,5 +77,6 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	// ([a-zA-Z_]\w*)\(([^()]|(?R))*\)
 	fmt.Println(fmt.Sprintf("%s", time.Since(start)))
 }

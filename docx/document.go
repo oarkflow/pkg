@@ -190,8 +190,6 @@ func unique(intSlice []string) []string {
 	return list
 }
 
-var rpl = strings.NewReplacer("{", "", "}", "", "$$", "'")
-
 // replace will create a parser on the given bytes, execute it and replace every placeholders found with the data
 // from the placeholderMap.
 func (d *Document) replace(placeholderMap PlaceholderMap, file string) ([]byte, error) {
@@ -206,7 +204,7 @@ func (d *Document) replace(placeholderMap PlaceholderMap, file string) ([]byte, 
 	}
 	for _, p := range placeholdersKeys {
 		pt := p
-		pt = rpl.Replace(pt)
+		pt = strReplacer.Replace(pt)
 		data, err := expr.Eval(pt, placeholderMap)
 		if err != nil {
 			placeholderMap[p] = p
