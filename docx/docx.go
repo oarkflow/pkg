@@ -51,6 +51,11 @@ func Placeholders(file string) ([]PType, error) {
 			}
 			for _, f := range functions {
 				ptypes = append(ptypes, PType{Type: "function", Placeholder: f.Name, Arguments: f.Arguments})
+				for _, a := range f.Arguments {
+					if a.Type == "variable" {
+						ptypes = append(ptypes, PType{Type: a.Type, Placeholder: a.Name})
+					}
+				}
 			}
 		} else {
 			node, err := parser.ParseExpr(placeholder)
