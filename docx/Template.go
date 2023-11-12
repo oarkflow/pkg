@@ -10,7 +10,6 @@ import (
 	"os"
 	"path"
 	"reflect"
-	"regexp"
 	"strings"
 )
 
@@ -577,14 +576,7 @@ func (t *Template) ExportDocx(path string) error {
 // If you already replaced params with values then you will not get all placeholders.
 // Or use it after replace and see how many placeholders left.
 func (t *Template) Placeholders() []string {
-	var arr []string
-
-	plaintext := t.Plaintext()
-
-	re := regexp.MustCompile(ParamPattern)
-	arr = re.FindAllString(plaintext, -1)
-
-	return arr
+	return paramRegex.FindAllString(t.Plaintext(), -1)
 }
 
 // Match single left placeholder ({{)

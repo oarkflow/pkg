@@ -8,12 +8,29 @@ import (
 )
 
 var (
-	leftDelim  = `{{`
-	rightDelim = `}}`
+	leftDelim    = `{`
+	rightDelim   = `}`
+	paramPattern = `%s(#|)([\w\.]+?)(| .*?)(| [:a-z]+?)%s`
+	paramRegex   *regexp.Regexp
 )
 
-// ParamPattern - regex pattern to identify params
-const ParamPattern = `{{(#|)([\w\.]+?)(| .*?)(| [:a-z]+?)}}`
+func SetDelim(left, right string) {
+	if left != "" {
+		leftDelim = left
+	}
+	if right != "" {
+		rightDelim = right
+	}
+	Init()
+}
+
+func Init() {
+	paramRegex = regexp.MustCompile(fmt.Sprintf(paramPattern, leftDelim, rightDelim))
+}
+
+func init() {
+	Init()
+}
 
 // Param type
 type ParamType int8
@@ -67,9 +84,7 @@ func NewParam(key interface{}) *Param {
 
 // NewParamFromRaw ..
 func NewParamFromRaw(raw []byte) *Param {
-	// extract from raw contents
-	re := regexp.MustCompile(ParamPattern)
-	matches := re.FindAllSubmatch(raw, -1)
+	matches := paramRegex.FindAllSubmatch(raw, -1)
 	if matches == nil || matches[0] == nil {
 		return nil
 	}
