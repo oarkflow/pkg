@@ -12,7 +12,53 @@ import (
 	"github.com/oarkflow/pkg/timeutil"
 )
 
-func main() {
+func tableParser() {
+	replaceMap := [][]docx.TablePlaceholder{
+		{
+			{
+				Key:   "Name",
+				Value: "John Doe",
+			},
+			{
+				Key:   "Value",
+				Value: "42",
+			},
+		},
+		{
+			{
+				Key:   "Name",
+				Value: "Jane Doe",
+			},
+			{
+				Key:   "Value",
+				Value: "43",
+			},
+		},
+	}
+
+	doc, err := docx.Open("/Users/sujit/Sites/pkg/examples/table_template.docx")
+	if err != nil {
+		panic(err)
+		return
+	}
+
+	tableReplacer := docx.NewTableReplacer(doc.GetFile(docx.DocumentXml))
+	err = tableReplacer.Replace("t1", replaceMap)
+	if err != nil {
+		panic(err)
+		return
+	}
+
+	doc.SetFile(docx.DocumentXml, tableReplacer.Bytes())
+
+	err = doc.WriteToFile("./test/out.docx")
+	if err != nil {
+		panic(err)
+		return
+	}
+}
+
+func docReplace() {
 	expr.AddFunction("current_date", func(params ...any) (any, error) {
 		return time.Now().Format(time.DateOnly), nil
 	})
