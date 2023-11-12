@@ -121,13 +121,13 @@ func (xnode *xmlNode) isRowElement() bool {
 func (xnode *xmlNode) HaveParams() bool {
 	buf := xnode.AllContents()
 
-	// if bytes.Contains(buf, []byte("{{")) && !bytes.Contains(buf, []byte("}}")) {
+	// if bytes.Contains(buf, []byte(leftDelim)) && !bytes.Contains(buf, []byte(rightDelim)) {
 	// 	log.Printf("ERROR: Broken param: [%s]", string(buf))
 	// 	log.Printf("Param node: [%+v]", xnode)
 	// }
 
-	have := bytes.Contains(buf, []byte("{{"))        // start
-	have = have && bytes.Contains(buf, []byte("}}")) // end
+	have := bytes.Contains(buf, []byte(leftDelim))         // start
+	have = have && bytes.Contains(buf, []byte(rightDelim)) // end
 	return have
 }
 

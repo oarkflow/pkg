@@ -10,6 +10,7 @@ import (
 	"os"
 	"path"
 	"reflect"
+	"regexp"
 	"strings"
 )
 
@@ -19,9 +20,12 @@ var t *Template
 type Template struct {
 	path string
 	file *os.File
-	zipw *zip.Writer     // zip writer
-	zipr *zip.ReadCloser // zip reader
-
+	zipw *zip.Writer // zip writer
+	zipr *zip.Reader // zip reader
+	// document headers
+	documentHeaders map[string]*zip.File
+	// document footer
+	documentFooters map[string]*zip.File
 	// save all zip files here so we can build it again
 	files map[string]*zip.File
 	// content type document file
@@ -41,19 +45,48 @@ type Template struct {
 
 // OpenTemplate .. docpath local file
 func OpenTemplate(docpath string) (*Template, error) {
-	var err error
+	docBytes, err := os.ReadFile(docpath)
+	if err != nil {
+		return nil, err
+	}
+	tmpl, err := OpenTemplateWithBytes(docBytes)
+	tmpl.path = docpath
+	return tmpl, err
+}
 
+// OpenTemplateWithURL .. docpath is remote url
+func OpenTemplateWithURL(docurl string) (*Template, error) {
+	docBytes, err := downloadFileAsBytes(docurl)
+	if err != nil {
+		return nil, err
+	}
+	tpl, err := OpenTemplateWithBytes(docBytes)
+	if err != nil {
+		return nil, err
+	}
+	return tpl, nil
+}
+
+var (
+	documentHeadersRegx = regexp.MustCompile(`word/header[0-9]+.xml`)
+	documentFootersRegx = regexp.MustCompile(`word/footer[0-9]+.xml`)
+)
+
+// OpenTemplateWithBytes docBytes is bytes
+func OpenTemplateWithBytes(docBytes []byte) (*Template, error) {
 	// Init doc template
 	t = &Template{
-		path:         docpath,
-		files:        map[string]*zip.File{},
-		documentRels: map[string]*zip.File{},
-		added:        map[string][]byte{},
-		modified:     map[string][]byte{},
+		files:           map[string]*zip.File{},
+		documentRels:    map[string]*zip.File{},
+		documentHeaders: map[string]*zip.File{},
+		documentFooters: map[string]*zip.File{},
+		added:           map[string][]byte{},
+		modified:        map[string][]byte{},
 	}
 
+	var err error
 	// Unzip
-	if t.zipr, err = zip.OpenReader(t.path); err != nil {
+	if t.zipr, err = zip.NewReader(bytes.NewReader(docBytes), int64(len(docBytes))); err != nil {
 		return nil, err
 	}
 
@@ -69,7 +102,12 @@ func OpenTemplate(docpath string) (*Template, error) {
 		if path.Ext(f.Name) == ".rels" {
 			t.documentRels[f.Name] = f
 		}
-
+		if documentHeadersRegx.MatchString(f.Name) {
+			t.documentHeaders[f.Name] = f
+		}
+		if documentFootersRegx.MatchString(f.Name) {
+			t.documentFooters[f.Name] = f
+		}
 	}
 
 	if t.documentMain == nil {
@@ -77,20 +115,6 @@ func OpenTemplate(docpath string) (*Template, error) {
 	}
 
 	return t, nil
-}
-
-// OpenTemplateWithURL .. docpath is remote url
-func OpenTemplateWithURL(docurl string) (tpl *Template, err error) {
-	docpath, err := downloadFile(docurl)
-	if err != nil {
-		return nil, err
-	}
-	defer os.Remove(docpath)
-	tpl, err = OpenTemplate(docpath)
-	if err != nil {
-		return nil, err
-	}
-	return
 }
 
 // Convert given bytes to struct of xml nodes
@@ -162,7 +186,17 @@ func (t *Template) Params(v interface{}) {
 		}
 	}
 
-	f := t.documentMain // TODO: loop all xml files
+	t.doReplace(t.documentMain)
+
+	for _, documentHeader := range t.documentHeaders {
+		t.doReplace(documentHeader)
+	}
+	for _, documentFooter := range t.documentFooters {
+		t.doReplace(documentFooter)
+	}
+}
+
+func (t *Template) doReplace(f *zip.File) {
 	xnode := t.fileToXMLStruct(f.Name)
 
 	// Enchance some markup (removed when building XML in the end)
@@ -302,7 +336,7 @@ func (t *Template) expandPlaceholders(xnode *xmlNode) {
 						}
 						if rowParam.AbsoluteKey == p.CompactKey {
 							isMatch = true
-							placeholders = append(placeholders, "{{"+p.AbsoluteKey+trigger+"}}")
+							placeholders = append(placeholders, leftDelim+p.AbsoluteKey+trigger+rightDelim)
 						}
 					})
 
@@ -364,7 +398,7 @@ func (t *Template) replaceSingleParams(xnode *xmlNode, triggerParamOnly bool) {
 			return
 		}
 
-		if bytes.Contains(n.Content, []byte("{{")) {
+		if bytes.Contains(n.Content, []byte(leftDelim)) {
 			// Try to replace on node that contains possible placeholder
 			t.params.Walk(func(p *Param) {
 				// Only string and image param to replace
@@ -485,7 +519,7 @@ func (t *Template) fixBrokenPlaceholders(xnode *xmlNode) {
 			if isMatchSingleLeftPlaceholder {
 				isMatchSingleRightPlaceholder = t.matchSingleRightPlaceholder(string(xnode.Content))
 				if isMatchSingleRightPlaceholder {
-					xnode.Content = xnode.Content[bytes.Index(xnode.Content, []byte("}}"))+2:]
+					xnode.Content = xnode.Content[bytes.Index(xnode.Content, []byte(rightDelim))+2:]
 				} else {
 					xnode.delete()
 					return
@@ -494,7 +528,7 @@ func (t *Template) fixBrokenPlaceholders(xnode *xmlNode) {
 			// Match left {{  to fix broken
 			isMatchSingleLeftPlaceholder = t.matchSingleLeftPlaceholder(string(xnode.Content))
 			if isMatchSingleLeftPlaceholder {
-				xnode.Content = append(xnode.Content, contents[bytes.Index(contents, xnode.Content)+len(xnode.Content):bytes.Index(contents, []byte("}}"))+2]...)
+				xnode.Content = append(xnode.Content, contents[bytes.Index(contents, xnode.Content)+len(xnode.Content):bytes.Index(contents, []byte(rightDelim))+2]...)
 			}
 			contents = contents[bytes.Index(contents, xnode.Content)+len(xnode.Content):]
 		})
@@ -586,7 +620,7 @@ func (t *Template) matchSingleLeftPlaceholder(content string) bool {
 	for i, char := range content {
 		if i > 0 {
 			if char == '{' && content[i-1] == '{' {
-				stack = append(stack, "{{")
+				stack = append(stack, leftDelim)
 			} else if char == '}' && content[i-1] == '}' && len(stack) > 0 {
 				stack = stack[:len(stack)-1]
 			}
@@ -603,7 +637,7 @@ func (t *Template) matchSingleRightPlaceholder(content string) bool {
 	for i, char := range content {
 		if i > 0 {
 			if char == '{' && content[i-1] == '{' {
-				stack = append(stack, "{{")
+				stack = append(stack, leftDelim)
 			} else if char == '}' && content[i-1] == '}' {
 				if len(stack) > 0 {
 					stack = stack[:len(stack)-1]

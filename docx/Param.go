@@ -10,6 +10,7 @@ import (
 var (
 	leftDelim    = `{`
 	rightDelim   = `}`
+	keyPattern   = `#`
 	paramPattern = `%s(#|)([\w\.]+?)(| .*?)(| [:a-z]+?)%s`
 	paramRegex   *regexp.Regexp
 )
@@ -112,7 +113,7 @@ func (p *Param) Placeholder() string {
 	if p.Trigger != nil {
 		trigger = " " + p.Trigger.String()
 	}
-	return "{{" + p.AbsoluteKey + trigger + "}}"
+	return leftDelim + p.AbsoluteKey + trigger + rightDelim
 }
 
 // PlaceholderKey .. {{#Key}}
@@ -121,27 +122,27 @@ func (p *Param) PlaceholderKey() string {
 	if p.Trigger != nil {
 		trigger = " " + p.Trigger.String()
 	}
-	return "{{#" + p.AbsoluteKey + trigger + "}}"
+	return leftDelim + keyPattern + p.AbsoluteKey + trigger + rightDelim
 }
 
 // PlaceholderInline .. {{Key ,}}
 func (p *Param) PlaceholderInline() string {
-	return "{{" + p.AbsoluteKey + " " // "{{Key " - space suffix
+	return leftDelim + p.AbsoluteKey + " " // "{{Key " - space suffix
 }
 
 // PlaceholderKeyInline .. {{#Key ,}}
 func (p *Param) PlaceholderKeyInline() string {
-	return "{{#" + p.AbsoluteKey + " " // "{{#Key " - space suffix
+	return leftDelim + keyPattern + p.AbsoluteKey + " " // "{{#Key " - space suffix
 }
 
 // PlaceholderPrefix .. {{Key
 func (p *Param) PlaceholderPrefix() string {
-	return "{{" + p.AbsoluteKey // "{{Key"
+	return leftDelim + p.AbsoluteKey // "{{Key"
 }
 
 // PlaceholderKeyPrefix .. {{#Key
 func (p *Param) PlaceholderKeyPrefix() string {
-	return "{{#" + p.AbsoluteKey // "{{#Key"
+	return leftDelim + keyPattern + p.AbsoluteKey // "{{#Key"
 }
 
 // ToCompact - convert AbsoluteKey placeholder to ComplexKey placeholder
@@ -215,7 +216,7 @@ func (p *Param) extractTriggerFrom(buf []byte) *ParamTrigger {
 		buf := bytes.SplitN(buf, bpref, 2)[1]
 
 		// Remove placeholder suffix and only raw trigger part left
-		buf = bytes.SplitN(buf, []byte("}}"), 2)[0]
+		buf = bytes.SplitN(buf, []byte(rightDelim), 2)[0]
 
 		p.Trigger = NewParamTrigger(buf)
 		return p.Trigger
