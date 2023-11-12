@@ -160,7 +160,7 @@ func (d *Document) Replace(key, value string) error {
 	return nil
 }
 
-// Get placeholders in a human readable form
+// GetPlaceHoldersList Get placeholders in a human readable form
 func (d *Document) GetPlaceHoldersList() ([]string, error) {
 	var placeholdersTextList []string
 

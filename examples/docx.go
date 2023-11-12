@@ -58,7 +58,7 @@ func tableParser() {
 	}
 }
 
-func docReplace() {
+func main() {
 	expr.AddFunction("current_date", func(params ...any) (any, error) {
 		return time.Now().Format(time.DateOnly), nil
 	})
@@ -101,10 +101,14 @@ func docReplace() {
 		}
 		return "", nil
 	})
-	doc := "/Users/sujit/Sites/paramarsha/frontend/public/test.docx"
+	doc := "/home/sujit/Projects/paramarsha/frontend/public/test.docx"
 	start := time.Now()
-	fmt.Println(docx.Placeholders(doc))
-	err := docx.PrepareDocxToFile(doc, map[string]interface{}{
+	placeholders, err := docx.Placeholders(doc)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(placeholders)
+	err = docx.PrepareDocxToFile(doc, map[string]interface{}{
 		"customer": map[string]any{
 			"dob": "1989-04-10",
 		},

@@ -7,6 +7,15 @@ import (
 	"strings"
 )
 
+var (
+	loopKeyStart      = `{#`
+	loopKeyEnd        = `{/#}`
+	conditionKeyStart = `{@`
+	conditionKeyEnd   = `{/@}`
+	includeKeyStart   = `{:`
+	includeKeyEnd     = `{/:}`
+)
+
 func PrepareDocxToFile(file string, data map[string]interface{}, outputFile ...string) error {
 	var output string
 	if len(outputFile) == 0 {
@@ -32,6 +41,15 @@ type PType struct {
 	Arguments   []Argument `json:"arguments"`
 }
 
+func IsControlPlaceholder(placeholder string) bool {
+	return strings.HasPrefix(placeholder, loopKeyStart) ||
+		strings.HasPrefix(placeholder, conditionKeyStart) ||
+		strings.HasPrefix(placeholder, includeKeyStart) ||
+		strings.EqualFold(placeholder, loopKeyEnd) ||
+		strings.EqualFold(placeholder, conditionKeyEnd) ||
+		strings.EqualFold(placeholder, includeKeyEnd)
+}
+
 func Placeholders(file string) ([]PType, error) {
 	var ptypes []PType
 	doc, err := Open(file)
@@ -43,27 +61,29 @@ func Placeholders(file string) ([]PType, error) {
 		return nil, err
 	}
 	for _, placeholder := range placeholders {
-		placeholder = strReplacer.Replace(placeholder)
-		if IsFunction(placeholder) {
-			functions, err := ParseExpr(placeholder)
-			if err != nil {
-				return nil, err
-			}
-			for _, f := range functions {
-				ptypes = append(ptypes, PType{Type: "function", Placeholder: f.Name, Arguments: f.Arguments})
-				for _, a := range f.Arguments {
-					if a.Type == "variable" {
-						ptypes = append(ptypes, PType{Type: a.Type, Placeholder: a.Name})
+		if !IsControlPlaceholder(placeholder) {
+			placeholder = strReplacer.Replace(placeholder)
+			if IsFunction(placeholder) {
+				functions, err := ParseExpr(placeholder)
+				if err != nil {
+					return nil, err
+				}
+				for _, f := range functions {
+					ptypes = append(ptypes, PType{Type: "function", Placeholder: f.Name, Arguments: f.Arguments})
+					for _, a := range f.Arguments {
+						if a.Type == "variable" {
+							ptypes = append(ptypes, PType{Type: a.Type, Placeholder: a.Name})
+						}
 					}
 				}
+			} else {
+				node, err := parser.ParseExpr(placeholder)
+				if err != nil {
+					return nil, err
+				}
+				arg := extractArg(node)
+				ptypes = append(ptypes, PType{Type: arg.Type, Placeholder: placeholder})
 			}
-		} else {
-			node, err := parser.ParseExpr(placeholder)
-			if err != nil {
-				return nil, err
-			}
-			arg := extractArg(node)
-			ptypes = append(ptypes, PType{Type: arg.Type, Placeholder: placeholder})
 		}
 	}
 	return ptypes, nil
