@@ -1,4 +1,4 @@
-package docx
+package replacer
 
 import (
 	"archive/zip"
@@ -7,6 +7,8 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"image"
+	"image/png"
 	"io"
 	"io/fs"
 	"io/ioutil"
@@ -51,27 +53,29 @@ func (d ZipFile) close() error {
 }
 
 type ReplaceDocx struct {
-	zipReader ZipData
-	content   string
-	links     string
-	headers   map[string]string
-	footers   map[string]string
-	images    map[string]string
-	imgIndex  int32
-	refIndex  int32
+	zipReader   ZipData
+	content     string
+	links       string
+	headers     map[string]string
+	footers     map[string]string
+	images      map[string]string
+	imagesSizes map[string]image.Config
+	imgIndex    int32
+	refIndex    int32
 }
 
 func (r *ReplaceDocx) Editable() *Docx {
 	return &Docx{
-		files:      r.zipReader.files(),
-		content:    r.content,
-		links:      r.links,
-		headers:    r.headers,
-		footers:    r.footers,
-		images:     r.images,
-		appendFile: make(map[string][]byte),
-		imgIndex:   r.imgIndex,
-		refIndex:   r.refIndex,
+		files:       r.zipReader.files(),
+		content:     r.content,
+		links:       r.links,
+		headers:     r.headers,
+		footers:     r.footers,
+		images:      r.images,
+		imagesSizes: r.imagesSizes,
+		appendFile:  make(map[string][]byte),
+		imgIndex:    r.imgIndex,
+		refIndex:    r.refIndex,
 	}
 }
 
@@ -80,15 +84,16 @@ func (r *ReplaceDocx) Close() error {
 }
 
 type Docx struct {
-	files      []*zip.File
-	content    string
-	links      string
-	headers    map[string]string
-	footers    map[string]string
-	images     map[string]string
-	imgIndex   int32
-	refIndex   int32
-	appendFile map[string][]byte
+	files       []*zip.File
+	content     string
+	links       string
+	headers     map[string]string
+	footers     map[string]string
+	images      map[string]string
+	imagesSizes map[string]image.Config
+	imgIndex    int32
+	refIndex    int32
+	appendFile  map[string][]byte
 }
 
 func (d *Docx) GetContent() string {
@@ -392,7 +397,28 @@ func ReadDocx(reader ZipData) (*ReplaceDocx, error) {
 
 	headers, footers, _ := readHeaderFooter(reader.files())
 	images, _ := retrieveImageFilenames(reader.files())
-	return &ReplaceDocx{zipReader: reader, content: content, links: links, headers: headers, footers: footers, images: images, imgIndex: int32(imgid), refIndex: int32(refid)}, nil
+	imagesSizes, _ := retrieveImagesSizes(reader.files())
+	return &ReplaceDocx{zipReader: reader, content: content, links: links, headers: headers, footers: footers, images: images, imagesSizes: imagesSizes, imgIndex: int32(imgid), refIndex: int32(refid)}, nil
+}
+
+func retrieveImagesSizes(files []*zip.File) (map[string]image.Config, error) {
+	images := make(map[string]image.Config)
+	for _, f := range files {
+		if strings.HasPrefix(f.Name, "word/media/") {
+			read, err := f.Open()
+			if err != nil {
+				return nil, err
+			}
+
+			im, err := png.DecodeConfig(read)
+			if err != nil {
+				return nil, err
+			}
+
+			images[f.Name] = im
+		}
+	}
+	return images, nil
 }
 
 func retrieveImageFilenames(files []*zip.File) (map[string]string, error) {
@@ -589,4 +615,8 @@ func (d *Docx) ReplaceImage(oldImage string, newImage string) (err error) {
 
 func (d *Docx) ImagesLen() int {
 	return len(d.images)
+}
+
+func (d *Docx) ImagesSizes() map[string]image.Config {
+	return d.imagesSizes
 }

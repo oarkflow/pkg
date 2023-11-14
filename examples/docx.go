@@ -8,6 +8,7 @@ import (
 	"github.com/oarkflow/expr"
 
 	"github.com/oarkflow/pkg/docx"
+	"github.com/oarkflow/pkg/docx/replacer"
 	"github.com/oarkflow/pkg/gender"
 	"github.com/oarkflow/pkg/timeutil"
 )
@@ -19,14 +20,22 @@ func main() {
 func textReplace() {
 	text := "TO WHOM IT MAY CONCERN"
 	doc := "./test.docx"
-	r, err := docx.ReadDocxFile(doc)
+	r, err := replacer.ReadDocxFile(doc)
 	if err != nil {
 		panic(err)
 	}
 	defer r.Close()
 	docx1 := r.Editable()
+	parser, err := docx1.Parser()
+	if err != nil {
+		panic(err)
+	}
+	parser.AddNewBlock("I'm loving this")
 	docx1.Replace(text, "EXPERIENCE CERTIFICATE", -1)
-	docx1.WriteToFile("./new_result_1.docx")
+	docx1.Compile("./new_result_1.docx", parser)
+	for i, p := range parser.WP {
+		fmt.Println(i, p)
+	}
 }
 
 func placeholderParser() {
