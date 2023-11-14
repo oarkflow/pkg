@@ -11,6 +11,8 @@ import (
 	"io/fs"
 	"io/ioutil"
 	"os"
+	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -55,16 +57,21 @@ type ReplaceDocx struct {
 	headers   map[string]string
 	footers   map[string]string
 	images    map[string]string
+	imgIndex  int32
+	refIndex  int32
 }
 
 func (r *ReplaceDocx) Editable() *Docx {
 	return &Docx{
-		files:   r.zipReader.files(),
-		content: r.content,
-		links:   r.links,
-		headers: r.headers,
-		footers: r.footers,
-		images:  r.images,
+		files:      r.zipReader.files(),
+		content:    r.content,
+		links:      r.links,
+		headers:    r.headers,
+		footers:    r.footers,
+		images:     r.images,
+		appendFile: make(map[string][]byte),
+		imgIndex:   r.imgIndex,
+		refIndex:   r.refIndex,
 	}
 }
 
@@ -73,12 +80,15 @@ func (r *ReplaceDocx) Close() error {
 }
 
 type Docx struct {
-	files   []*zip.File
-	content string
-	links   string
-	headers map[string]string
-	footers map[string]string
-	images  map[string]string
+	files      []*zip.File
+	content    string
+	links      string
+	headers    map[string]string
+	footers    map[string]string
+	images     map[string]string
+	imgIndex   int32
+	refIndex   int32
+	appendFile map[string][]byte
 }
 
 func (d *Docx) GetContent() string {
@@ -91,6 +101,29 @@ func (d *Docx) SetContent(content string) {
 
 func (d *Docx) ReplaceRaw(oldString string, newString string, num int) {
 	d.content = strings.Replace(d.content, oldString, newString, num)
+}
+
+func (d *Docx) ReplaceTagContains(oldTag string, oldstring string, newString string) error {
+	reg, err := regexp.Compile(`<` + oldTag + `>.*?</\` + oldTag + ">")
+	if err != nil {
+		return err
+	}
+	for _, content := range reg.FindAllString(d.content, -1) {
+		if strings.Contains(content, oldstring) {
+			d.content = strings.Replace(d.content, content, newString, 1)
+		}
+	}
+	return nil
+}
+
+func (d *Docx) ReplaceStartEnd(start, end string, new string, num int) {
+	indexstart := strings.Index(d.content, start)
+	indexend := strings.Index(d.content, end)
+	if indexend == -1 || indexstart == -1 {
+		return
+	}
+	indexend += len(end)
+	d.content = strings.Replace(d.content, d.content[indexstart:indexend], new, num)
 }
 
 func (d *Docx) Replace(oldString string, newString string, num int) (err error) {
@@ -142,6 +175,7 @@ func (d *Docx) WriteToFile(path string) (err error) {
 
 func (d *Docx) Write(ioWriter io.Writer) (err error) {
 	w := zip.NewWriter(ioWriter)
+	defer w.Close()
 	for _, file := range d.files {
 		var writer io.Writer
 		var readCloser io.ReadCloser
@@ -173,8 +207,72 @@ func (d *Docx) Write(ioWriter io.Writer) (err error) {
 			writer.Write(streamToByte(readCloser))
 		}
 	}
-	w.Close()
+	for fileName, appendFile := range d.appendFile {
+		writer, err := w.Create(fileName)
+		if err != nil {
+			return err
+		}
+		writer.Write([]byte(appendFile))
+	}
 	return
+}
+
+func (d *Docx) AddPic(dir string) (string, string, error) {
+	if _, err := os.Stat(dir); errors.Is(err, os.ErrNotExist) {
+		return "", "", err
+	}
+	file, err := ioutil.ReadFile(dir)
+	if err != nil {
+		return "", "", err
+	}
+	d.imgIndex++
+	d.refIndex++
+	idIndx := strconv.Itoa(int(d.imgIndex))
+	refIndx := strconv.Itoa(int(d.refIndex))
+	fileName := d.fileName(dir)
+	imgName := "image" + idIndx + d.fileSuffix(fileName)
+	id := "rId" + refIndx
+	sb := strings.Builder{}
+	sb.WriteString(`<Relationship Id="rId`)
+	sb.WriteString(idIndx)
+	sb.WriteString(`" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/`)
+	sb.WriteString(imgName)
+	sb.WriteString(`"/>`)
+	d.links += sb.String()
+	d.appendFile["word/media/"+imgName] = file
+	return refIndx, id, err
+}
+
+func (d *Docx) AddPicStream(buf []byte, suffix string) (string, string) {
+	d.imgIndex++
+	d.refIndex++
+	idIndx := strconv.Itoa(int(d.imgIndex))
+	refIndx := strconv.Itoa(int(d.refIndex))
+	imgName := "image" + idIndx + suffix
+	id := "rId" + refIndx
+
+	sb := strings.Builder{}
+	sb.WriteString(`<Relationship Id="rId`)
+	sb.WriteString(refIndx)
+	sb.WriteString(`" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/`)
+	sb.WriteString(imgName)
+	sb.WriteString(`"/></Relationships>`)
+	d.links = strings.Replace(d.links, "</Relationships>", sb.String(), 1)
+	d.appendFile["word/media/"+imgName] = buf
+	return refIndx, id
+}
+
+func (d *Docx) fileName(dir string) string {
+	list := strings.Split(dir, string(os.PathSeparator))
+	return list[len(list)-1]
+}
+
+func (d *Docx) fileSuffix(file string) string {
+	list := strings.Split(file, ".")
+	if len(list) > 1 {
+		return "." + list[len(list)-1]
+	}
+	return ""
 }
 
 func replaceHeaderFooter(headerFooter map[string]string, oldString string, newString string) (err error) {
@@ -233,14 +331,14 @@ func ReadDocx(reader ZipData) (*ReplaceDocx, error) {
 		return nil, err
 	}
 
-	links, err := readLinks(reader.files())
+	refid, imgid, links, err := readLinks(reader.files())
 	if err != nil {
 		return nil, err
 	}
 
 	headers, footers, _ := readHeaderFooter(reader.files())
 	images, _ := retrieveImageFilenames(reader.files())
-	return &ReplaceDocx{zipReader: reader, content: content, links: links, headers: headers, footers: footers, images: images}, nil
+	return &ReplaceDocx{zipReader: reader, content: content, links: links, headers: headers, footers: footers, images: images, imgIndex: int32(imgid), refIndex: int32(refid)}, nil
 }
 
 func retrieveImageFilenames(files []*zip.File) (map[string]string, error) {
@@ -310,19 +408,42 @@ func readText(files []*zip.File) (text string, err error) {
 	return
 }
 
-func readLinks(files []*zip.File) (text string, err error) {
+var imgReg = regexp.MustCompile(`"media/image\d+`)
+var refReg = regexp.MustCompile(`"rId\d+`)
+
+func readLinks(files []*zip.File) (refid, imgid int, text string, err error) {
 	var documentFile *zip.File
 	documentFile, err = retrieveLinkDoc(files)
 	if err != nil {
-		return text, err
+		return
 	}
 	var documentReader io.ReadCloser
 	documentReader, err = documentFile.Open()
 	if err != nil {
-		return text, err
+		return
 	}
 
 	text, err = wordDocToString(documentReader)
+	for _, v := range imgReg.FindAllString(text, -1) {
+		id := strings.TrimPrefix(v, `"media/image`)
+		mid, err := strconv.Atoi(id)
+		if err != nil {
+			continue
+		}
+		if mid > imgid {
+			imgid = mid
+		}
+	}
+	for _, v := range refReg.FindAllString(text, -1) {
+		id := strings.TrimPrefix(v, `"rId`)
+		mid, err := strconv.Atoi(id)
+		if err != nil {
+			continue
+		}
+		if mid > refid {
+			refid = mid
+		}
+	}
 	return
 }
 
@@ -331,7 +452,9 @@ func wordDocToString(reader io.Reader) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return string(b), nil
+	data := string(b)
+
+	return data, nil
 }
 
 func retrieveWordDoc(files []*zip.File) (file *zip.File, err error) {
