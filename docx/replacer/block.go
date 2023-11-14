@@ -7,7 +7,6 @@ import (
 
 func (d *Docx) CreateStructedBlock(simpleword string, arr ...Font) Block {
 	block := Block{
-		//	Head:   "<w:p><w:pPr><w:pStyle w:val=\"Normal\"/><w:rPr></w:rPr></w:pPr><w:r><w:rPr></w:rPr><w:t>",
 		Head: Font{
 			FontSize: 15,
 			FontName: "Calibri",
@@ -41,7 +40,6 @@ func (d *Docx) CreateStructedBlock(simpleword string, arr ...Font) Block {
 			block.Head.Color = arg.Color
 		}
 	}
-	//	block := fmt.Sprintf("<w:p><w:pPr><w:pStyle w:val=\"Normal\"/><w:rPr></w:rPr></w:pPr><w:r><w:rPr></w:rPr><w:t>%s</w:t></w:r></w:p>", simpleword)
 	return block
 }
 

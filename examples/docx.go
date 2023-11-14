@@ -33,9 +33,6 @@ func textReplace() {
 	parser.AddNewBlock("I'm loving this")
 	docx1.Replace(text, "EXPERIENCE CERTIFICATE", -1)
 	docx1.Compile("./new_result_1.docx", parser)
-	for i, p := range parser.WP {
-		fmt.Println(i, p)
-	}
 }
 
 func placeholderParser() {
