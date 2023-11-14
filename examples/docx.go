@@ -12,53 +12,24 @@ import (
 	"github.com/oarkflow/pkg/timeutil"
 )
 
-func tableParser() {
-	replaceMap := [][]docx.TablePlaceholder{
-		{
-			{
-				Key:   "Name",
-				Value: "John Doe",
-			},
-			{
-				Key:   "Value",
-				Value: "42",
-			},
-		},
-		{
-			{
-				Key:   "Name",
-				Value: "Jane Doe",
-			},
-			{
-				Key:   "Value",
-				Value: "43",
-			},
-		},
-	}
-
-	doc, err := docx.Open("/Users/sujit/Sites/pkg/examples/table_template.docx")
-	if err != nil {
-		panic(err)
-		return
-	}
-
-	tableReplacer := docx.NewTableReplacer(doc.GetFile(docx.DocumentXml))
-	err = tableReplacer.Replace("t1", replaceMap)
-	if err != nil {
-		panic(err)
-		return
-	}
-
-	doc.SetFile(docx.DocumentXml, tableReplacer.Bytes())
-
-	err = doc.WriteToFile("./test/out.docx")
-	if err != nil {
-		panic(err)
-		return
-	}
+func main() {
+	textReplace()
 }
 
-func main() {
+func textReplace() {
+	text := "TO WHOM IT MAY CONCERN"
+	doc := "./test.docx"
+	r, err := docx.ReadDocxFile(doc)
+	if err != nil {
+		panic(err)
+	}
+	defer r.Close()
+	docx1 := r.Editable()
+	docx1.Replace(text, "EXPERIENCE CERTIFICATE", -1)
+	docx1.WriteToFile("./new_result_1.docx")
+}
+
+func placeholderParser() {
 	expr.AddFunction("current_date", func(params ...any) (any, error) {
 		return time.Now().Format(time.DateOnly), nil
 	})
