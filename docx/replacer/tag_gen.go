@@ -54,26 +54,20 @@ func (d *Docx) AddBlockAfterElement(elemNum int, element string, body []string) 
 	if f == 0 {
 		var el []string
 		el = append(el, element)
-		//	fmt.Println("60")
 		return el
 	}
 	if f < elemNum {
 		body = append(body, element)
-		//		fmt.Println("65")
 		return body
 	}
 	var newBody []string
 	for i := 0; i < f; i++ {
 
 		newBody = append(newBody, body[i])
-		//		fmt.Printf("i: %d, elemNum: %d\n", i, elemNum-1)
 		if i == elemNum-1 {
-			//			fmt.Printf("append: %s\n", element)
 			newBody = append(newBody, element)
 		}
 	}
-	//	fmt.Println("75")
-	//	fmt.Printf("f: %d elem: %d\n", f, elemNum)
 	return newBody
 }
 func (d *Docx) AddBlockBeforeElement(elemNum int, element string, body []string) []string {
@@ -107,7 +101,6 @@ func (d *Docx) BodyParse(body string) []string {
 				bodyElems = append(bodyElems, parag[1])
 			}
 		}
-		// fmt.Printf("item: %s\n ", item)
 	}
 	return bodyElems
 }
@@ -127,8 +120,6 @@ func (d *Docx) ReplaceWithTag(oldString string, newString string) (err error) {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("old: %s\nnew: %s\n", oldString, newString)
-	fmt.Println(d.content)
 	d.content = strings.Replace(d.content, "<w:t>{div id=&apos;1&apos;}{/div}</w:t>", `
 	<w:p>
             <w:pPr>

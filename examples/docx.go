@@ -14,7 +14,8 @@ import (
 )
 
 func main() {
-	textReplace()
+	// textReplace()
+	placeholderParser()
 }
 
 func textReplace() {
@@ -26,12 +27,14 @@ func textReplace() {
 	}
 	defer r.Close()
 	docx1 := r.Editable()
+	docx1.GetContent()
+	docx1.Replace(text, "EXPERIENCE CERTIFICATE", -1)
+	docx1.ReplaceStartEnd("responsibilities", "Golang", "are the", -1)
 	parser, err := docx1.Parser()
 	if err != nil {
 		panic(err)
 	}
 	parser.AddNewBlock("I'm loving this")
-	docx1.Replace(text, "EXPERIENCE CERTIFICATE", -1)
 	docx1.Compile("./new_result_1.docx", parser)
 }
 
@@ -78,14 +81,9 @@ func placeholderParser() {
 		}
 		return "", nil
 	})
-	doc := "/home/sujit/Projects/paramarsha/frontend/public/test.docx"
+	doc := "./test.docx"
 	start := time.Now()
-	placeholders, err := docx.Placeholders(doc)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println(placeholders)
-	err = docx.PrepareDocxToFile(doc, map[string]interface{}{
+	err := docx.PrepareDocxToFile(doc, map[string]interface{}{
 		"customer": map[string]any{
 			"dob": "1989-04-10",
 		},
@@ -104,6 +102,5 @@ func placeholderParser() {
 	if err != nil {
 		panic(err)
 	}
-	// ([a-zA-Z_]\w*)\(([^()]|(?R))*\)
 	fmt.Println(fmt.Sprintf("%s", time.Since(start)))
 }

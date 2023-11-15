@@ -47,7 +47,6 @@ func (d *Docx) Parser() (Document, error) {
 		case "w:p":
 			body, err := wpParser(item.Body)
 			if err != nil {
-				fmt.Println(err)
 				return Document{}, err
 			}
 			doc.WP = append(doc.WP, WP{
@@ -127,13 +126,11 @@ func (d *Document) GetBlockByID(id int) WP {
 }
 
 func (d *Docx) Compile(path string, doc Document) error {
-
 	head, _, footer := d.ParseNode()
 	body := "<w:body>" + doc.BodyToString() + "</w:body>"
 	xml := head + body + footer
 	d.content = xml
-	err := d.WriteToFile(path)
-	return err
+	return d.WriteToFile(path)
 }
 func (d *Document) BodyToString() string {
 	var body string

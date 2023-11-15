@@ -45,34 +45,19 @@ func (r *Replacer) Replace(placeholderKey string, value string) error {
 		!strings.ContainsRune(placeholderKey, CloseDelimiter) {
 		placeholderKey = AddPlaceholderDelimiter(placeholderKey)
 	}
-
-	// find all occurrences of the placeholderKey inside r.placeholders
 	found := false
 	for i := 0; i < len(r.placeholders); i++ {
 		placeholder := r.placeholders[i]
-
 		if placeholder.Text(r.document) == placeholderKey {
 			found = true
-
-			// ensure html escaping of special chars
-			// reassign to prevent overwriting the actual value which would cause multiple-escapes
 			tmpVal := html.EscapeString(value)
-			valueInBytes := bytes.Replace(
-				[]byte(tmpVal),
-				[]byte("\n"), []byte("</w:t><w:br/><w:t>"), -1)
-
-			// replace text of the placeholder'str first fragment with the actual value
+			valueInBytes := bytes.Replace([]byte(tmpVal), []byte("\n"), []byte("</w:t><w:br/><w:t>"), -1)
 			r.replaceFragmentValue(placeholder.Fragments[0], string(valueInBytes))
-
-			// the other fragments of the placeholder are cut, leaving only the value inside the document.
 			for i := 1; i < len(placeholder.Fragments); i++ {
 				r.cutFragment(placeholder.Fragments[i])
 			}
 		}
 	}
-
-	// all replacing actions might potentially screw up the XML structure
-	// in order to capture this, all tags are re-validated after replacing a value
 	if err := ValidatePositions(r.document, r.distinctRuns); err != nil {
 		return fmt.Errorf("replace produced invalid result: %w", err)
 	}

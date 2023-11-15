@@ -9,6 +9,12 @@ import (
 	"regexp"
 )
 
+var (
+	pTagRegex = regexp.MustCompile(`(?U)<w:p[^>]*>(.*)</w:p>`)
+	rTagRegex = regexp.MustCompile(`(?U)(<w:r>|<w:r .*>)(.*)(</w:r>)`)
+	tTagRegex = regexp.MustCompile(`(?U)(<w:t>|<w:t .*>)(.*)(</w:t>)`)
+)
+
 // docx zip struct
 type docx struct {
 	zipFileReader *zip.ReadCloser
@@ -100,16 +106,14 @@ func (d *docx) GenWordsList() {
 func (d *docx) getT(item string) {
 	var subStr string
 	data := item
-	reRun := regexp.MustCompile(`(?U)(<w:r>|<w:r .*>)(.*)(</w:r>)`)
-	re := regexp.MustCompile(`(?U)(<w:t>|<w:t .*>)(.*)(</w:t>)`)
 	w := new(words)
 	content := []string{}
 
-	wrMatch := reRun.FindAllStringSubmatchIndex(data, -1)
+	wrMatch := rTagRegex.FindAllStringSubmatchIndex(data, -1)
 	// loop r
 	for _, rMatch := range wrMatch {
 		rData := data[rMatch[4]:rMatch[5]]
-		wtMatch := re.FindAllStringSubmatchIndex(rData, -1)
+		wtMatch := tTagRegex.FindAllStringSubmatchIndex(rData, -1)
 		for _, match := range wtMatch {
 			subStr = rData[match[4]:match[5]]
 			content = append(content, subStr)
@@ -121,16 +125,13 @@ func (d *docx) getT(item string) {
 
 // hasP identify the paragraph
 func hasP(data string) bool {
-	re := regexp.MustCompile(`(?U)<w:p[^>]*>(.*)</w:p>`)
-	result := re.MatchString(data)
-	return result
+	return pTagRegex.MatchString(data)
 }
 
 // listP for w:p tag value
 func (d *docx) listP(data string) {
 	var result []string
-	re := regexp.MustCompile(`(?U)<w:p[^>]*(.*)</w:p>`)
-	for _, match := range re.FindAllStringSubmatch(data, -1) {
+	for _, match := range pTagRegex.FindAllStringSubmatch(data, -1) {
 		result = append(result, match[1])
 	}
 	for _, item := range result {
