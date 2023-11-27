@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"html"
 	"strings"
 	"sync"
 )
@@ -50,7 +49,7 @@ func (r *Replacer) Replace(placeholderKey string, value string) error {
 		placeholder := r.placeholders[i]
 		if placeholder.Text(r.document) == placeholderKey {
 			found = true
-			tmpVal := html.EscapeString(value)
+			tmpVal := value
 			valueInBytes := bytes.Replace([]byte(tmpVal), []byte("\n"), []byte("</w:t><w:br/><w:t>"), -1)
 			r.replaceFragmentValue(placeholder.Fragments[0], string(valueInBytes))
 			for i := 1; i < len(placeholder.Fragments); i++ {
