@@ -6,10 +6,8 @@ import (
 	"reflect"
 	"regexp"
 	"slices"
-	"sort"
 	"strconv"
 	"strings"
-	"sync"
 
 	"github.com/oarkflow/frame/pkg/common/xid"
 
@@ -1286,7 +1284,7 @@ func (r *Rule) Join(left *Group, operator JoinOperator, right *Group) *Join {
 	return join
 }
 
-func (r *Rule) AddHandler(handler CallbackFn) {
+func (r *Rule) OnSuccess(handler CallbackFn) {
 	r.successHandler = handler
 }
 
@@ -1377,10 +1375,10 @@ func (r *Rule) Apply(d Data, callback ...CallbackFn) (any, error) {
 				ErrorAction: r.ErrorAction,
 			}
 		}
-		if rt != nil {
-			return defaultCallbackFn(d), nil
+		if rt != nil && r.successHandler != nil {
+			return r.successHandler(rt), nil
 		}
-		return defaultCallbackFn(nil), nil
+		return defaultCallbackFn(rt), nil
 	case []map[string]any:
 		var data []map[string]any
 		for _, line := range d {
@@ -1397,7 +1395,10 @@ func (r *Rule) Apply(d Data, callback ...CallbackFn) (any, error) {
 				ErrorAction: r.ErrorAction,
 			}
 		}
-		return data, nil
+		if len(data) > 0 && r.successHandler != nil {
+			return r.successHandler(data), nil
+		}
+		return defaultCallbackFn(data), nil
 	case []any:
 		var data []map[string]any
 		for _, line := range d {
@@ -1417,104 +1418,10 @@ func (r *Rule) Apply(d Data, callback ...CallbackFn) (any, error) {
 				ErrorAction: r.ErrorAction,
 			}
 		}
-		return data, nil
-	}
-	return nil, nil
-}
-
-type Priority int
-
-const (
-	HighestPriority Priority = 1
-	LowestPriority  Priority = 0
-)
-
-type PriorityRule struct {
-	Rule     *Rule
-	Priority int
-}
-
-type Config struct {
-	Rules    []*PriorityRule
-	Priority Priority
-}
-
-type GroupRule struct {
-	mu     *sync.RWMutex
-	Key    string          `json:"key,omitempty"`
-	Rules  []*PriorityRule `json:"rules,omitempty"`
-	config Config
-}
-
-func NewRuleGroup(config ...Config) *GroupRule {
-	cfg := Config{}
-	if len(config) > 0 {
-		cfg = config[0]
-	}
-	return &GroupRule{
-		Rules:  cfg.Rules,
-		config: cfg,
-		mu:     &sync.RWMutex{},
-	}
-}
-
-func (r *GroupRule) AddRule(rule *Rule, priority int) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	r.Rules = append(r.Rules, &PriorityRule{
-		Rule:     rule,
-		Priority: priority,
-	})
-}
-
-func (r *GroupRule) ApplyHighestPriority(data Data, fn ...CallbackFn) (any, error) {
-	return r.apply(r.sortByPriority("DESC"), data, fn...)
-}
-
-func (r *GroupRule) ApplyLowestPriority(data Data, fn ...CallbackFn) (any, error) {
-	return r.apply(r.sortByPriority(), data, fn...)
-}
-
-func (r *GroupRule) Apply(data Data, fn ...CallbackFn) (any, error) {
-	if r.config.Priority == HighestPriority {
-		return r.ApplyHighestPriority(data, fn...)
-	}
-	return r.ApplyLowestPriority(data, fn...)
-}
-
-func (r *GroupRule) apply(sortedRules []*Rule, data Data, fn ...CallbackFn) (any, error) {
-	for _, rule := range sortedRules {
-		response, err := rule.Apply(data, fn...)
-		if response != nil {
-			return response, err
+		if len(data) > 0 && r.successHandler != nil {
+			return r.successHandler(data), nil
 		}
+		return defaultCallbackFn(data), nil
 	}
-	return nil, nil
+	return defaultCallbackFn(nil), nil
 }
-
-func (r *GroupRule) SortByPriority(direction ...string) []*Rule {
-	return r.sortByPriority(direction...)
-}
-
-func (r *GroupRule) sortByPriority(direction ...string) []*Rule {
-	dir := "ASC"
-	if len(direction) > 0 {
-		dir = direction[0]
-	}
-	if dir == "DESC" {
-		sort.Sort(sort.Reverse(byPriority(r.Rules)))
-	} else {
-		sort.Sort(byPriority(r.Rules))
-	}
-	res := make([]*Rule, 0, len(r.Rules))
-	for _, q := range r.Rules {
-		res = append(res, q.Rule)
-	}
-	return res
-}
-
-type byPriority []*PriorityRule
-
-func (x byPriority) Len() int           { return len(x) }
-func (x byPriority) Less(i, j int) bool { return x[i].Priority < x[j].Priority }
-func (x byPriority) Swap(i, j int)      { x[i], x[j] = x[j], x[i] }
