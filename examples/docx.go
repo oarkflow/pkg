@@ -94,9 +94,9 @@ func placeholderParser() {
 		},
 		"start_date":   "2022-09-01",
 		"end_date":     "date",
-		"position":     "Associate Developer",
-		"technologies": "Web Development in PHP/Laravel",
-	}, "Rohan Kumar Das - Work Experience Ceritificate.docx")
+		"position":     "Associate Office Administrator",
+		"technologies": "Managing Office, Working with MS Word, Excel for office operations",
+	}, "Rohan Kumar Das - Work Experience Certificate.docx")
 	if err != nil {
 		panic(err)
 	}
