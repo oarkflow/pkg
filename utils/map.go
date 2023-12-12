@@ -4,6 +4,7 @@ import (
 	"errors"
 	"sort"
 
+	"github.com/goccy/go-reflect"
 	"golang.org/x/exp/constraints"
 )
 
@@ -290,4 +291,14 @@ func SliceToMap[K comparable, T any](s1 []K, s2 []T) map[K]T {
 	}
 
 	return result
+}
+
+// IsZeroVal check if any type is its zero value
+func IsZeroVal(x interface{}) bool {
+	return x == nil || reflect.DeepEqual(x, reflect.Zero(reflect.TypeOf(x)).Interface())
+}
+
+// IsDefaultVal alias of IsZeroVal
+func IsDefaultVal(x interface{}) bool {
+	return IsZeroVal(x)
 }

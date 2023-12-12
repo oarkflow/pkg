@@ -3,8 +3,11 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"slices"
 
+	"github.com/oarkflow/pkg/maputil"
 	"github.com/oarkflow/pkg/rule"
+	"github.com/oarkflow/pkg/utils"
 )
 
 func main() {
@@ -14,7 +17,7 @@ func main() {
 }
 
 type Route interface {
-	ToRule() *rule.PriorityRule
+	ToRule(exceptFields ...string) *rule.PriorityRule
 }
 type ProviderRoute struct {
 	Provider             string `gorm:"provider" json:"provider" form:"provider" query:"provider"`
@@ -26,58 +29,39 @@ type ProviderRoute struct {
 	CarrierCode          string `gorm:"carrier_code" json:"carrier_code" form:"carrier_code" query:"carrier_code"`
 }
 
-func (route *ProviderRoute) ToRule() *rule.PriorityRule {
+func prepareConditions(route Route, exceptFields []string) *rule.PriorityRule {
 	priority := 0
 	var conditions []*rule.Condition
+	data, err := maputil.ToMap[any, map[string]any](route)
+	if err != nil {
+		return nil
+	}
+	for key, val := range data {
+		if !slices.Contains(exceptFields, key) {
+
+			if !utils.IsZeroVal(val) {
+				priority++
+				conditions = append(conditions, &rule.Condition{
+					Field:    key,
+					Operator: rule.EQ,
+					Value:    val,
+				})
+			}
+		}
+	}
 	r := rule.New()
 	r.OnSuccess(func(data rule.Data) any {
 		return route
 	})
-	if route.RouteType != "" {
-		priority++
-		conditions = append(conditions, &rule.Condition{
-			Field:    "route_type",
-			Operator: "eq",
-			Value:    route.RouteType,
-		})
-	}
-	if route.SourceAddrType != "" {
-		priority++
-		conditions = append(conditions, &rule.Condition{
-			Field:    "source_addr_type",
-			Operator: "eq",
-			Value:    route.SourceAddrType,
-		})
-	}
-	if route.SourceAddr != "" {
-		priority++
-		conditions = append(conditions, &rule.Condition{
-			Field:    "source_addr",
-			Operator: "eq",
-			Value:    route.SourceAddr,
-		})
-	}
-	if route.CountryCode != "" {
-		priority++
-		conditions = append(conditions, &rule.Condition{
-			Field:    "country_code",
-			Operator: "eq",
-			Value:    route.CountryCode,
-		})
-	}
-	if route.CarrierCode != "" {
-		priority++
-		conditions = append(conditions, &rule.Condition{
-			Field:    "carrier_code",
-			Operator: "eq",
-			Value:    route.CarrierCode,
-		})
-	}
 	r.And(conditions...)
 	return &rule.PriorityRule{
 		Rule:     r,
 		Priority: priority,
 	}
+}
+
+func (route *ProviderRoute) ToRule(exceptFields ...string) *rule.PriorityRule {
+	return prepareConditions(route, exceptFields)
 }
 
 type UserRoute struct {
@@ -92,66 +76,29 @@ type UserRoute struct {
 	UserID         uint   `gorm:"user_id" json:"user_id" form:"user_id" query:"user_id"`
 }
 
-func (route *UserRoute) ToRule() *rule.PriorityRule {
-	priority := 100
-	var conditions []*rule.Condition
-	r := rule.New()
-	r.OnSuccess(func(data rule.Data) any {
-		return route
+func (route *UserRoute) ToRule(exceptFields ...string) *rule.PriorityRule {
+	return prepareConditions(route, exceptFields)
+}
+
+func SearchProvider(data any, routes []Route) (any, error) {
+	var mp map[string]any
+	dt, err := json.Marshal(data)
+	if err != nil {
+		panic(err)
+	}
+	err = json.Unmarshal(dt, &mp)
+	if err != nil {
+		panic(err)
+	}
+	var routePriorities []*rule.PriorityRule
+	for _, providerRoute := range routes {
+		routePriorities = append(routePriorities, providerRoute.ToRule("message_count_operator", "provider"))
+	}
+	ruleGroup := rule.NewRuleGroup(rule.Config{
+		Rules:    routePriorities,
+		Priority: rule.HighestPriority,
 	})
-	if route.UserID != 0 {
-		priority++
-		conditions = append(conditions, &rule.Condition{
-			Field:    "user_id",
-			Operator: "eq",
-			Value:    route.UserID,
-		})
-	}
-	if route.RouteType != "" {
-		priority++
-		conditions = append(conditions, &rule.Condition{
-			Field:    "route_type",
-			Operator: "eq",
-			Value:    route.RouteType,
-		})
-	}
-	if route.SourceAddrType != "" {
-		priority++
-		conditions = append(conditions, &rule.Condition{
-			Field:    "source_addr_type",
-			Operator: "eq",
-			Value:    route.SourceAddrType,
-		})
-	}
-	if route.SourceAddr != "" {
-		priority++
-		conditions = append(conditions, &rule.Condition{
-			Field:    "source_addr",
-			Operator: "eq",
-			Value:    route.SourceAddr,
-		})
-	}
-	if route.CountryCode != "" {
-		priority++
-		conditions = append(conditions, &rule.Condition{
-			Field:    "country_code",
-			Operator: "eq",
-			Value:    route.CountryCode,
-		})
-	}
-	if route.CarrierCode != "" {
-		priority++
-		conditions = append(conditions, &rule.Condition{
-			Field:    "carrier_code",
-			Operator: "eq",
-			Value:    route.CarrierCode,
-		})
-	}
-	r.And(conditions...)
-	return &rule.PriorityRule{
-		Rule:     r,
-		Priority: priority,
-	}
+	return ruleGroup.Apply(mp)
 }
 
 var providerRoutes = []Route{
@@ -198,24 +145,7 @@ var userRoute3 = UserRoute{
 }
 
 func Group1() {
-	var userRouteMap map[string]any
-	dt, err := json.Marshal(userRoute1)
-	if err != nil {
-		panic(err)
-	}
-	err = json.Unmarshal(dt, &userRouteMap)
-	if err != nil {
-		panic(err)
-	}
-	var routePriorities []*rule.PriorityRule
-	for _, providerRoute := range providerRoutes {
-		routePriorities = append(routePriorities, providerRoute.ToRule())
-	}
-	ruleGroup := rule.NewRuleGroup(rule.Config{
-		Rules:    routePriorities,
-		Priority: rule.HighestPriority,
-	})
-	route, err := ruleGroup.Apply(userRouteMap)
+	route, err := SearchProvider(userRoute1, providerRoutes)
 	if err != nil {
 		panic(err)
 	}
@@ -223,24 +153,7 @@ func Group1() {
 }
 
 func Group2() {
-	var userRouteMap map[string]any
-	dt, err := json.Marshal(userRoute2)
-	if err != nil {
-		panic(err)
-	}
-	err = json.Unmarshal(dt, &userRouteMap)
-	if err != nil {
-		panic(err)
-	}
-	var routePriorities []*rule.PriorityRule
-	for _, providerRoute := range providerRoutes {
-		routePriorities = append(routePriorities, providerRoute.ToRule())
-	}
-	ruleGroup := rule.NewRuleGroup(rule.Config{
-		Rules:    routePriorities,
-		Priority: rule.HighestPriority,
-	})
-	route, err := ruleGroup.Apply(userRouteMap)
+	route, err := SearchProvider(userRoute2, providerRoutes)
 	if err != nil {
 		panic(err)
 	}
@@ -248,24 +161,7 @@ func Group2() {
 }
 
 func Group3() {
-	var userRouteMap map[string]any
-	dt, err := json.Marshal(userRoute3)
-	if err != nil {
-		panic(err)
-	}
-	err = json.Unmarshal(dt, &userRouteMap)
-	if err != nil {
-		panic(err)
-	}
-	var routePriorities []*rule.PriorityRule
-	for _, providerRoute := range providerRoutes {
-		routePriorities = append(routePriorities, providerRoute.ToRule())
-	}
-	ruleGroup := rule.NewRuleGroup(rule.Config{
-		Rules:    routePriorities,
-		Priority: rule.HighestPriority,
-	})
-	route, err := ruleGroup.Apply(userRouteMap)
+	route, err := SearchProvider(userRoute3, providerRoutes)
 	if err != nil {
 		panic(err)
 	}
