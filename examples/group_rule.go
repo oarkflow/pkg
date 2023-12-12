@@ -19,6 +19,7 @@ func main() {
 type Route interface {
 	ToRule(exceptFields ...string) *rule.PriorityRule
 }
+
 type ProviderRoute struct {
 	Provider             string `gorm:"provider" json:"provider" form:"provider" query:"provider"`
 	RouteType            string `gorm:"route_type" json:"route_type" form:"route_type" query:"route_type"` // D W OTP
@@ -38,7 +39,6 @@ func prepareConditions(route Route, exceptFields []string) *rule.PriorityRule {
 	}
 	for key, val := range data {
 		if !slices.Contains(exceptFields, key) {
-
 			if !utils.IsZeroVal(val) {
 				priority++
 				conditions = append(conditions, &rule.Condition{
@@ -92,7 +92,7 @@ func SearchProvider(data any, routes []Route) (any, error) {
 	}
 	var routePriorities []*rule.PriorityRule
 	for _, providerRoute := range routes {
-		routePriorities = append(routePriorities, providerRoute.ToRule("message_count_operator", "provider"))
+		routePriorities = append(routePriorities, providerRoute.ToRule("provider"))
 	}
 	ruleGroup := rule.NewRuleGroup(rule.Config{
 		Rules:    routePriorities,
