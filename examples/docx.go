@@ -83,6 +83,7 @@ func placeholderParser() {
 	})
 	doc := "./test.docx"
 	start := time.Now()
+	docx.Placeholders(doc)
 	err := docx.PrepareDocxToFile(doc, map[string]interface{}{
 		"name": "Rohan Kumar Das",
 		"address": map[string]any{

@@ -254,6 +254,18 @@ func (condition *Condition) checkEq(val any) bool {
 			return val == gtVal
 		}
 		return false
+	case bool:
+		switch gtVal := condition.Value.(type) {
+		case bool:
+			return val == gtVal
+		case string:
+			v, err := strconv.ParseBool(gtVal)
+			if err != nil {
+				return false
+			}
+			return val == v
+		}
+		return false
 	}
 	return false
 }
@@ -280,6 +292,18 @@ func (condition *Condition) checkNeq(val any) bool {
 			return val != float64(gtVal)
 		case float64:
 			return val != gtVal
+		}
+		return false
+	case bool:
+		switch gtVal := condition.Value.(type) {
+		case bool:
+			return val != gtVal
+		case string:
+			v, err := strconv.ParseBool(gtVal)
+			if err != nil {
+				return false
+			}
+			return val != v
 		}
 		return false
 	}

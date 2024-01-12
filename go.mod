@@ -7,10 +7,10 @@ replace github.com/casbin/casbin/v2 => github.com/sujit-baniya/casbin/v2 v2.77.2
 require (
 	github.com/boombuler/barcode v1.0.1
 	github.com/carlmjohnson/deque v0.23.1
-	github.com/casbin/casbin/v2 v2.77.2
+	github.com/casbin/casbin/v2 v2.68.0
 	github.com/go-playground/validator/v10 v10.16.0
 	github.com/goccy/go-reflect v1.2.0
-	github.com/google/uuid v1.4.0
+	github.com/google/uuid v1.5.0
 	github.com/gorilla/securecookie v1.1.2
 	github.com/gorilla/sessions v1.2.2
 	github.com/klauspost/compress v1.17.4
@@ -27,11 +27,11 @@ require (
 	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e
 	github.com/sourcegraph/conc v0.3.0
 	github.com/tidwall/pretty v1.2.1
-	golang.org/x/crypto v0.16.0
-	golang.org/x/exp v0.0.0-20231206192017-f3f8817b8deb
-	golang.org/x/image v0.14.0
-	golang.org/x/net v0.19.0
-	golang.org/x/sys v0.15.0
+	golang.org/x/crypto v0.18.0
+	golang.org/x/exp v0.0.0-20240110193028-0dcbfd608b1e
+	golang.org/x/image v0.15.0
+	golang.org/x/net v0.20.0
+	golang.org/x/sys v0.16.0
 	golang.org/x/text v0.14.0
 	gonum.org/v1/gonum v0.14.0
 	gopkg.in/yaml.v3 v3.0.1
