@@ -23,6 +23,9 @@ import (
 	"reflect"
 	"strings"
 	"text/template"
+	"time"
+
+	"github.com/gosimple/slug"
 
 	"github.com/oarkflow/pkg/jet/utils/e"
 )
@@ -38,8 +41,13 @@ func init() {
 		"repeat":    reflect.ValueOf(strings.Repeat),
 		"replace":   reflect.ValueOf(strings.Replace),
 		"split":     reflect.ValueOf(strings.Split),
+		"slug":      reflect.ValueOf(slug.Make),
+		"slugify":   reflect.ValueOf(slug.Make),
 		"trimSpace": reflect.ValueOf(strings.TrimSpace),
 		"html":      reflect.ValueOf(html.EscapeString),
+		"string":    reflect.ValueOf(fmt.Sprint),
+		"sprint":    reflect.ValueOf(fmt.Sprint),
+		"now":       reflect.ValueOf(time.Now),
 		"url":       reflect.ValueOf(url.QueryEscape),
 		"safeHtml":  reflect.ValueOf(SafeWriter(template.HTMLEscape)),
 		"safeJs":    reflect.ValueOf(SafeWriter(template.JSEscape)),

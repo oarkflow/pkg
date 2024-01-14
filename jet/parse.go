@@ -53,6 +53,39 @@ func (t *Template) Placeholders() []string {
 	return t.placeholders
 }
 
+func (t *Template) ParseMap(data any, asMap ...bool) (result string, err error) {
+	var d bytes.Buffer
+	switch data := data.(type) {
+	case map[string]any:
+		if len(asMap) > 0 && asMap[0] {
+			err = t.Execute(&d, nil, data)
+			if err != nil {
+				return
+			}
+			result = d.String()
+		} else {
+			varMap := make(VarMap)
+			for k, v := range data {
+				varMap.Set(k, v)
+			}
+			err = t.Execute(&d, varMap, nil)
+			if err != nil {
+				return
+			}
+			result = d.String()
+		}
+		return
+	case VarMap:
+		err = t.Execute(&d, data, nil)
+		if err != nil {
+			return
+		}
+		result = d.String()
+		return
+	}
+	return
+}
+
 func (t *Template) String() (template string) {
 	if t.extends != nil {
 		if len(t.Root.Nodes) > 0 && len(t.imports) == 0 {

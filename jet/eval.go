@@ -63,7 +63,7 @@ type escapeeWriter struct {
 }
 
 func (w *escapeeWriter) Write(b []byte) (int, error) {
-	if w.set.escapee == nil {
+	if w.set == nil || w.set.escapee == nil {
 		w.Writer.Write(b)
 	} else {
 		w.set.escapee(w.Writer, b)

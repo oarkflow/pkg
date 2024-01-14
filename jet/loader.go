@@ -100,6 +100,10 @@ func DefaultSet(opts ...Option) {
 	defaultSet = NewSet(NewInMemLoader(), opts...)
 }
 
+func NewMemorySet(opts ...Option) *Set {
+	return NewSet(NewInMemLoader(), opts...)
+}
+
 // NewInMemLoader return a new InMemLoader.
 func NewInMemLoader() *InMemLoader {
 	return &InMemLoader{

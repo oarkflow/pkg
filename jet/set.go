@@ -1,7 +1,6 @@
 package jet
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -40,17 +39,12 @@ func NewSet(loader Loader, opts ...Option) *Set {
 	}
 
 	s := &Set{
-		loader:  loader,
-		cache:   &cache{},
-		escapee: template.HTMLEscape,
-		globals: VarMap{},
-		gmx:     &sync.RWMutex{},
-		extensions: []string{
-			"", // in case the path is given with the correct extension already
-			".jet",
-			".html.jet",
-			".jet.html",
-		},
+		loader:     loader,
+		cache:      &cache{},
+		escapee:    template.HTMLEscape,
+		globals:    VarMap{},
+		gmx:        &sync.RWMutex{},
+		extensions: defaultExtensions,
 	}
 
 	for _, opt := range opts {
@@ -204,7 +198,11 @@ func (s *Set) Parse(templatePath, contents string) (template *Template, err erro
 	// make sure it's absolute and clean it
 	templatePath = path.Join("/", templatePath)
 
-	return s.parse(templatePath, contents, false)
+	return s.parse(templatePath, contents, true)
+}
+
+func (s *Set) ParseContent(contents string) (template *Template, err error) {
+	return s.parse("", contents, true)
 }
 
 type Tmpl struct {
@@ -220,40 +218,11 @@ func NewTemplate(template string) (tmpl *Tmpl, err error) {
 }
 
 func (tmpl *Tmpl) Parse(data any, asMap ...bool) (result string, err error) {
-	var d bytes.Buffer
-	switch data := data.(type) {
-	case map[string]any:
-		if len(asMap) > 0 && asMap[0] {
-			err = tmpl.Execute(&d, nil, data)
-			if err != nil {
-				return
-			}
-			result = d.String()
-		} else {
-			varMap := make(VarMap)
-			for k, v := range data {
-				varMap.Set(k, v)
-			}
-			err = tmpl.Execute(&d, varMap, nil)
-			if err != nil {
-				return
-			}
-			result = d.String()
-		}
-		return
-	case VarMap:
-		err = tmpl.Execute(&d, data, nil)
-		if err != nil {
-			return
-		}
-		result = d.String()
-		return
-	}
-	return
+	return tmpl.Template.ParseMap(data, asMap...)
 }
 
 func Placeholders(template string) []string {
-	tmpl, err := defaultSet.parse("", template, false)
+	tmpl, err := defaultSet.parse("", template, true)
 	if err != nil {
 		return nil
 	}
@@ -261,44 +230,16 @@ func Placeholders(template string) []string {
 }
 
 func Parse(template string, data any, asMap ...bool) (result string, err error) {
-	var d bytes.Buffer
-	tmpl, err := defaultSet.parse("", template, false)
+	tmpl, err := defaultSet.parse("", template, true)
 	if err != nil {
 		return
 	}
-	switch data := data.(type) {
-	case map[string]any:
-		if len(asMap) > 0 && asMap[0] {
-			err = tmpl.Execute(&d, nil, data)
-			if err != nil {
-				return
-			}
-			result = d.String()
-		} else {
-			varMap := make(VarMap)
-			for k, v := range data {
-				varMap.Set(k, v)
-			}
-			err = tmpl.Execute(&d, varMap, nil)
-			if err != nil {
-				return
-			}
-			result = d.String()
-		}
-		return
-	case VarMap:
-		err = tmpl.Execute(&d, data, nil)
-		if err != nil {
-			return
-		}
-		result = d.String()
-		return
-	}
+	result, err = tmpl.ParseMap(data, asMap...)
 	return
 }
 
 func (s *Set) ParseBytes(data []byte) (template *Template, err error) {
-	return s.parse("", str.FromByte(data), false)
+	return s.parse("", str.FromByte(data), true)
 }
 
 // AddGlobal adds a global variable into the Set,
