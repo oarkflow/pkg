@@ -604,7 +604,7 @@ func (i *Invoice) prepareHeader(detail *Detail) {
 					})
 					i.engine.Text(detail.Currency+FloatStr(detail.TotalAmount), props.Text{
 						Align: consts.Center,
-						Size:  20,
+						Size:  18,
 						Top:   6,
 						Style: consts.Bold,
 						Color: *primaryColor,
@@ -619,7 +619,7 @@ func (i *Invoice) prepareHeader(detail *Detail) {
 					})
 					i.engine.Text("Invoice No. "+detail.InvoiceNumber, props.Text{
 						Align: consts.Right,
-						Size:  20,
+						Size:  18,
 						Top:   6,
 						Style: consts.Bold,
 						Color: *primaryColor,
