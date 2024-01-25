@@ -595,24 +595,46 @@ func (i *Invoice) prepareHeader(detail *Detail) {
 						Percent: 100,
 					})
 				})
-				i.engine.ColSpace(3)
+				i.engine.Col(3, func() {
+					i.engine.Text("Outstanding Amount", props.Text{
+						Align: consts.Center,
+						Size:  10,
+						Top:   2,
+						Color: *primaryColor,
+					})
+					i.engine.Text(detail.Currency+FloatStr(detail.TotalAmount), props.Text{
+						Align: consts.Center,
+						Size:  20,
+						Top:   6,
+						Style: consts.Bold,
+						Color: *primaryColor,
+					})
+				})
+				i.engine.Col(3, func() {
+					i.engine.Text("Date: "+detail.Date+"  Terms:"+detail.PaymentTerms, props.Text{
+						Align: consts.Right,
+						Size:  10,
+						Top:   2,
+						Color: *primaryColor,
+					})
+					i.engine.Text("Invoice No. "+detail.InvoiceNumber, props.Text{
+						Align: consts.Right,
+						Size:  20,
+						Top:   6,
+						Style: consts.Bold,
+						Color: *primaryColor,
+					})
+					i.engine.Text("Due Date: "+detail.DueDate, props.Text{
+						Align: consts.Right,
+						Size:  10,
+						Top:   15,
+						Color: *primaryColor,
+					})
+				})
 			} else {
-				i.engine.ColSpace(7)
+				i.engine.ColSpace(6)
 			}
 
-			i.engine.Col(3, func() {
-				i.engine.Text("Invoice No.", props.Text{
-					Align: consts.Right,
-					Size:  25,
-					Color: *primaryColor,
-				})
-				i.engine.Text("#"+detail.InvoiceNumber, props.Text{
-					Top:   11,
-					Align: consts.Right,
-					Size:  18,
-					Color: *color.Hex2RGB("a4a4a4"),
-				})
-			})
 			if detail.InvoiceURL == "" {
 				detail.InvoiceURL = "https://orgwareconstruct.com"
 			}
@@ -621,7 +643,7 @@ func (i *Invoice) prepareHeader(detail *Detail) {
 			i.engine.Col(2, func() {
 				i.engine.Base64Image(base64.StdEncoding.EncodeToString(png), "png", props.Rect{
 					Percent: 100,
-					Center:  true,
+					Left:    10,
 				})
 
 			})
@@ -636,10 +658,10 @@ func (i *Invoice) prepareHeader(detail *Detail) {
 	})
 }
 
-func (i *Invoice) prepareBusinessDetail(detail Contact) {
+func (i *Invoice) prepareBusinessDetail(detail Contact, align consts.Align) {
 	i.engine.Text(detail.Name, props.Text{
 		Top:   10,
-		Align: consts.Left,
+		Align: align,
 		Size:  10,
 		Style: consts.Bold,
 		Color: *primaryColor,
@@ -648,12 +670,14 @@ func (i *Invoice) prepareBusinessDetail(detail Contact) {
 	i.engine.Text(detail.Address1, props.Text{
 		Size:  10,
 		Top:   15,
+		Align: align,
 		Color: *primaryColor,
 	})
 	top := 20.0
 	if detail.Address2 != "" {
 		i.engine.Text(detail.Address2, props.Text{
 			Size:  10,
+			Align: align,
 			Top:   top,
 			Color: *primaryColor,
 		})
@@ -663,6 +687,7 @@ func (i *Invoice) prepareBusinessDetail(detail Contact) {
 
 	i.engine.Text(fmt.Sprintf("%s, %s %s, %s", detail.City, detail.State, detail.ZipCode, detail.Country), props.Text{
 		Size:  10,
+		Align: align,
 		Top:   top,
 		Color: *primaryColor,
 	})
@@ -671,6 +696,7 @@ func (i *Invoice) prepareBusinessDetail(detail Contact) {
 		i.engine.Text("Tel: "+detail.Telephone, props.Text{
 			Size:  10,
 			Top:   top,
+			Align: align,
 			Color: *primaryColor,
 		})
 	}
@@ -679,6 +705,7 @@ func (i *Invoice) prepareBusinessDetail(detail Contact) {
 		i.engine.Text(detail.Email, props.Text{
 			Size:  10,
 			Top:   top,
+			Align: align,
 			Color: *primaryColor,
 		})
 	}
@@ -688,8 +715,8 @@ func (i *Invoice) prepareDetail(detail *Detail) {
 	businessDetail := i.config.Business.Details
 	customerDetail := detail.Customer.Details
 	i.engine.Row(37, func() {
-		i.engine.Col(4, func() {
-			i.engine.Text("From:", props.Text{
+		i.engine.Col(6, func() {
+			i.engine.Text("From", props.Text{
 				Top:   4,
 				Align: consts.Left,
 				Size:  12,
@@ -699,12 +726,12 @@ func (i *Invoice) prepareDetail(detail *Detail) {
 					Blue:  124,
 				},
 			})
-			i.prepareBusinessDetail(businessDetail)
+			i.prepareBusinessDetail(businessDetail, consts.Left)
 		})
-		i.engine.Col(3, func() {
-			i.engine.Text("To:", props.Text{
+		i.engine.Col(6, func() {
+			i.engine.Text("To", props.Text{
 				Top:   4,
-				Align: consts.Left,
+				Align: consts.Right,
 				Size:  12,
 				Color: color.Color{
 					Red:   124,
@@ -712,72 +739,7 @@ func (i *Invoice) prepareDetail(detail *Detail) {
 					Blue:  124,
 				},
 			})
-			i.prepareBusinessDetail(customerDetail)
-		})
-		i.engine.Col(3, func() {
-			i.engine.Text("Detail:", props.Text{
-				Top:  4,
-				Size: 12,
-				Color: color.Color{
-					Red:   124,
-					Green: 124,
-					Blue:  124,
-				},
-			})
-			i.engine.Text("Date:", props.Text{
-				Top:   10,
-				Size:  10,
-				Color: *primaryColor,
-			})
-			i.engine.Text("Payment Terms:", props.Text{
-				Top:   15,
-				Size:  10,
-				Color: *primaryColor,
-			})
-			i.engine.Text("Due Date:", props.Text{
-				Top:   20,
-				Size:  10,
-				Color: *primaryColor,
-			})
-			i.engine.Text("Balance Due:", props.Text{
-				Top:   25,
-				Size:  16,
-				Style: consts.Bold,
-				Color: *primaryColor,
-			})
-		})
-		i.engine.Col(2, func() {
-			i.engine.Text("", props.Text{
-				Top: 4,
-			})
-			i.engine.Text(detail.Date, props.Text{
-				Top:   10,
-				Align: consts.Right,
-				Size:  10,
-				Style: consts.Bold,
-				Color: *primaryColor,
-			})
-			i.engine.Text(detail.PaymentTerms, props.Text{
-				Top:   15,
-				Align: consts.Right,
-				Size:  10,
-				Style: consts.Bold,
-				Color: *primaryColor,
-			})
-			i.engine.Text(detail.DueDate, props.Text{
-				Top:   20,
-				Align: consts.Right,
-				Size:  10,
-				Style: consts.Bold,
-				Color: *primaryColor,
-			})
-			i.engine.Text(detail.Currency+FloatStr(detail.TotalAmount), props.Text{
-				Top:   25,
-				Align: consts.Right,
-				Size:  16,
-				Style: consts.Bold,
-				Color: *primaryColor,
-			})
+			i.prepareBusinessDetail(customerDetail, consts.Right)
 		})
 	})
 	/*i.engine.Line(1.0,
