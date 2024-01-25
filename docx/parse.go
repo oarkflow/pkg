@@ -23,7 +23,7 @@ var (
 	// RunCloseTagRegex matches the close tag of runs
 	RunCloseTagRegex = regexp.MustCompile(`(</w:r>)`)
 	// RunSingletonTagRegex matches a singleton run tag
-	RunSingletonTagRegex = regexp.MustCompile(`(<w:r/>)`)
+	RunSingletonTagRegex = regexp.MustCompile(`(<w:r\s*/>)`)
 	// TextOpenTagRegex matches all OpenTags for text-runs, including eventually set attributes
 	TextOpenTagRegex = regexp.MustCompile(`(<w:t).*>`)
 	// TextCloseTagRegex matches the close tag of text-runs
