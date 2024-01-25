@@ -601,9 +601,9 @@ func (i *Invoice) prepareHeader(detail *Detail) {
 			}
 
 			i.engine.Col(3, func() {
-				i.engine.Text("INVOICE", props.Text{
+				i.engine.Text("Invoice No.", props.Text{
 					Align: consts.Right,
-					Size:  28,
+					Size:  25,
 					Color: *primaryColor,
 				})
 				i.engine.Text("#"+detail.InvoiceNumber, props.Text{
@@ -621,8 +621,7 @@ func (i *Invoice) prepareHeader(detail *Detail) {
 			i.engine.Col(2, func() {
 				i.engine.Base64Image(base64.StdEncoding.EncodeToString(png), "png", props.Rect{
 					Percent: 100,
-					// Center: true,
-					Left: 11,
+					Center:  true,
 				})
 
 			})
