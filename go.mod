@@ -8,17 +8,17 @@ require (
 	github.com/boombuler/barcode v1.0.1
 	github.com/carlmjohnson/deque v0.23.1
 	github.com/casbin/casbin/v2 v2.68.0
-	github.com/go-playground/validator/v10 v10.16.0
+	github.com/go-playground/validator/v10 v10.17.0
 	github.com/goccy/go-reflect v1.2.0
-	github.com/google/uuid v1.5.0
+	github.com/google/uuid v1.6.0
 	github.com/gorilla/securecookie v1.1.2
 	github.com/gorilla/sessions v1.2.2
 	github.com/gosimple/slug v1.13.1
-	github.com/klauspost/compress v1.17.4
+	github.com/klauspost/compress v1.17.5
 	github.com/klauspost/pgzip v1.2.6
 	github.com/kljensen/snowball v0.9.0
 	github.com/oarkflow/expr v0.0.7
-	github.com/oarkflow/frame v0.0.56
+	github.com/oarkflow/frame v0.0.59
 	github.com/oarkflow/gorm-adapter v0.0.7
 	github.com/oarkflow/govaluate v0.0.1
 	github.com/oarkflow/xid v1.2.5
@@ -29,14 +29,14 @@ require (
 	github.com/sourcegraph/conc v0.3.0
 	github.com/tidwall/pretty v1.2.1
 	golang.org/x/crypto v0.18.0
-	golang.org/x/exp v0.0.0-20240110193028-0dcbfd608b1e
+	golang.org/x/exp v0.0.0-20240119083558-1b970713d09a
 	golang.org/x/image v0.15.0
 	golang.org/x/net v0.20.0
 	golang.org/x/sys v0.16.0
 	golang.org/x/text v0.14.0
 	gonum.org/v1/gonum v0.14.0
 	gopkg.in/yaml.v3 v3.0.1
-	gorm.io/gorm v1.25.5
+	gorm.io/gorm v1.25.6
 	mvdan.cc/xurls/v2 v2.5.0
 )
 
@@ -44,8 +44,8 @@ require (
 	github.com/andeya/ameda v1.5.3 // indirect
 	github.com/andeya/goutil v1.0.1 // indirect
 	github.com/bytedance/go-tagexpr/v2 v2.9.11 // indirect
-	github.com/bytedance/gopkg v0.0.0-20230728082804-614d0af6619b // indirect
-	github.com/cloudwego/netpoll v0.5.1 // indirect
+	github.com/bytedance/gopkg v0.0.0-20240202110943-5e26950c5e57 // indirect
+	github.com/cloudwego/netpoll v0.5.2-0.20240202120102-c3792e87d4a6 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.2 // indirect
 	github.com/glebarez/go-sqlite v1.21.1 // indirect
@@ -55,7 +55,7 @@ require (
 	github.com/go-sql-driver/mysql v1.7.1 // indirect
 	github.com/golang-sql/civil v0.0.0-20220223132316-b832511892a9 // indirect
 	github.com/golang-sql/sqlexp v0.1.0 // indirect
-	github.com/golang/protobuf v1.5.3 // indirect
+	github.com/golang/protobuf v1.5.0 // indirect
 	github.com/gosimple/unidecode v1.0.1 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
@@ -72,7 +72,7 @@ require (
 	github.com/tidwall/match v1.1.1 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
-	google.golang.org/protobuf v1.31.0 // indirect
+	google.golang.org/protobuf v1.32.0 // indirect
 	gorm.io/driver/mysql v1.5.0 // indirect
 	gorm.io/driver/postgres v1.5.0 // indirect
 	gorm.io/driver/sqlserver v1.4.3 // indirect

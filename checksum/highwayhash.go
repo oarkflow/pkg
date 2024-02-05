@@ -244,6 +244,14 @@ func Make(data []byte) string {
 	return hex.EncodeToString(def.Sum(data))
 }
 
+func MakeSum(hasher hash.Hash, data []byte) string {
+	return hex.EncodeToString(hasher.Sum(data))
+}
+
 func Verify(data []byte, token string) bool {
 	return str.EqualFold(str.ToUpper(hex.EncodeToString(def.Sum(data))), str.ToUpper(token))
+}
+
+func VerifySum(hasher hash.Hash, data []byte, token string) bool {
+	return str.EqualFold(str.ToUpper(hex.EncodeToString(hasher.Sum(data))), str.ToUpper(token))
 }

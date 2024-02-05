@@ -760,7 +760,7 @@ func (i *Invoice) prepareFooter(detail *Detail) {
 	i.engine.RegisterFooter(func() {
 		i.engine.Row(37, func() {
 			i.engine.Col(4, func() {
-				i.engine.Text("Payment Details:", props.Text{
+				i.engine.Text("Payment Details", props.Text{
 					Top:   4,
 					Align: consts.Left,
 					Size:  12,
@@ -915,7 +915,7 @@ func (i *Invoice) prepareFooter(detail *Detail) {
 				}
 			})
 			i.engine.Col(4, func() {
-				i.engine.Text("Contact Information:", props.Text{
+				i.engine.Text("Contact Information", props.Text{
 					Top:   4,
 					Align: consts.Right,
 					Size:  12,
@@ -992,14 +992,16 @@ func (i *Invoice) prepareFooter(detail *Detail) {
 			i.engine.Col(12, func() {
 				if i.config.Secret != "" {
 					bt := i.Byte(detail)
-					checksum.Default(str.ToByte(i.config.Secret))
-					signature := checksum.Make(bt)
-					i.engine.Text(signature, props.Text{
-						Top:         4,
-						Align:       consts.Center,
-						Size:        1.5,
-						Extrapolate: true,
-					})
+					hash, err := checksum.New64(str.ToByte(i.config.Secret))
+					if err != nil {
+						signature := checksum.MakeSum(hash, bt)
+						i.engine.Text(signature, props.Text{
+							Top:         4,
+							Align:       consts.Center,
+							Size:        1.5,
+							Extrapolate: true,
+						})
+					}
 				}
 			})
 		})
