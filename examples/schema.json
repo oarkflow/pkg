@@ -5,7 +5,8 @@
 			"type": "object",
 			"properties": {
 				"code": {
-					"type": "string"
+					"type": "string",
+					"default": "N/A"
 				},
 				"encounter_uid": {
 					"type": "integer"
