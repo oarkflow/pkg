@@ -85,7 +85,7 @@ func placeholderParser() {
 	start := time.Now()
 	docx.Placeholders(doc)
 	err := docx.PrepareDocxToFile(doc, map[string]interface{}{
-		"name": "Rohan Kumar Das",
+		"name": "Ujjwal Shrestha",
 		"address": map[string]any{
 			"city": "Kathmandu",
 		},
@@ -93,11 +93,11 @@ func placeholderParser() {
 		"company": map[string]any{
 			"name": "Orgware Construct Pvt. Ltd",
 		},
-		"start_date":   "2022-09-01",
-		"end_date":     "date",
-		"position":     "Associate Office Administrator",
-		"technologies": "Managing Office, Working with MS Word, Excel for office operations",
-	}, "Rohan Kumar Das - Work Experience Certificate.docx")
+		"start_date":   "2023-06-05",
+		"end_date":     "2023-11-30",
+		"position":     "QA Engineer",
+		"technologies": "Software Testing, CI/CD with Jenkins, and preparing test cases on various bugs, features on Jira.",
+	}, "Ujjwal Shrestha - Work Experience Certificate.docx")
 	if err != nil {
 		panic(err)
 	}

@@ -43,6 +43,7 @@ require (
 require (
 	github.com/andeya/ameda v1.5.3 // indirect
 	github.com/andeya/goutil v1.0.1 // indirect
+	github.com/apcera/termtables v0.0.0-20170405184538-bcbc5dc54055 // indirect
 	github.com/bytedance/go-tagexpr/v2 v2.9.11 // indirect
 	github.com/bytedance/gopkg v0.0.0-20240202110943-5e26950c5e57 // indirect
 	github.com/cloudwego/netpoll v0.5.2-0.20240202120102-c3792e87d4a6 // indirect
@@ -64,10 +65,13 @@ require (
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/leodido/go-urn v1.2.4 // indirect
 	github.com/mattn/go-isatty v0.0.18 // indirect
+	github.com/mattn/go-runewidth v0.0.15 // indirect
 	github.com/microsoft/go-mssqldb v0.21.0 // indirect
 	github.com/nyaruka/phonenumbers v1.0.55 // indirect
 	github.com/oarkflow/log v1.0.74 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
+	github.com/rivo/uniseg v0.4.6 // indirect
+	github.com/scylladb/termtables v1.0.0 // indirect
 	github.com/tidwall/gjson v1.17.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
