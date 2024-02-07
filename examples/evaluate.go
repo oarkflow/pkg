@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	p, err := evaluate.Parse("{{'active'}}", true)
+	p, err := evaluate.Parse("string(1)", true)
 	if err != nil {
 		panic(err)
 	}

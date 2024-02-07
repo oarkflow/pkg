@@ -1,6 +1,7 @@
 package evaluate
 
 import (
+	"fmt"
 	"math"
 	"time"
 )
@@ -53,6 +54,8 @@ func BuiltinOperators() map[string]Operator {
 		"log":   builtinLog,
 		"log2":  builtinLog2,
 		"log10": builtinLog10,
+
+		"string": builtinString,
 
 		"now":          builtinNow,
 		"now_date":     builtinNowDate,
@@ -359,6 +362,17 @@ func builtinLog2(ctx EvalContext) (interface{}, error) {
 func builtinLog10(ctx EvalContext) (interface{}, error) {
 	arg, err := unaryNumericArg(ctx)
 	return math.Log10(arg), err
+}
+
+func builtinString(ctx EvalContext) (interface{}, error) {
+	if err := ctx.CheckArgCount(1); err != nil {
+		return "", err
+	}
+	str, err := ctx.Arg(0)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%v", str), nil
 }
 
 func binaryArgs(ctx EvalContext) (interface{}, interface{}, error) {
