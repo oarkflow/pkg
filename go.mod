@@ -1,6 +1,6 @@
 module github.com/oarkflow/pkg
 
-go 1.21.0
+go 1.22
 
 replace github.com/casbin/casbin/v2 => github.com/sujit-baniya/casbin/v2 v2.77.2
 
@@ -8,35 +8,35 @@ require (
 	github.com/boombuler/barcode v1.0.1
 	github.com/carlmjohnson/deque v0.23.1
 	github.com/casbin/casbin/v2 v2.68.0
-	github.com/go-playground/validator/v10 v10.17.0
 	github.com/goccy/go-reflect v1.2.0
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/securecookie v1.1.2
 	github.com/gorilla/sessions v1.2.2
 	github.com/gosimple/slug v1.13.1
-	github.com/klauspost/compress v1.17.5
+	github.com/klauspost/compress v1.17.6
 	github.com/klauspost/pgzip v1.2.6
 	github.com/kljensen/snowball v0.9.0
 	github.com/oarkflow/expr v0.0.7
-	github.com/oarkflow/frame v0.0.59
+	github.com/oarkflow/frame v0.0.60
 	github.com/oarkflow/gorm-adapter v0.0.7
 	github.com/oarkflow/govaluate v0.0.1
 	github.com/oarkflow/xid v1.2.5
 	github.com/phpdave11/gofpdf v1.4.2
 	github.com/ruudk/golang-pdf417 v0.0.0-20201230142125-a7e3863a1245
 	github.com/samber/lo v1.39.0
+	github.com/scylladb/termtables v1.0.0
 	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e
 	github.com/sourcegraph/conc v0.3.0
 	github.com/tidwall/pretty v1.2.1
-	golang.org/x/crypto v0.18.0
-	golang.org/x/exp v0.0.0-20240119083558-1b970713d09a
+	golang.org/x/crypto v0.19.0
+	golang.org/x/exp v0.0.0-20240205201215-2c58cdc269a3
 	golang.org/x/image v0.15.0
-	golang.org/x/net v0.20.0
-	golang.org/x/sys v0.16.0
+	golang.org/x/net v0.21.0
+	golang.org/x/sys v0.17.0
 	golang.org/x/text v0.14.0
 	gonum.org/v1/gonum v0.14.0
 	gopkg.in/yaml.v3 v3.0.1
-	gorm.io/gorm v1.25.6
+	gorm.io/gorm v1.25.7
 	mvdan.cc/xurls/v2 v2.5.0
 )
 
@@ -48,11 +48,8 @@ require (
 	github.com/bytedance/gopkg v0.0.0-20240202110943-5e26950c5e57 // indirect
 	github.com/cloudwego/netpoll v0.5.2-0.20240202120102-c3792e87d4a6 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
-	github.com/gabriel-vasile/mimetype v1.4.2 // indirect
 	github.com/glebarez/go-sqlite v1.21.1 // indirect
 	github.com/glebarez/sqlite v1.8.0 // indirect
-	github.com/go-playground/locales v0.14.1 // indirect
-	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-sql-driver/mysql v1.7.1 // indirect
 	github.com/golang-sql/civil v0.0.0-20220223132316-b832511892a9 // indirect
 	github.com/golang-sql/sqlexp v0.1.0 // indirect
@@ -63,15 +60,13 @@ require (
 	github.com/jackc/pgx/v5 v5.3.1 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
-	github.com/leodido/go-urn v1.2.4 // indirect
 	github.com/mattn/go-isatty v0.0.18 // indirect
 	github.com/mattn/go-runewidth v0.0.15 // indirect
 	github.com/microsoft/go-mssqldb v0.21.0 // indirect
 	github.com/nyaruka/phonenumbers v1.0.55 // indirect
 	github.com/oarkflow/log v1.0.74 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
-	github.com/rivo/uniseg v0.4.6 // indirect
-	github.com/scylladb/termtables v1.0.0 // indirect
+	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/tidwall/gjson v1.17.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
