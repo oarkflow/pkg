@@ -82,7 +82,7 @@ func IsMatch(item map[string]any, fields map[string]any) (bool, error) {
 	return true, nil
 }
 
-var funcs = map[string]govaluate.ExpressionFunction{
+var CasFunc = map[string]govaluate.ExpressionFunction{
 	"isMatch": func(args ...interface{}) (interface{}, error) {
 		switch attributes := args[0].(type) {
 		case map[string]any:

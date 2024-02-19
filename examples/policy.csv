@@ -1,4 +1,4 @@
-p, financePerson, edelberg, allow, /restrict, GET, *
-p, financePerson, edelberg, deny, /restrict, POST, *
-g, sujit, financePerson, edelberg
-g2, edelberg, arnet
+p, financePerson, companyA, allow, /restrict, GET, *
+p, financePerson, companyA, deny, /restrict, POST, *
+g, sujit, financePerson, companyA
+g2, companyA, companyB
