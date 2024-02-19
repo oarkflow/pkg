@@ -78,18 +78,18 @@ func (c *Enforcer) GetUserPermissions(user string, domain ...string) (p []Permis
 }
 
 func (c *Enforcer) GetDomainsForUser(user string) ([]string, error) {
-	domains, err := c.GetAllDomains()
-	if err != nil {
-		return nil, err
-	}
+	var domains []string
 	userDomains, err := c.Enforcer.GetDomainsForUser(user)
 	if err != nil {
 		return nil, err
 	}
-	if str.Contains(userDomains, "*") {
-		return domains, nil
+	for _, d := range userDomains {
+		if strings.TrimSpace(d) != "" {
+			ds := Instance.GetRelatedDomains(d)
+			domains = append(domains, ds...)
+		}
 	}
-	return userDomains, nil
+	return domains, nil
 }
 
 func (c *Enforcer) GetRolesInDomain(domain string) []string {

@@ -144,9 +144,25 @@ var CasFunc = map[string]govaluate.ExpressionFunction{
 		if len(args) != 2 {
 			return args[0], nil
 		}
-		domains := Instance.GetRelatedDomains(args[1].(string))
-		fmt.Println(domains)
-		fmt.Println(args)
-		return args[0], nil
+		if Instance == nil {
+			return args[0], nil
+		}
+		if !Instance.config.ApplyRoleToTenants {
+			return args[0], nil
+		}
+		reqDomain := args[0]
+		ds, err := Instance.GetDomainsForUser(args[1].(string))
+		if err != nil {
+			return reqDomain, nil
+		}
+		for _, d := range ds {
+			if strings.TrimSpace(d) != "" {
+				domains := Instance.GetRelatedDomains(d)
+				if str.Contains(domains, reqDomain.(string)) {
+					return d, nil
+				}
+			}
+		}
+		return reqDomain, nil
 	},
 }

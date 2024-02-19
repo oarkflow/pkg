@@ -18,18 +18,19 @@ import (
 var Instance *Engine
 
 type Config struct {
-	TableName       string
-	PrimaryKey      string
-	DisableMigrate  bool
-	Unauthorized    frame.HandlerFunc
-	Forbidden       frame.HandlerFunc
-	ParamExtractor  func(c context.Context, ctx *frame.Context) []string
-	CustomFunctions map[string]govaluate.ExpressionFunction
-	DB              *gorm.DB
-	Model           interface{}
-	Policy          interface{}
-	Adapter         persist.Adapter
-	Scopes          []func(db *gorm.DB) *gorm.DB
+	TableName          string
+	PrimaryKey         string
+	DisableMigrate     bool
+	ApplyRoleToTenants bool
+	Unauthorized       frame.HandlerFunc
+	Forbidden          frame.HandlerFunc
+	ParamExtractor     func(c context.Context, ctx *frame.Context) []string
+	CustomFunctions    map[string]govaluate.ExpressionFunction
+	DB                 *gorm.DB
+	Model              interface{}
+	Policy             interface{}
+	Adapter            persist.Adapter
+	Scopes             []func(db *gorm.DB) *gorm.DB
 }
 
 // Engine holds the configuration for the middleware
