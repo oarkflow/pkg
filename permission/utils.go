@@ -84,34 +84,55 @@ func IsMatch(item map[string]any, fields map[string]any) (bool, error) {
 
 var CasFunc = map[string]govaluate.ExpressionFunction{
 	"isMatch": func(args ...interface{}) (interface{}, error) {
-		switch attributes := args[0].(type) {
+		switch requestData := args[0].(type) {
 		case map[string]any:
-			switch condition := args[1].(type) {
+			switch policyCondition := args[1].(type) {
 			case map[string]any:
-				return IsMatch(attributes, condition)
+				return IsMatch(requestData, policyCondition)
 			case string:
-				t, err := getMapFromString(condition)
+				t, err := getMapFromString(policyCondition)
 				if err != nil || len(t) == 0 {
 					return true, nil
 				}
-				return IsMatch(attributes, t)
+				return IsMatch(requestData, t)
 			}
 		case string:
-			if attributes != "" {
-				attr, err := getMapFromString(attributes)
+			if requestData != "" {
+				attr, err := getMapFromString(requestData)
 				if err != nil {
 					return false, nil
 				}
-				switch condition := args[1].(type) {
+				switch policyCondition := args[1].(type) {
 				case map[string]any:
-					return IsMatch(attr, condition)
+					return IsMatch(attr, policyCondition)
 				case string:
-					t, err := getMapFromString(condition)
+					if policyCondition == "" {
+						return true, nil
+					}
+					t, err := getMapFromString(policyCondition)
 					if err != nil {
 						return true, nil
 					}
 					if len(t) == 0 {
-						return str.EqualFold(attributes, condition), nil
+						return str.EqualFold(requestData, policyCondition), nil
+					}
+					return IsMatch(attr, t)
+				}
+			} else {
+				attr := make(map[string]any)
+				switch policyCondition := args[1].(type) {
+				case map[string]any:
+					return IsMatch(attr, policyCondition)
+				case string:
+					if policyCondition == "" {
+						return true, nil
+					}
+					t, err := getMapFromString(policyCondition)
+					if err != nil {
+						return true, nil
+					}
+					if len(t) == 0 {
+						return str.EqualFold(requestData, policyCondition), nil
 					}
 					return IsMatch(attr, t)
 				}

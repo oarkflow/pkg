@@ -1,0 +1,8 @@
+p, admin, domain1, allow, data1, read, ""
+p, admin, domain2, allow, data2, read, ""
+p, admin, domain3, allow, data3, read, ""
+g, alice, admin, domain1
+g, bob, admin, domain2
+g, carol, admin, domain3
+g2, domain1, domain2
+g2, domain2, domain3
