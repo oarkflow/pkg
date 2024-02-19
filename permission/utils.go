@@ -147,22 +147,40 @@ var CasFunc = map[string]govaluate.ExpressionFunction{
 		if Instance == nil {
 			return args[0], nil
 		}
-		if !Instance.config.ApplyRoleToTenants {
-			return args[0], nil
-		}
 		reqDomain := args[0]
-		ds, err := Instance.GetDomainsForUser(args[1].(string))
-		if err != nil {
-			return reqDomain, nil
-		}
-		for _, d := range ds {
-			if strings.TrimSpace(d) != "" {
-				domains := Instance.GetRelatedDomains(d)
-				if str.Contains(domains, reqDomain.(string)) {
-					return d, nil
+		ds := Instance.GetFilteredNamedGroupingPolicy("g", 0, args[1].(string))
+		for _, dGroup := range ds {
+			if len(dGroup) == 4 {
+				d := strings.TrimSpace(dGroup[2])
+				if d == "*" {
+					fmt.Println(args)
+					return reqDomain, nil
+				}
+				if dGroup[3] == "true" {
+					if d != "" {
+						domains := Instance.GetRelatedDomains(d)
+						if str.Contains(domains, reqDomain.(string)) {
+							return d, nil
+						}
+					}
 				}
 			}
 		}
+
+		/*if Instance.config.ApplyRoleToTenants {
+			ds, err := Instance.Enforcer.Enforcer.GetDomainsForUser(args[1].(string))
+			if err != nil {
+				return reqDomain, nil
+			}
+			for _, d := range ds {
+				if strings.TrimSpace(d) != "" {
+					domains := Instance.GetRelatedDomains(d)
+					if str.Contains(domains, reqDomain.(string)) {
+						return d, nil
+					}
+				}
+			}
+		}*/
 		return reqDomain, nil
 	},
 }

@@ -1,6 +1,6 @@
 p, financePerson, companyA, allow, /restrict, GET
 p, financePerson, companyA, deny, /restrict, POST
 p, financePerson, companyB, allow, /restricted, GET
-g, sujit, financePerson, companyA
+g, sujit, financePerson, companyA, true
 g2, companyA, companyB
 g2, companyD, companyC

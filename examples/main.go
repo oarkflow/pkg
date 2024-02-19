@@ -14,9 +14,8 @@ import (
 
 func main() {
 	et, err := permission.Default(permission.Config{
-		Model:              "model.conf",
-		Policy:             "policy.csv",
-		ApplyRoleToTenants: true,
+		Model:  "model.conf",
+		Policy: "policy.csv",
 		ParamExtractor: func(c context.Context, ctx *frame.Context) []string {
 			bt, _ := json.Marshal(map[string]any{
 				"service":   "medical-coding",
@@ -35,10 +34,9 @@ func main() {
 			et.AddFunction(key, fn)
 		}
 	}
-	fmt.Println(et.GetDomainsForUser("sujit"))
 	slice := [][]any{
 		{"sujit", "companyA", "/restricted", "GET"}, // true
-		{"sujit", "companyB", "/restricted", "GET"}, // false expected true
+		{"sujit", "companyB", "/restricted", "GET"}, // false, expected true
 	}
 	for _, rVals := range slice {
 		ok, err := et.Enforce(rVals...)
