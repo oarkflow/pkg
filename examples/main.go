@@ -14,46 +14,13 @@ import (
 )
 
 func main() {
-	e, err := casbin.NewEnforcer("model.conf", "working_policy.csv")
-	if err != nil {
-		log.Fatalf("unable to create Casbin enforcer: %v", err)
-	}
-	if len(permission.CasFunc) > 0 {
-		for key, fn := range permission.CasFunc {
-			e.AddFunction(key, fn)
-		}
-	}
-	slice := [][]any{
-		{"alice", "domain1", "data1", "read", `{entity:"work-item"}`},
-		{"alice", "domain1", "data2", "read", ""},
-		{"alice", "domain1", "data3", "read", ""},
-		{"bob", "domain2", "data1", "read", ""},
-		{"bob", "domain2", "data2", "read", ""},
-		{"bob", "domain2", "data3", "read", ""},
-		{"carol", "domain3", "data1", "read", ""},
-		{"carol", "domain3", "data2", "read", ""},
-		{"carol", "domain3", "data3", "read", ""},
-	}
-	for _, rVals := range slice {
-		ok, err := e.Enforce(rVals...)
-		if err != nil {
-			fmt.Println("error: ")
-			panic(err)
-		}
-		fmt.Println("Valid", ok)
-	}
 	et, err := casbin.NewEnforcer("model.conf", "policy.csv")
 	if err != nil {
 		log.Fatalf("unable to create Casbin enforcer: %v", err)
 	}
-	if len(permission.CasFunc) > 0 {
-		for key, fn := range permission.CasFunc {
-			et.AddFunction(key, fn)
-		}
-	}
-	slice = [][]any{
-		{"sujit", "companyA", "/restricted", "GET", ""}, // true
-		{"sujit", "companyB", "/restricted", "GET", ""}, // true
+	slice := [][]any{
+		{"sujit", "companyA", "/restricted", "GET"}, // true
+		{"sujit", "companyB", "/restricted", "GET"}, // false expected true
 	}
 	for _, rVals := range slice {
 		ok, err := et.Enforce(rVals...)
