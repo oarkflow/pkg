@@ -1,5 +1,4 @@
-p, finance, domainHere, allow, expense, read, "{ service: work-item, db: golang }"
-p, 123-413-13, domainHere, deny, expense, read, "{ id: 10 }"
-p, financePerson, domainHere, allow, *, write, "{ service: ""*"" }"
-g, sujit, financePerson, domainHere
-g2, domainHere, domainThere
+p, financePerson, edelberg, allow, /restrict, GET, *
+p, financePerson, edelberg, deny, /restrict, POST, *
+g, sujit, financePerson, edelberg
+g2, edelberg, arnet

@@ -1,11 +1,12 @@
 package permission
 
 import (
-	"errors"
+	"encoding/json"
 	"fmt"
 	"reflect"
+	"regexp"
+	"strings"
 
-	json "encoding/json"
 	"github.com/casbin/casbin/v2/model"
 	"github.com/oarkflow/govaluate"
 	"gopkg.in/yaml.v3"
@@ -38,14 +39,18 @@ func getMapFromString(text string) (map[string]any, error) {
 	return t, nil
 }
 
+var (
+	sliceRe = regexp.MustCompile(`\b\w+\.\d+\b`)
+)
+
 func IsMatch(item map[string]any, fields map[string]any) (bool, error) {
 	i, err := flat.Flatten(item, nil)
 	if err != nil {
-		return false, err
+		return false, nil
 	}
 	f, err := flat.Flatten(fields, nil)
 	if err != nil {
-		return false, err
+		return false, nil
 	}
 	for k, v := range f {
 		vt := fmt.Sprintf("%v", v)
@@ -53,7 +58,21 @@ func IsMatch(item map[string]any, fields map[string]any) (bool, error) {
 			continue
 		}
 		if t, ok := i[k]; !ok {
-			return false, errors.New("field not found")
+			if sliceRe.MatchString(k) {
+				iKey := k[:strings.Index(k, ".")]
+				iVal := fields[iKey]
+				switch reflect.TypeOf(iVal).Kind() {
+				case reflect.Slice:
+					tc := fmt.Sprintf("%v", item[iKey])
+					var strSlice []string
+					s := reflect.ValueOf(iVal)
+					for i := 0; i < s.Len(); i++ {
+						strSlice = append(strSlice, fmt.Sprintf("%v", s.Index(i)))
+					}
+					return str.Contains(strSlice, tc), nil
+				}
+			}
+			return false, nil // errors.New("field not found: " + k)
 		} else {
 			if !reflect.DeepEqual(v, t) {
 				return false, nil
