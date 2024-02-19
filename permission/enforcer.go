@@ -1,9 +1,11 @@
 package permission
 
 import (
-	"github.com/casbin/casbin/v2"
-	"github.com/oarkflow/pkg/str"
 	"strings"
+
+	"github.com/casbin/casbin/v2"
+
+	"github.com/oarkflow/pkg/str"
 )
 
 type OperationPermission struct {
@@ -162,6 +164,30 @@ func (c *Enforcer) GetUserRole(domain, user string) []string {
 		roleUser = append(roleUser, role[1])
 	}
 	return roleUser
+}
+
+func (c *Enforcer) GetRelatedDomains(domain string) []string {
+	domains := c.GetNamedGroupingPolicy("g2")
+	queue := []string{domain}
+	visited := map[string]bool{domain: true}
+	relatedItems := []string{}
+
+	for len(queue) > 0 {
+		current := queue[0]
+		queue = queue[1:]
+
+		for _, pair := range domains {
+			if pair[0] == current && !visited[pair[1]] {
+				visited[pair[1]] = true
+				relatedItems = append(relatedItems, pair[1])
+				queue = append(queue, pair[1])
+			}
+		}
+	}
+	if len(relatedItems) > 0 {
+		relatedItems = append(relatedItems, domain)
+	}
+	return relatedItems
 }
 
 func (c *Enforcer) GetModuleRelatedByRole(domain, role string) []string {

@@ -18,6 +18,11 @@ func main() {
 	if err != nil {
 		log.Fatalf("unable to create Casbin enforcer: %v", err)
 	}
+	if len(permission.CasFunc) > 0 {
+		for key, fn := range permission.CasFunc {
+			et.AddFunction(key, fn)
+		}
+	}
 	slice := [][]any{
 		{"sujit", "companyA", "/restricted", "GET"}, // true
 		{"sujit", "companyB", "/restricted", "GET"}, // false expected true

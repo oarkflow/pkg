@@ -140,4 +140,13 @@ var CasFunc = map[string]govaluate.ExpressionFunction{
 		}
 		return false, nil
 	},
+	"isRelated": func(args ...interface{}) (interface{}, error) {
+		if len(args) != 2 {
+			return args[0], nil
+		}
+		domains := Instance.GetRelatedDomains(args[1].(string))
+		fmt.Println(domains)
+		fmt.Println(args)
+		return args[0], nil
+	},
 }
