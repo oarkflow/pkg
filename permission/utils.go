@@ -140,11 +140,8 @@ var CasFunc = map[string]govaluate.ExpressionFunction{
 		}
 		return false, nil
 	},
-	"isRelated": func(args ...interface{}) (interface{}, error) {
-		if len(args) != 2 {
-			return args[0], nil
-		}
-		if Instance == nil {
+	"relatedDomain": func(args ...interface{}) (interface{}, error) {
+		if len(args) != 2 || Instance == nil {
 			return args[0], nil
 		}
 		reqDomain := args[0]
@@ -153,7 +150,6 @@ var CasFunc = map[string]govaluate.ExpressionFunction{
 			if len(dGroup) == 4 {
 				d := strings.TrimSpace(dGroup[2])
 				if d == "*" {
-					fmt.Println(args)
 					return reqDomain, nil
 				}
 				if dGroup[3] == "true" {
@@ -166,21 +162,6 @@ var CasFunc = map[string]govaluate.ExpressionFunction{
 				}
 			}
 		}
-
-		/*if Instance.config.ApplyRoleToTenants {
-			ds, err := Instance.Enforcer.Enforcer.GetDomainsForUser(args[1].(string))
-			if err != nil {
-				return reqDomain, nil
-			}
-			for _, d := range ds {
-				if strings.TrimSpace(d) != "" {
-					domains := Instance.GetRelatedDomains(d)
-					if str.Contains(domains, reqDomain.(string)) {
-						return d, nil
-					}
-				}
-			}
-		}*/
 		return reqDomain, nil
 	},
 }
