@@ -1,6 +1,7 @@
-p, financePerson, companyA, allow, /restrict, GET
-p, financePerson, companyA, deny, /restrict, POST
-p, financePerson, companyB, allow, /restricted, GET
-g, sujit, financePerson, companyA, true
+p, financePerson, companyA, allow, /, GET, ""
+p, financePerson, companyA, allow, /restrict, GET, ""
+p, financePerson, companyA, deny, /restrict, POST, ""
+p, financePerson, companyB, allow, /restricted, GET, ""
+g, sujit, financePerson, companyA, false
 g2, companyA, companyB
 g2, companyD, companyC

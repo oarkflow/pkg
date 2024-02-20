@@ -1,7 +1,6 @@
 package permission
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/casbin/casbin/v2"
@@ -84,7 +83,6 @@ func (c *Enforcer) GetDomainsForUser(user string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("ASD", userDomains)
 	for _, d := range userDomains {
 		if strings.TrimSpace(d) != "" {
 			ds := Instance.GetRelatedDomains(d)

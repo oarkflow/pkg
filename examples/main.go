@@ -12,7 +12,7 @@ import (
 	"github.com/oarkflow/pkg/permission"
 )
 
-func main() {
+func ma1in() {
 	et, err := permission.Default(permission.Config{
 		Model:  "model.conf",
 		Policy: "policy.csv",
@@ -29,14 +29,9 @@ func main() {
 	if err != nil {
 		log.Fatalf("unable to create Casbin enforcer: %v", err)
 	}
-	if len(permission.CasFunc) > 0 {
-		for key, fn := range permission.CasFunc {
-			et.AddFunction(key, fn)
-		}
-	}
 	slice := [][]any{
-		{"sujit", "companyA", "/restricted", "GET"}, // true
-		{"sujit", "companyB", "/restricted", "GET"}, // false, expected true
+		{"sujit", "companyA", "/restricted", "GET", ""}, // true
+		{"sujit", "companyB", "/restricted", "GET", ""}, // false, expected true
 	}
 	for _, rVals := range slice {
 		ok, err := et.Enforce(rVals...)
@@ -48,7 +43,7 @@ func main() {
 	}
 }
 
-func routeMiddlePermission() {
+func main() {
 	perm, err := permission.Default(permission.Config{
 		Model:  "model.conf",
 		Policy: "policy.csv",
@@ -59,7 +54,7 @@ func routeMiddlePermission() {
 				"entity_id": "1",
 			})
 			// "user", "company", "url/feature", "method/action", "json attributes"
-			return []string{"sujit", "arnet", string(ctx.Path()), string(ctx.Method()), string(bt)}
+			return []string{"sujit", "companyB", string(ctx.Path()), string(ctx.Method()), string(bt)}
 		},
 	})
 	if err != nil {
