@@ -45,9 +45,10 @@ func mai1n() {
 }
 
 func main() {
-	/*perm, err := permission.Default(permission.Config{
-		Model:  "model.conf",
-		Policy: "policy.csv",
+	perm, err := permission.Default(permission.Config{
+		Model:      "model.conf",
+		Policy:     "policy.csv",
+		SkipExcept: []string{"GET /"},
 		ParamExtractor: func(c context.Context, ctx *frame.Context) []string {
 			bt, _ := json.Marshal(map[string]any{
 				"service":   "medical-coding",
@@ -61,14 +62,20 @@ func main() {
 	if err != nil {
 		fmt.Println("error: ")
 		panic(err)
-	}*/
+	}
 	srv := server.Default(server.WithExitWaitTime(1 * time.Second))
-	// srv.Use(perm.RoutePermission)
+	srv.Use(perm.RoutePermission)
+	srv.GET("/", func(c context.Context, ctx *frame.Context) {
+		ctx.JSON(200, "Welcome home")
+	})
 	srv.GET("/restrict/:id", func(c context.Context, ctx *frame.Context) {
 		ctx.JSON(200, ctx.FullPath())
 	})
 	srv.POST("/restrict", func(c context.Context, ctx *frame.Context) {
 		ctx.JSON(200, "Access Done")
+	})
+	srv.NoRoute(func(c context.Context, ctx *frame.Context) {
+		ctx.JSON(200, "No route")
 	})
 	srv.Spin()
 }

@@ -120,6 +120,14 @@ func New(cfg Config) (*Engine, error) {
 	return engine, err
 }
 
+func (cm *Engine) SetSkip(skip []string) {
+	cm.config.Skip = skip
+}
+
+func (cm *Engine) SetSkipExcept(skip []string) {
+	cm.config.SkipExcept = skip
+}
+
 // RequirePermissions tries to find the current subject and determine if the
 // subject has the required permissions according to predefined Casbin policies.
 func (cm *Engine) RequirePermissions(permissions []string, opts ...func(o *Options)) frame.HandlerFunc {
