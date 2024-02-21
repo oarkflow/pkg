@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/oarkflow/frame"
 	"github.com/oarkflow/frame/server"
@@ -12,7 +13,7 @@ import (
 	"github.com/oarkflow/pkg/permission"
 )
 
-func ma1in() {
+func mai1n() {
 	et, err := permission.Default(permission.Config{
 		Model:  "model.conf",
 		Policy: "policy.csv",
@@ -30,7 +31,7 @@ func ma1in() {
 		log.Fatalf("unable to create Casbin enforcer: %v", err)
 	}
 	slice := [][]any{
-		{"sujit", "companyA", "/restricted", "GET", ""}, // true
+		{"sujit", "companyA", "/users", "GET", ""},      // true
 		{"sujit", "companyB", "/restricted", "GET", ""}, // false, expected true
 	}
 	for _, rVals := range slice {
@@ -44,7 +45,7 @@ func ma1in() {
 }
 
 func main() {
-	perm, err := permission.Default(permission.Config{
+	/*perm, err := permission.Default(permission.Config{
 		Model:  "model.conf",
 		Policy: "policy.csv",
 		ParamExtractor: func(c context.Context, ctx *frame.Context) []string {
@@ -60,11 +61,11 @@ func main() {
 	if err != nil {
 		fmt.Println("error: ")
 		panic(err)
-	}
-	srv := server.Default()
-	srv.Use(perm.RoutePermission)
-	srv.GET("/restrict", func(c context.Context, ctx *frame.Context) {
-		ctx.JSON(200, "Access Done")
+	}*/
+	srv := server.Default(server.WithExitWaitTime(1 * time.Second))
+	// srv.Use(perm.RoutePermission)
+	srv.GET("/restrict/:id", func(c context.Context, ctx *frame.Context) {
+		ctx.JSON(200, ctx.FullPath())
 	})
 	srv.POST("/restrict", func(c context.Context, ctx *frame.Context) {
 		ctx.JSON(200, "Access Done")

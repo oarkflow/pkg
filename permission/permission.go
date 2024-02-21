@@ -3,6 +3,7 @@ package permission
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/casbin/casbin/v2"
 	"github.com/casbin/casbin/v2/persist"
@@ -21,6 +22,8 @@ type Config struct {
 	TableName       string
 	PrimaryKey      string
 	DisableMigrate  bool
+	SkipExcept      []string
+	Skip            []string
 	Unauthorized    frame.HandlerFunc
 	Forbidden       frame.HandlerFunc
 	ParamExtractor  func(c context.Context, ctx *frame.Context) []string
@@ -211,6 +214,21 @@ func (cm *Engine) Can(dom, sub, perm string, opts ...func(o *Options)) bool {
 // subject has the required permissions according to predefined Casbin policies.
 // This method uses http Path and Method as object and action.
 func (cm *Engine) RoutePermission(cc context.Context, c *frame.Context) {
+	path := c.FullPath()
+	method := string(c.Method())
+	path = fmt.Sprintf("%s %s", method, path)
+	if len(cm.config.Skip) > 0 {
+		if str.Contains(cm.config.Skip, path) {
+			c.Next(cc)
+			return
+		}
+	}
+	if len(cm.config.SkipExcept) > 0 {
+		if !str.Contains(cm.config.SkipExcept, path) {
+			c.Next(cc)
+			return
+		}
+	}
 	vals := cm.config.ParamExtractor(cc, c)
 	if len(vals) < 3 {
 		cm.config.Unauthorized(cc, c)
