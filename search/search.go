@@ -14,7 +14,6 @@ import (
 
 	"github.com/oarkflow/pkg/search/lib"
 	"github.com/oarkflow/pkg/search/tokenizer"
-
 	"github.com/oarkflow/pkg/str"
 	"github.com/oarkflow/pkg/utils"
 )
@@ -115,7 +114,7 @@ type Config struct {
 	SliceField      string
 }
 
-type Search[Schema SchemaProps] struct {
+type Engine[Schema SchemaProps] struct {
 	mutex           sync.RWMutex
 	documents       map[int64]Schema
 	indexes         map[string]*Index
@@ -128,7 +127,7 @@ type Search[Schema SchemaProps] struct {
 	sliceField      string
 }
 
-func New[Schema SchemaProps](c *Config) *Search[Schema] {
+func New[Schema SchemaProps](c *Config) *Engine[Schema] {
 	if c.TokenizerConfig == nil {
 		c.TokenizerConfig = &tokenizer.Config{
 			EnableStemming:  true,
@@ -138,7 +137,7 @@ func New[Schema SchemaProps](c *Config) *Search[Schema] {
 	if c.DefaultLanguage == "" {
 		c.DefaultLanguage = tokenizer.ENGLISH
 	}
-	db := &Search[Schema]{
+	db := &Engine[Schema]{
 		key:             c.Key,
 		documents:       make(map[int64]Schema),
 		indexes:         make(map[string]*Index),
@@ -158,7 +157,7 @@ func New[Schema SchemaProps](c *Config) *Search[Schema] {
 	return db
 }
 
-func (db *Search[Schema]) buildIndexes() {
+func (db *Engine[Schema]) buildIndexes() {
 	var s Schema
 	for key := range db.flattenSchema(s) {
 		db.indexes[key] = NewIndex()
@@ -166,11 +165,18 @@ func (db *Search[Schema]) buildIndexes() {
 	}
 }
 
-func (db *Search[Schema]) DocumentLen() int {
+func (db *Engine[Schema]) DocumentLen() int {
 	return len(db.documents)
 }
 
-func (db *Search[Schema]) Insert(doc Schema, lang ...tokenizer.Language) (Record[Schema], error) {
+func (db *Engine[Schema]) Insert(doc Schema, lang ...tokenizer.Language) (Record[Schema], error) {
+	if len(db.indexKeys) == 0 {
+		indexKeys := DocFields(doc)
+		for _, key := range indexKeys {
+			db.indexes[key] = NewIndex()
+			db.indexKeys = append(db.indexKeys, key)
+		}
+	}
 	language := tokenizer.ENGLISH
 	if len(lang) > 0 {
 		language = lang[0]
@@ -197,7 +203,7 @@ func (db *Search[Schema]) Insert(doc Schema, lang ...tokenizer.Language) (Record
 	return Record[Schema]{Id: id, Data: doc}, nil
 }
 
-func (db *Search[Schema]) InsertBatch(docs []Schema, batchSize int, lang ...tokenizer.Language) []error {
+func (db *Engine[Schema]) InsertBatch(docs []Schema, batchSize int, lang ...tokenizer.Language) []error {
 	docLen := len(docs)
 	if docLen == 0 {
 		return nil
@@ -249,7 +255,7 @@ func (db *Search[Schema]) InsertBatch(docs []Schema, batchSize int, lang ...toke
 	return errs
 }
 
-func (db *Search[Schema]) Update(params *UpdateParams[Schema]) (Record[Schema], error) {
+func (db *Engine[Schema]) Update(params *UpdateParams[Schema]) (Record[Schema], error) {
 	document := db.flattenSchema(params.Document)
 
 	language := params.Language
@@ -277,7 +283,7 @@ func (db *Search[Schema]) Update(params *UpdateParams[Schema]) (Record[Schema], 
 	return Record[Schema]{Id: params.Id, Data: params.Document}, nil
 }
 
-func (db *Search[Schema]) Delete(params *DeleteParams[Schema]) error {
+func (db *Engine[Schema]) Delete(params *DeleteParams[Schema]) error {
 	language := params.Language
 	if language == "" {
 		language = db.defaultLanguage
@@ -302,7 +308,7 @@ func (db *Search[Schema]) Delete(params *DeleteParams[Schema]) error {
 	return nil
 }
 
-func (db *Search[Schema]) prepareResult(idScores map[int64]float64, params *Params) (Result[Schema], error) {
+func (db *Engine[Schema]) prepareResult(idScores map[int64]float64, params *Params) (Result[Schema], error) {
 	db.mutex.RLock()
 	defer db.mutex.RUnlock()
 
@@ -326,11 +332,11 @@ func (db *Search[Schema]) prepareResult(idScores map[int64]float64, params *Para
 	return Result[Schema]{Hits: results, Count: len(results)}, nil
 }
 
-func (db *Search[Schema]) ClearCache() {
+func (db *Engine[Schema]) ClearCache() {
 	db.cache = nil
 }
 
-func (db *Search[Schema]) prepareParams(params *Params) (map[int64]float64, error) {
+func (db *Engine[Schema]) prepareParams(params *Params) (map[int64]float64, error) {
 	allIdScores := make(map[int64]float64)
 
 	properties := params.Properties
@@ -372,7 +378,7 @@ func (db *Search[Schema]) prepareParams(params *Params) (map[int64]float64, erro
 	return allIdScores, nil
 }
 
-func (db *Search[Schema]) Search(params *Params) (Result[Schema], error) {
+func (db *Engine[Schema]) Search(params *Params) (Result[Schema], error) {
 	if db.cache == nil {
 		db.cache = make(map[uint64]map[int64]float64)
 	}
@@ -440,7 +446,7 @@ func (db *Search[Schema]) Search(params *Params) (Result[Schema], error) {
 	return db.prepareResult(allIdScores, params)
 }
 
-func (db *Search[Schema]) indexDocument(id int64, document map[string]string, language tokenizer.Language) {
+func (db *Engine[Schema]) indexDocument(id int64, document map[string]string, language tokenizer.Language) {
 	for propName, index := range db.indexes {
 		tokens, _ := tokenizer.Tokenize(&tokenizer.TokenizeParams{
 			Text:            document[propName],
@@ -456,7 +462,7 @@ func (db *Search[Schema]) indexDocument(id int64, document map[string]string, la
 	}
 }
 
-func (db *Search[Schema]) deindexDocument(id int64, document map[string]string, language tokenizer.Language) {
+func (db *Engine[Schema]) deindexDocument(id int64, document map[string]string, language tokenizer.Language) {
 	for propName, index := range db.indexes {
 		tokens, _ := tokenizer.Tokenize(&tokenizer.TokenizeParams{
 			Text:            document[propName],
@@ -472,7 +478,7 @@ func (db *Search[Schema]) deindexDocument(id int64, document map[string]string, 
 	}
 }
 
-func (db *Search[Schema]) getFieldsFromMap(obj map[string]any, prefix ...string) map[string]string {
+func (db *Engine[Schema]) getFieldsFromMap(obj map[string]any, prefix ...string) map[string]string {
 	fields := make(map[string]string)
 	rules := make(map[string]bool)
 	if db.rules != nil {
@@ -496,7 +502,7 @@ func (db *Search[Schema]) getFieldsFromMap(obj map[string]any, prefix ...string)
 	return fields
 }
 
-func (db *Search[Schema]) getFieldsFromStruct(obj any, prefix ...string) map[string]string {
+func (db *Engine[Schema]) getFieldsFromStruct(obj any, prefix ...string) map[string]string {
 	fields := make(map[string]string)
 	t := reflect.TypeOf(obj)
 	v := reflect.ValueOf(obj)
@@ -536,7 +542,7 @@ func (db *Search[Schema]) getFieldsFromStruct(obj any, prefix ...string) map[str
 	return fields
 }
 
-func (db *Search[Schema]) flattenSchema(obj any, prefix ...string) map[string]string {
+func (db *Engine[Schema]) flattenSchema(obj any, prefix ...string) map[string]string {
 	if obj == nil {
 		return nil
 	}

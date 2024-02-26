@@ -13,7 +13,7 @@ import (
 	"github.com/oarkflow/pkg/permission"
 )
 
-func mai1n() {
+func main() {
 	et, err := permission.Default(permission.Config{
 		Model:  "model.conf",
 		Policy: "policy.csv",
@@ -33,6 +33,7 @@ func mai1n() {
 	slice := [][]any{
 		{"sujit", "companyA", "/users", "GET", ""},      // true
 		{"sujit", "companyB", "/restricted", "GET", ""}, // false, expected true
+		{"sujit", "companyC", "/post", "GET", ""},       // false, expected true
 	}
 	for _, rVals := range slice {
 		ok, err := et.Enforce(rVals...)
@@ -44,7 +45,7 @@ func mai1n() {
 	}
 }
 
-func main() {
+func main1() {
 	perm, err := permission.Default(permission.Config{
 		Model:      "model.conf",
 		Policy:     "policy.csv",

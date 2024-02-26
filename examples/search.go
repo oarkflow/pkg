@@ -73,11 +73,25 @@ func testMap() {
 			EnableStopWords: true,
 		},
 	})
-	errs := db.InsertBatch(data, 100)
+	var startTime = time.Now()
+	for _, dat := range data {
+		_, err := db.Insert(dat)
+		if err != nil {
+			panic(err)
+		}
+		// fmt.Println(rs)
+	}
+	/*errs := db.InsertBatch(data, 100)
 	if len(errs) > 0 {
 		panic(errs)
-	}
-
+	}*/
+	fmt.Println(db.DocumentLen())
+	fmt.Println("Indexing took", time.Since(startTime))
+	/*errs := db.InsertBatch(data, 100)
+	if len(errs) > 0 {
+		panic(errs)
+	}*/
+	startTime = time.Now()
 	s, err := db.Search(&search.Params{
 		Query:    "Cholera",
 		BoolMode: search.AND,
@@ -85,6 +99,7 @@ func testMap() {
 	if err != nil {
 		panic(err)
 	}
+	fmt.Println("Searching took", time.Since(startTime))
 	fmt.Println(s.Hits)
 }
 

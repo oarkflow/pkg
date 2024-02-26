@@ -12,8 +12,8 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/securecookie v1.1.2
 	github.com/gorilla/sessions v1.2.2
-	github.com/gosimple/slug v1.13.1
-	github.com/klauspost/compress v1.17.6
+	github.com/gosimple/slug v1.14.0
+	github.com/klauspost/compress v1.17.7
 	github.com/klauspost/pgzip v1.2.6
 	github.com/kljensen/snowball v0.9.0
 	github.com/oarkflow/expr v0.0.7
@@ -29,9 +29,9 @@ require (
 	github.com/sourcegraph/conc v0.3.0
 	github.com/tidwall/pretty v1.2.1
 	golang.org/x/crypto v0.19.0
-	golang.org/x/exp v0.0.0-20231214170342-aacd6d4b4611
+	golang.org/x/exp v0.0.0-20240222234643-814bf88cf225
 	golang.org/x/image v0.15.0
-	golang.org/x/net v0.10.0
+	golang.org/x/net v0.21.0
 	golang.org/x/sys v0.17.0
 	golang.org/x/text v0.14.0
 	gonum.org/v1/gonum v0.14.0
@@ -53,6 +53,7 @@ require (
 	github.com/go-sql-driver/mysql v1.7.1 // indirect
 	github.com/golang-sql/civil v0.0.0-20220223132316-b832511892a9 // indirect
 	github.com/golang-sql/sqlexp v0.1.0 // indirect
+	github.com/golang/protobuf v1.5.0 // indirect
 	github.com/gosimple/unidecode v1.0.1 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
@@ -62,7 +63,7 @@ require (
 	github.com/mattn/go-isatty v0.0.18 // indirect
 	github.com/mattn/go-runewidth v0.0.15 // indirect
 	github.com/microsoft/go-mssqldb v0.21.0 // indirect
-	github.com/nyaruka/phonenumbers v1.3.2 // indirect
+	github.com/nyaruka/phonenumbers v1.0.55 // indirect
 	github.com/oarkflow/log v1.0.74 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
