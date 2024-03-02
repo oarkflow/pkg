@@ -1,9 +1,10 @@
 package xopen
 
 import (
-	"compress/gzip"
 	"io"
 	"os/exec"
+
+	"github.com/klauspost/compress/gzip"
 )
 
 // from: https://gist.github.com/rasky/d42a52c16683f1a2f4dccdef80e2712d

@@ -16,7 +16,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	gzip "github.com/klauspost/pgzip"
+	"github.com/klauspost/compress/gzip"
 )
 
 // ErrNoContent means nothing in the stream/file.
