@@ -6,15 +6,16 @@ import (
 	"hash/fnv"
 	"math"
 	"reflect"
+	"slices"
 	"sort"
 	"sync"
 	"time"
 
 	"github.com/oarkflow/xid"
 
+	"github.com/oarkflow/pkg/maps"
 	"github.com/oarkflow/pkg/search/lib"
 	"github.com/oarkflow/pkg/search/tokenizer"
-	"github.com/oarkflow/pkg/str"
 	"github.com/oarkflow/pkg/utils"
 )
 
@@ -116,13 +117,13 @@ type Config struct {
 
 type Engine[Schema SchemaProps] struct {
 	mutex           sync.RWMutex
-	documents       map[int64]Schema
-	indexes         map[string]*Index
+	documents       maps.IMap[int64, Schema]
+	indexes         maps.IMap[string, *Index]
 	indexKeys       []string
 	defaultLanguage tokenizer.Language
 	tokenizerConfig *tokenizer.Config
 	rules           map[string]bool
-	cache           map[uint64]map[int64]float64
+	cache           maps.IMap[uint64, map[int64]float64]
 	key             string
 	sliceField      string
 }
@@ -139,9 +140,8 @@ func New[Schema SchemaProps](c *Config) *Engine[Schema] {
 	}
 	db := &Engine[Schema]{
 		key:             c.Key,
-		documents:       make(map[int64]Schema),
-		indexes:         make(map[string]*Index),
-		indexKeys:       make([]string, 0),
+		documents:       maps.New[int64, Schema](),
+		indexes:         maps.New[string, *Index](),
 		defaultLanguage: c.DefaultLanguage,
 		tokenizerConfig: c.TokenizerConfig,
 		rules:           c.Rules,
@@ -150,7 +150,7 @@ func New[Schema SchemaProps](c *Config) *Engine[Schema] {
 	db.buildIndexes()
 	if len(db.indexKeys) == 0 {
 		for _, key := range c.IndexKeys {
-			db.indexes[key] = NewIndex()
+			db.indexes.Set(key, NewIndex())
 			db.indexKeys = append(db.indexKeys, key)
 		}
 	}
@@ -160,20 +160,20 @@ func New[Schema SchemaProps](c *Config) *Engine[Schema] {
 func (db *Engine[Schema]) buildIndexes() {
 	var s Schema
 	for key := range db.flattenSchema(s) {
-		db.indexes[key] = NewIndex()
+		db.indexes.Set(key, NewIndex())
 		db.indexKeys = append(db.indexKeys, key)
 	}
 }
 
 func (db *Engine[Schema]) DocumentLen() int {
-	return len(db.documents)
+	return int(db.documents.Len())
 }
 
 func (db *Engine[Schema]) Insert(doc Schema, lang ...tokenizer.Language) (Record[Schema], error) {
 	if len(db.indexKeys) == 0 {
 		indexKeys := DocFields(doc)
 		for _, key := range indexKeys {
-			db.indexes[key] = NewIndex()
+			db.indexes.Set(key, NewIndex())
 			db.indexKeys = append(db.indexKeys, key)
 		}
 	}
@@ -194,11 +194,11 @@ func (db *Engine[Schema]) Insert(doc Schema, lang ...tokenizer.Language) (Record
 	db.mutex.Lock()
 	defer db.mutex.Unlock()
 
-	if _, ok := db.documents[id]; ok {
+	if _, ok := db.documents.Get(id); ok {
 		return Record[Schema]{}, fmt.Errorf("document id already exists")
 	}
 
-	db.documents[id] = doc
+	db.documents.Set(id, doc)
 	db.indexDocument(id, document, language)
 	return Record[Schema]{Id: id, Data: doc}, nil
 }
@@ -211,7 +211,7 @@ func (db *Engine[Schema]) InsertBatch(docs []Schema, batchSize int, lang ...toke
 	if len(db.indexKeys) == 0 {
 		keys := DocFields(docs[0])
 		for _, key := range keys {
-			db.indexes[key] = NewIndex()
+			db.indexes.Set(key, NewIndex())
 			db.indexKeys = append(db.indexKeys, key)
 		}
 	}
@@ -269,7 +269,7 @@ func (db *Engine[Schema]) Update(params *UpdateParams[Schema]) (Record[Schema], 
 	db.mutex.Lock()
 	defer db.mutex.Unlock()
 
-	oldDocument, ok := db.documents[params.Id]
+	oldDocument, ok := db.documents.Get(params.Id)
 	if !ok {
 		return Record[Schema]{}, fmt.Errorf("document not found")
 	}
@@ -278,7 +278,7 @@ func (db *Engine[Schema]) Update(params *UpdateParams[Schema]) (Record[Schema], 
 	document = db.flattenSchema(oldDocument)
 	db.deindexDocument(params.Id, document, language)
 
-	db.documents[params.Id] = params.Document
+	db.documents.Set(params.Id, params.Document)
 
 	return Record[Schema]{Id: params.Id, Data: params.Document}, nil
 }
@@ -295,15 +295,14 @@ func (db *Engine[Schema]) Delete(params *DeleteParams[Schema]) error {
 	db.mutex.Lock()
 	defer db.mutex.Unlock()
 
-	document, ok := db.documents[params.Id]
+	document, ok := db.documents.Get(params.Id)
 	if !ok {
 		return fmt.Errorf("document not found")
 	}
 
 	doc := db.flattenSchema(document)
 	db.deindexDocument(params.Id, doc, language)
-
-	delete(db.documents, params.Id)
+	db.documents.Del(params.Id)
 
 	return nil
 }
@@ -315,7 +314,7 @@ func (db *Engine[Schema]) prepareResult(idScores map[int64]float64, params *Para
 	results := make(Hits[Schema], 0)
 
 	for id, score := range idScores {
-		if doc, ok := db.documents[id]; ok {
+		if doc, ok := db.documents.Get(id); ok {
 			results = append(results, Hit[Schema]{Id: id, Data: doc, Score: score})
 		}
 	}
@@ -361,14 +360,14 @@ func (db *Engine[Schema]) prepareParams(params *Params) (map[int64]float64, erro
 	db.mutex.RLock()
 	defer db.mutex.RUnlock()
 	for _, prop := range properties {
-		if index, ok := db.indexes[prop]; ok {
+		if index, ok := db.indexes.Get(prop); ok {
 			idScores := index.Find(&FindParams{
 				Tokens:    tokens,
 				BoolMode:  params.BoolMode,
 				Exact:     params.Exact,
 				Tolerance: params.Tolerance,
 				Relevance: params.Relevance,
-				DocsCount: len(db.documents),
+				DocsCount: db.DocumentLen(),
 			})
 			for id, score := range idScores {
 				allIdScores[id] += score
@@ -380,11 +379,11 @@ func (db *Engine[Schema]) prepareParams(params *Params) (map[int64]float64, erro
 
 func (db *Engine[Schema]) Search(params *Params) (Result[Schema], error) {
 	if db.cache == nil {
-		db.cache = make(map[uint64]map[int64]float64)
+		db.cache = maps.New[uint64, map[int64]float64]()
 	}
 	cachedKey := params.ToInt64()
 	if cachedKey != 0 {
-		if score, ok := db.cache[cachedKey]; ok {
+		if score, ok := db.cache.Get(cachedKey); ok {
 			return db.prepareResult(score, params)
 		}
 	}
@@ -433,12 +432,12 @@ func (db *Engine[Schema]) Search(params *Params) (Result[Schema], error) {
 			}
 			d := utils.Intersection(keys...)
 			for id, _ := range idScores {
-				if !str.Contains(d, id) {
+				if !slices.Contains(d, id) {
 					delete(idScores, id)
 				}
 			}
 			if cachedKey != 0 {
-				db.cache[cachedKey] = idScores
+				db.cache.Set(cachedKey, idScores)
 			}
 			return db.prepareResult(idScores, params)
 		}
@@ -447,7 +446,7 @@ func (db *Engine[Schema]) Search(params *Params) (Result[Schema], error) {
 }
 
 func (db *Engine[Schema]) indexDocument(id int64, document map[string]string, language tokenizer.Language) {
-	for propName, index := range db.indexes {
+	db.indexes.ForEach(func(propName string, index *Index) bool {
 		tokens, _ := tokenizer.Tokenize(&tokenizer.TokenizeParams{
 			Text:            document[propName],
 			Language:        language,
@@ -457,13 +456,18 @@ func (db *Engine[Schema]) indexDocument(id int64, document map[string]string, la
 		index.Insert(&IndexParams{
 			Id:        id,
 			Tokens:    tokens,
-			DocsCount: len(db.documents),
+			DocsCount: db.DocumentLen(),
 		})
-	}
+		return true
+	})
+}
+
+func (db *Engine[Schema]) Documents() maps.IMap[int64, Schema] {
+	return db.documents
 }
 
 func (db *Engine[Schema]) deindexDocument(id int64, document map[string]string, language tokenizer.Language) {
-	for propName, index := range db.indexes {
+	db.indexes.ForEach(func(propName string, index *Index) bool {
 		tokens, _ := tokenizer.Tokenize(&tokenizer.TokenizeParams{
 			Text:            document[propName],
 			Language:        language,
@@ -473,9 +477,10 @@ func (db *Engine[Schema]) deindexDocument(id int64, document map[string]string, 
 		index.Delete(&IndexParams{
 			Id:        id,
 			Tokens:    tokens,
-			DocsCount: len(db.documents),
+			DocsCount: db.DocumentLen(),
 		})
-	}
+		return true
+	})
 }
 
 func (db *Engine[Schema]) getFieldsFromMap(obj map[string]any, prefix ...string) map[string]string {

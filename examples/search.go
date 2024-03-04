@@ -74,17 +74,17 @@ func testMap() {
 		},
 	})
 	var startTime = time.Now()
-	for _, dat := range data {
+	/*for _, dat := range data {
 		_, err := db.Insert(dat)
 		if err != nil {
 			panic(err)
 		}
 		// fmt.Println(rs)
-	}
-	/*errs := db.InsertBatch(data, 100)
+	}*/
+	errs := db.InsertBatch(data, 1000)
 	if len(errs) > 0 {
 		panic(errs)
-	}*/
+	}
 	fmt.Println(db.DocumentLen())
 	fmt.Println("Indexing took", time.Since(startTime))
 	/*errs := db.InsertBatch(data, 100)
