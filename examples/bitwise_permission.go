@@ -103,3 +103,89 @@ func main() {
 		fmt.Printf("User in %s with role %s in department %s does not have permission to access %s with method %d\n", company, userRole, department, url, method)
 	}
 }
+
+/*
+package main
+
+import (
+	"fmt"
+)
+
+// Define constants for HTTP methods
+const (
+	GET = 1 << iota // 1
+	POST            // 2
+	PUT             // 4
+	DELETE          // 8
+)
+
+// Define permissions for users
+var userPermissions = map[string]map[string]map[string]int{
+	"companyA": {
+		"client1": {
+			"service1": {
+				"admin":  GET | POST | PUT | DELETE,
+				"editor": GET | POST | PUT,
+				"viewer": GET,
+			},
+			"service2": {
+				"admin":  GET | POST | PUT | DELETE,
+				"editor": GET | POST | PUT,
+				"viewer": GET,
+			},
+		},
+		"client2": {
+			"service1": {
+				"admin":  GET | POST | PUT | DELETE,
+				"editor": GET | POST | PUT,
+				"viewer": GET,
+			},
+			"service2": {
+				"admin":  GET | POST | PUT | DELETE,
+				"editor": GET | POST | PUT,
+				"viewer": GET,
+			},
+		},
+	},
+	"companyB": {
+		"client3": {
+			"service1": {
+				"admin":  GET | POST | PUT | DELETE,
+				"editor": GET | POST | PUT,
+				"viewer": GET,
+			},
+			"service2": {
+				"admin":  GET | POST | PUT | DELETE,
+				"editor": GET | POST | PUT,
+				"viewer": GET,
+			},
+		},
+	},
+	// Add more companies, clients, and services as needed
+}
+
+// Function to check if a user has permission for a specific operation
+func hasPermission(company, client, service, userRole string, method int) bool {
+	permissions, found := userPermissions[company][client][service][userRole]
+	if !found {
+		return false // Permissions not found
+	}
+	return permissions&method != 0
+}
+
+func main() {
+	company := "companyA"
+	client := "client1"
+	service := "service1"
+	userRole := "admin"
+	url := "/clients/123" // Example URL
+	method := GET
+
+	if hasPermission(company, client, service, userRole, method) {
+		fmt.Printf("User with role %s in company %s, client %s, and service %s has permission to access %s with method %d\n", userRole, company, client, service, url, method)
+	} else {
+		fmt.Printf("User with role %s in company %s, client %s, and service %s does not have permission to access %s with method %d\n", userRole, company, client, service, url, method)
+	}
+}
+
+*/
