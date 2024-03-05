@@ -188,4 +188,155 @@ func main() {
 	}
 }
 
+package main
+
+import (
+	"fmt"
+	"net/http"
+)
+
+// Define constants for HTTP methods
+const (
+	GET = 1 << iota // 1
+	POST            // 2
+	PUT             // 4
+	DELETE          // 8
+)
+
+// Define permissions for users
+var userPermissions = map[string]map[string]map[string]map[string]int{
+	"companyA": {
+		"client1": {
+			"service1": {
+				"admin":  {"/users": GET | POST | PUT | DELETE, "/posts": GET | POST | PUT | DELETE},
+				"editor": {"/users": GET | POST | PUT, "/posts": GET | POST | PUT},
+				"viewer": {"/users": GET, "/posts": GET},
+			},
+			"service2": {
+				"admin":  {"/comments": GET | POST | PUT | DELETE},
+				"editor": {"/comments": GET | POST | PUT},
+				"viewer": {"/comments": GET},
+			},
+		},
+		"client2": {
+			"service1": {
+				"admin":  {"/users": GET | POST | PUT | DELETE, "/posts": GET | POST | PUT | DELETE},
+				"editor": {"/users": GET | POST | PUT, "/posts": GET | POST | PUT},
+				"viewer": {"/users": GET, "/posts": GET},
+			},
+			"service2": {
+				"admin":  {"/comments": GET | POST | PUT | DELETE},
+				"editor": {"/comments": GET | POST | PUT},
+				"viewer": {"/comments": GET},
+			},
+		},
+	},
+	"companyB": {
+		"client3": {
+			"service1": {
+				"admin":  {"/users": GET | POST | PUT | DELETE, "/posts": GET | POST | PUT | DELETE},
+				"editor": {"/users": GET | POST | PUT, "/posts": GET | POST | PUT},
+				"viewer": {"/users": GET, "/posts": GET},
+			},
+			"service2": {
+				"admin":  {"/comments": GET | POST | PUT | DELETE},
+				"editor": {"/comments": GET | POST | PUT},
+				"viewer": {"/comments": GET},
+			},
+		},
+	},
+	// Add more companies, clients, and services as needed
+}
+
+// Middleware function to check permission before serving HTTP request
+func checkPermission(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Extract company, client, service, user role, and URL from the request context
+		company := r.Header.Get("X-Company")
+		client := r.Header.Get("X-Client")
+		service := r.Header.Get("X-Service")
+		userRole := r.Header.Get("X-UserRole")
+		url := r.URL.Path
+
+		// Check if user has permission for the requested URL and method
+		method := getMethodMask(r.Method)
+		if !hasPermission(company, client, service, userRole, url, method) {
+			http.Error(w, "Forbidden", http.StatusForbidden)
+			return
+		}
+
+		// If permission granted, call the next handler
+		next.ServeHTTP(w, r)
+	})
+}
+
+// Function to map HTTP method to its bitmask
+func getMethodMask(method string) int {
+	switch method {
+	case "GET":
+		return GET
+	case "POST":
+		return POST
+	case "PUT":
+		return PUT
+	case "DELETE":
+		return DELETE
+	default:
+		return 0 // Unsupported method
+	}
+}
+
+// Function to check if a user has permission for a specific operation
+func hasPermission(company, client, service, userRole, url string, method int) bool {
+	// Check if the company exists
+	companyPermissions, found := userPermissions[company]
+	if !found {
+		return false // Company not found
+	}
+
+	// Check if the client exists
+	clientPermissions, found := companyPermissions[client]
+	if !found {
+		return false // Client not found
+	}
+
+	// Check if the service exists
+	servicePermissions, found := clientPermissions[service]
+	if !found {
+		return false // Service not found
+	}
+
+	// Check if the user role exists
+	userRolePermissions, found := servicePermissions[userRole]
+	if !found {
+		return false // User role not found
+	}
+
+	// Check if the URL exists
+	permissions, found := userRolePermissions[url]
+	if !found {
+		return false // URL not found
+	}
+
+	// Check if the method is allowed for the URL
+	return permissions&method != 0
+}
+
+// Example handler function
+func helloHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "Hello, World!")
+}
+
+func main() {
+	// Setup routes
+	http.HandleFunc("/hello", helloHandler)
+
+	// Use middleware to check permission before serving HTTP requests
+	http.Handle("/", checkPermission(http.DefaultServeMux))
+
+	// Start the server
+	fmt.Println("Server started on port 8080")
+	http.ListenAndServe(":8080", nil)
+}
+
 */
