@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"runtime"
 	"time"
 
 	"github.com/oarkflow/pkg/search"
@@ -64,6 +65,12 @@ func readFromInt() []int {
 	}
 }
 
+func memoryUsage() float64 {
+	var m runtime.MemStats
+	runtime.ReadMemStats(&m)
+	return float64(m.HeapAlloc) / 1024 / 1024
+}
+
 func testMap() {
 	data := readFileAsMap("icd10_codes.json")
 	db := search.New[any](&search.Config{
@@ -74,23 +81,11 @@ func testMap() {
 		},
 	})
 	var startTime = time.Now()
-	/*for _, dat := range data {
-		_, err := db.Insert(dat)
-		if err != nil {
-			panic(err)
-		}
-		// fmt.Println(rs)
-	}*/
 	errs := db.InsertBatch(data, 1000)
 	if len(errs) > 0 {
 		panic(errs)
 	}
-	fmt.Println(db.DocumentLen())
 	fmt.Println("Indexing took", time.Since(startTime))
-	/*errs := db.InsertBatch(data, 100)
-	if len(errs) > 0 {
-		panic(errs)
-	}*/
 	startTime = time.Now()
 	s, err := db.Search(&search.Params{
 		Query:    "Cholera",

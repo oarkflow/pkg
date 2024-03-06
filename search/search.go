@@ -112,12 +112,13 @@ type Config struct {
 	TokenizerConfig *tokenizer.Config
 	IndexKeys       []string
 	Rules           map[string]bool
+	Compress        bool
 	SliceField      string
 }
 
 type Engine[Schema SchemaProps] struct {
 	mutex           sync.RWMutex
-	documents       maps.IMap[int64, Schema]
+	documents       maps.IMap[int64, []byte]
 	indexes         maps.IMap[string, *Index]
 	indexKeys       []string
 	defaultLanguage tokenizer.Language
@@ -126,6 +127,7 @@ type Engine[Schema SchemaProps] struct {
 	cache           maps.IMap[uint64, map[int64]float64]
 	key             string
 	sliceField      string
+	compress        bool
 }
 
 func New[Schema SchemaProps](c *Config) *Engine[Schema] {
@@ -140,19 +142,17 @@ func New[Schema SchemaProps](c *Config) *Engine[Schema] {
 	}
 	db := &Engine[Schema]{
 		key:             c.Key,
-		documents:       maps.New[int64, Schema](),
+		documents:       maps.New[int64, []byte](),
 		indexes:         maps.New[string, *Index](),
 		defaultLanguage: c.DefaultLanguage,
 		tokenizerConfig: c.TokenizerConfig,
 		rules:           c.Rules,
 		sliceField:      c.SliceField,
+		compress:        c.Compress,
 	}
 	db.buildIndexes()
 	if len(db.indexKeys) == 0 {
-		for _, key := range c.IndexKeys {
-			db.indexes.Set(key, NewIndex())
-			db.indexKeys = append(db.indexKeys, key)
-		}
+		db.addIndexes(c.IndexKeys)
 	}
 	return db
 }
@@ -160,8 +160,7 @@ func New[Schema SchemaProps](c *Config) *Engine[Schema] {
 func (db *Engine[Schema]) buildIndexes() {
 	var s Schema
 	for key := range db.flattenSchema(s) {
-		db.indexes.Set(key, NewIndex())
-		db.indexKeys = append(db.indexKeys, key)
+		db.addIndex(key)
 	}
 }
 
@@ -172,10 +171,7 @@ func (db *Engine[Schema]) DocumentLen() int {
 func (db *Engine[Schema]) Insert(doc Schema, lang ...tokenizer.Language) (Record[Schema], error) {
 	if len(db.indexKeys) == 0 {
 		indexKeys := DocFields(doc)
-		for _, key := range indexKeys {
-			db.indexes.Set(key, NewIndex())
-			db.indexKeys = append(db.indexKeys, key)
-		}
+		db.addIndexes(indexKeys)
 	}
 	language := tokenizer.ENGLISH
 	if len(lang) > 0 {
@@ -191,16 +187,26 @@ func (db *Engine[Schema]) Insert(doc Schema, lang ...tokenizer.Language) (Record
 		return Record[Schema]{}, fmt.Errorf("not supported language")
 	}
 
-	db.mutex.Lock()
-	defer db.mutex.Unlock()
-
-	if _, ok := db.documents.Get(id); ok {
-		return Record[Schema]{}, fmt.Errorf("document id already exists")
+	bt, _ := json.Marshal(doc)
+	if db.compress {
+		bt, _ = Compress(bt)
 	}
-
-	db.documents.Set(id, doc)
+	db.documents.Set(id, bt)
+	db.mutex.Lock()
 	db.indexDocument(id, document, language)
+	db.mutex.Unlock()
 	return Record[Schema]{Id: id, Data: doc}, nil
+}
+
+func (db *Engine[Schema]) addIndexes(keys []string) {
+	for _, key := range keys {
+		db.addIndex(key)
+	}
+}
+
+func (db *Engine[Schema]) addIndex(key string) {
+	db.indexes.Set(key, NewIndex())
+	db.indexKeys = append(db.indexKeys, key)
 }
 
 func (db *Engine[Schema]) InsertBatch(docs []Schema, batchSize int, lang ...tokenizer.Language) []error {
@@ -210,10 +216,7 @@ func (db *Engine[Schema]) InsertBatch(docs []Schema, batchSize int, lang ...toke
 	}
 	if len(db.indexKeys) == 0 {
 		keys := DocFields(docs[0])
-		for _, key := range keys {
-			db.indexes.Set(key, NewIndex())
-			db.indexKeys = append(db.indexKeys, key)
-		}
+		db.addIndexes(keys)
 	}
 	batchCount := int(math.Ceil(float64(len(docs)) / float64(batchSize)))
 	docsChan := make(chan Schema)
@@ -277,8 +280,11 @@ func (db *Engine[Schema]) Update(params *UpdateParams[Schema]) (Record[Schema], 
 	db.indexDocument(params.Id, document, language)
 	document = db.flattenSchema(oldDocument)
 	db.deindexDocument(params.Id, document, language)
-
-	db.documents.Set(params.Id, params.Document)
+	bt, _ := json.Marshal(params.Document)
+	if db.compress {
+		bt, _ = Compress(bt)
+	}
+	db.documents.Set(params.Id, bt)
 
 	return Record[Schema]{Id: params.Id, Data: params.Document}, nil
 }
@@ -315,7 +321,12 @@ func (db *Engine[Schema]) prepareResult(idScores map[int64]float64, params *Para
 
 	for id, score := range idScores {
 		if doc, ok := db.documents.Get(id); ok {
-			results = append(results, Hit[Schema]{Id: id, Data: doc, Score: score})
+			if db.compress {
+				doc, _ = Decompress(doc)
+			}
+			var t Schema
+			json.Unmarshal(doc, &t)
+			results = append(results, Hit[Schema]{Id: id, Data: t, Score: score})
 		}
 	}
 
@@ -460,10 +471,6 @@ func (db *Engine[Schema]) indexDocument(id int64, document map[string]string, la
 		})
 		return true
 	})
-}
-
-func (db *Engine[Schema]) Documents() maps.IMap[int64, Schema] {
-	return db.documents
 }
 
 func (db *Engine[Schema]) deindexDocument(id int64, document map[string]string, language tokenizer.Language) {
