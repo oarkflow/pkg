@@ -81,10 +81,11 @@ func testMap() {
 		},
 	})
 	var startTime = time.Now()
-	errs := db.InsertBatch(data, 1000)
+	errs := db.InsertBatch(data)
 	if len(errs) > 0 {
 		panic(errs)
 	}
+	fmt.Println("Total Documents", db.DocumentLen())
 	fmt.Println("Indexing took", time.Since(startTime))
 	startTime = time.Now()
 	s, err := db.Search(&search.Params{
@@ -106,7 +107,7 @@ func testStruct() {
 			EnableStemming:  true,
 		},
 	})
-	errs := ftsSearch.InsertBatch(data, 2)
+	errs := ftsSearch.InsertBatch(data)
 	if len(errs) > 0 {
 		for _, err := range errs {
 			panic(err)
@@ -133,7 +134,7 @@ func testString() {
 			EnableStemming:  true,
 		},
 	})
-	errs := ftsSearch.InsertBatch(data, 2)
+	errs := ftsSearch.InsertBatch(data)
 	if len(errs) > 0 {
 		for _, err := range errs {
 			panic(err)

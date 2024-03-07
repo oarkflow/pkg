@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"hash/fnv"
-	"math"
 	"reflect"
+	"runtime"
 	"slices"
 	"sort"
 	"sync"
@@ -192,9 +192,7 @@ func (db *Engine[Schema]) Insert(doc Schema, lang ...tokenizer.Language) (Record
 		bt, _ = Compress(bt)
 	}
 	db.documents.Set(id, bt)
-	db.mutex.Lock()
 	db.indexDocument(id, document, language)
-	db.mutex.Unlock()
 	return Record[Schema]{Id: id, Data: doc}, nil
 }
 
@@ -209,7 +207,7 @@ func (db *Engine[Schema]) addIndex(key string) {
 	db.indexKeys = append(db.indexKeys, key)
 }
 
-func (db *Engine[Schema]) InsertBatch(docs []Schema, batchSize int, lang ...tokenizer.Language) []error {
+func (db *Engine[Schema]) InsertBatch(docs []Schema, lang ...tokenizer.Language) []error {
 	docLen := len(docs)
 	if docLen == 0 {
 		return nil
@@ -218,7 +216,10 @@ func (db *Engine[Schema]) InsertBatch(docs []Schema, batchSize int, lang ...toke
 		keys := DocFields(docs[0])
 		db.addIndexes(keys)
 	}
-	batchCount := int(math.Ceil(float64(len(docs)) / float64(batchSize)))
+	batchCount := runtime.NumCPU() / 2
+	if batchCount == 0 {
+		batchCount = 1
+	}
 	docsChan := make(chan Schema)
 	errsChan := make(chan error)
 	language := tokenizer.ENGLISH
@@ -226,16 +227,16 @@ func (db *Engine[Schema]) InsertBatch(docs []Schema, batchSize int, lang ...toke
 		language = lang[0]
 	}
 	var wg sync.WaitGroup
-	wg.Add(batchCount)
 
-	go func() {
+	go func(docs []Schema) {
 		for _, doc := range docs {
 			docsChan <- doc
 		}
 		close(docsChan)
-	}()
+	}(docs)
 
 	for i := 0; i < batchCount; i++ {
+		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			for doc := range docsChan {
@@ -269,14 +270,10 @@ func (db *Engine[Schema]) Update(params *UpdateParams[Schema]) (Record[Schema], 
 		return Record[Schema]{}, fmt.Errorf("not supported language")
 	}
 
-	db.mutex.Lock()
-	defer db.mutex.Unlock()
-
 	oldDocument, ok := db.documents.Get(params.Id)
 	if !ok {
 		return Record[Schema]{}, fmt.Errorf("document not found")
 	}
-
 	db.indexDocument(params.Id, document, language)
 	document = db.flattenSchema(oldDocument)
 	db.deindexDocument(params.Id, document, language)
@@ -298,14 +295,10 @@ func (db *Engine[Schema]) Delete(params *DeleteParams[Schema]) error {
 		return fmt.Errorf("not supported language")
 	}
 
-	db.mutex.Lock()
-	defer db.mutex.Unlock()
-
 	document, ok := db.documents.Get(params.Id)
 	if !ok {
 		return fmt.Errorf("document not found")
 	}
-
 	doc := db.flattenSchema(document)
 	db.deindexDocument(params.Id, doc, language)
 	db.documents.Del(params.Id)
@@ -314,9 +307,6 @@ func (db *Engine[Schema]) Delete(params *DeleteParams[Schema]) error {
 }
 
 func (db *Engine[Schema]) prepareResult(idScores map[int64]float64, params *Params) (Result[Schema], error) {
-	db.mutex.RLock()
-	defer db.mutex.RUnlock()
-
 	results := make(Hits[Schema], 0)
 
 	for id, score := range idScores {
@@ -332,14 +322,14 @@ func (db *Engine[Schema]) prepareResult(idScores map[int64]float64, params *Para
 
 	sort.Sort(results)
 
-	if params.Paginate {
-		if params.Limit == 0 {
-			params.Limit = 20
-		}
-		start, stop := lib.Paginate(params.Offset, params.Limit, len(results))
-		return Result[Schema]{Hits: results[start:stop], Count: len(results)}, nil
+	if !params.Paginate {
+		return Result[Schema]{Hits: results, Count: len(results)}, nil
 	}
-	return Result[Schema]{Hits: results, Count: len(results)}, nil
+	if params.Limit == 0 {
+		params.Limit = 20
+	}
+	start, stop := lib.Paginate(params.Offset, params.Limit, len(results))
+	return Result[Schema]{Hits: results[start:stop], Count: len(results)}, nil
 }
 
 func (db *Engine[Schema]) ClearCache() {
@@ -368,8 +358,6 @@ func (db *Engine[Schema]) prepareParams(params *Params) (map[int64]float64, erro
 		AllowDuplicates: false,
 	}, db.tokenizerConfig)
 
-	db.mutex.RLock()
-	defer db.mutex.RUnlock()
 	for _, prop := range properties {
 		if index, ok := db.indexes.Get(prop); ok {
 			idScores := index.Find(&FindParams{
@@ -457,6 +445,8 @@ func (db *Engine[Schema]) Search(params *Params) (Result[Schema], error) {
 }
 
 func (db *Engine[Schema]) indexDocument(id int64, document map[string]string, language tokenizer.Language) {
+	db.mutex.Lock()
+	defer db.mutex.Unlock()
 	db.indexes.ForEach(func(propName string, index *Index) bool {
 		tokens, _ := tokenizer.Tokenize(&tokenizer.TokenizeParams{
 			Text:            document[propName],
@@ -474,6 +464,8 @@ func (db *Engine[Schema]) indexDocument(id int64, document map[string]string, la
 }
 
 func (db *Engine[Schema]) deindexDocument(id int64, document map[string]string, language tokenizer.Language) {
+	db.mutex.Lock()
+	defer db.mutex.Unlock()
 	db.indexes.ForEach(func(propName string, index *Index) bool {
 		tokens, _ := tokenizer.Tokenize(&tokenizer.TokenizeParams{
 			Text:            document[propName],
