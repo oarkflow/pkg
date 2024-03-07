@@ -81,7 +81,7 @@ func testMap() {
 		},
 	})
 	var startTime = time.Now()
-	errs := db.InsertBatch(data)
+	errs := db.InsertBatch(data, 1000)
 	if len(errs) > 0 {
 		panic(errs)
 	}
@@ -107,7 +107,7 @@ func testStruct() {
 			EnableStemming:  true,
 		},
 	})
-	errs := ftsSearch.InsertBatch(data)
+	errs := ftsSearch.InsertBatch(data, 1000)
 	if len(errs) > 0 {
 		for _, err := range errs {
 			panic(err)
@@ -134,7 +134,7 @@ func testString() {
 			EnableStemming:  true,
 		},
 	})
-	errs := ftsSearch.InsertBatch(data)
+	errs := ftsSearch.InsertBatch(data, 1000)
 	if len(errs) > 0 {
 		for _, err := range errs {
 			panic(err)

@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"hash/fnv"
+	"math"
 	"reflect"
-	"runtime"
 	"slices"
 	"sort"
 	"sync"
@@ -207,7 +207,7 @@ func (db *Engine[Schema]) addIndex(key string) {
 	db.indexKeys = append(db.indexKeys, key)
 }
 
-func (db *Engine[Schema]) InsertBatch(docs []Schema, lang ...tokenizer.Language) []error {
+func (db *Engine[Schema]) InsertBatch(docs []Schema, batchSize int, lang ...tokenizer.Language) []error {
 	docLen := len(docs)
 	if docLen == 0 {
 		return nil
@@ -216,10 +216,7 @@ func (db *Engine[Schema]) InsertBatch(docs []Schema, lang ...tokenizer.Language)
 		keys := DocFields(docs[0])
 		db.addIndexes(keys)
 	}
-	batchCount := runtime.NumCPU() / 2
-	if batchCount == 0 {
-		batchCount = 1
-	}
+	batchCount := int(math.Ceil(float64(len(docs)) / float64(batchSize)))
 	docsChan := make(chan Schema)
 	errsChan := make(chan error)
 	language := tokenizer.ENGLISH
