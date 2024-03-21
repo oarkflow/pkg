@@ -317,16 +317,6 @@ func (db *Engine[Schema]) ClearCache() {
 	db.cache = nil
 }
 
-func (db *Engine[Schema]) Filter(slice []Schema, f func(Schema) bool) []Schema {
-	var n []Schema
-	for _, e := range slice {
-		if f(e) {
-			n = append(n, e)
-		}
-	}
-	return n
-}
-
 func (db *Engine[Schema]) findWithParams(params *Params) (map[int64]float64, error) {
 	allIdScores := make(map[int64]float64)
 
@@ -367,7 +357,39 @@ func (db *Engine[Schema]) findWithParams(params *Params) (map[int64]float64, err
 	return allIdScores, nil
 }
 
-func (db *Engine[Schema]) Search(params *Params) (Result[Schema], error) {
+// Check function checks if a key-value map exists in any type of data
+func (db *Engine[Schema]) Check(data Schema, filter map[string]any) bool {
+	switch reflect.TypeOf(data).Kind() {
+	case reflect.Map:
+		dataMap := reflect.ValueOf(data)
+		for key, value := range filter {
+			keyValue := reflect.ValueOf(key)
+			dataValue := dataMap.MapIndex(keyValue)
+			if !dataValue.IsValid() || !reflect.DeepEqual(dataValue.Interface(), value) {
+				return false
+			}
+		}
+		return true
+	case reflect.Struct:
+		dataValue := reflect.ValueOf(data)
+		dataType := reflect.TypeOf(data)
+		for key, value := range filter {
+			field := dataValue.FieldByName(key)
+			if !field.IsValid() || !reflect.DeepEqual(field.Interface(), value) {
+				return false
+			}
+			fieldType, _ := dataType.FieldByName(key)
+			if !fieldType.Type.Comparable() {
+				return false
+			}
+		}
+		return true
+	default:
+		return false
+	}
+}
+
+func (db *Engine[Schema]) SearchOld(params *Params) (Result[Schema], error) {
 	if db.cache == nil {
 		db.cache = maps.New[uint64, map[int64]float64]()
 	}
@@ -435,6 +457,58 @@ func (db *Engine[Schema]) Search(params *Params) (Result[Schema], error) {
 		db.cache.Set(cachedKey, idScores)
 	}
 	return db.prepareResult(idScores, params)
+}
+
+func (db *Engine[Schema]) Search(params *Params) (Result[Schema], error) {
+	if db.cache == nil {
+		db.cache = maps.New[uint64, map[int64]float64]()
+	}
+	cachedKey := params.ToInt64()
+	if cachedKey != 0 {
+		if score, ok := db.cache.Get(cachedKey); ok {
+			return db.prepareResult(score, params)
+		}
+	}
+	if params.Query == "" && len(params.Extra) > 0 {
+		for key, val := range params.Extra {
+			params.Query = fmt.Sprintf("%v", val)
+			params.Properties = append(params.Properties, key)
+			delete(params.Extra, key)
+			break
+		}
+	}
+	allIdScores, err := db.findWithParams(params)
+	if err != nil {
+		return Result[Schema]{}, err
+	}
+	results := make(Hits[Schema], 0)
+	cache := make(map[int64]float64)
+	for id, score := range allIdScores {
+		if doc, ok := db.documents.Get(id); ok {
+			if len(params.Extra) > 0 {
+				if db.Check(doc, params.Extra) {
+					cache[id] = score
+					results = append(results, Hit[Schema]{Id: id, Data: doc, Score: score})
+				}
+			} else {
+				cache[id] = score
+				results = append(results, Hit[Schema]{Id: id, Data: doc, Score: score})
+			}
+		}
+	}
+	if cachedKey != 0 {
+		db.cache.Set(cachedKey, cache)
+	}
+	sort.Sort(results)
+
+	if !params.Paginate {
+		return Result[Schema]{Hits: results, Count: len(results)}, nil
+	}
+	if params.Limit == 0 {
+		params.Limit = 20
+	}
+	start, stop := lib.Paginate(params.Offset, params.Limit, len(results))
+	return Result[Schema]{Hits: results[start:stop], Count: len(results)}, nil
 }
 
 func (db *Engine[Schema]) indexDocument(id int64, document map[string]string, language tokenizer.Language) {
