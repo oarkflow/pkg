@@ -77,7 +77,7 @@ func (p *Params) ToInt64() uint64 {
 		return 0
 	}
 	f := fnv.New64()
-	f.Write(bt)
+	_, _ = f.Write(bt)
 	return f.Sum64()
 }
 
@@ -312,7 +312,7 @@ func (db *Engine[Schema]) prepareResult(idScores map[int64]float64, params *Para
 				doc, _ = Decompress(doc)
 			}
 			var t Schema
-			json.Unmarshal(doc, &t)
+			_ = json.Unmarshal(doc, &t)
 			results = append(results, Hit[Schema]{Id: id, Data: t, Score: score})
 		}
 	}
@@ -333,7 +333,7 @@ func (db *Engine[Schema]) ClearCache() {
 	db.cache = nil
 }
 
-func (db *Engine[Schema]) prepareParams(params *Params) (map[int64]float64, error) {
+func (db *Engine[Schema]) findWithParams(params *Params) (map[int64]float64, error) {
 	allIdScores := make(map[int64]float64)
 
 	properties := params.Properties
@@ -391,7 +391,7 @@ func (db *Engine[Schema]) Search(params *Params) (Result[Schema], error) {
 			break
 		}
 	}
-	allIdScores, err := db.prepareParams(params)
+	allIdScores, err := db.findWithParams(params)
 	if err != nil {
 		return Result[Schema]{}, err
 	}
@@ -408,11 +408,11 @@ func (db *Engine[Schema]) Search(params *Params) (Result[Schema], error) {
 				Relevance:  params.Relevance,
 				Language:   params.Language,
 			}
-			scores, err := db.prepareParams(param)
+			scores, err := db.findWithParams(param)
 			if err != nil {
 				return Result[Schema]{}, err
 			}
-			for id, _ := range scores {
+			for id := range scores {
 				if v, k := allIdScores[id]; k {
 					idScores[id] = v
 					commonKeys[key] = append(commonKeys[key], id)
@@ -423,11 +423,8 @@ func (db *Engine[Schema]) Search(params *Params) (Result[Schema], error) {
 				keys = append(keys, k)
 			}
 			commonKeys = nil
-			if len(keys) != len(params.Extra) {
-				return Result[Schema]{}, nil
-			}
 			d := utils.Intersection(keys...)
-			for id, _ := range idScores {
+			for id := range idScores {
 				if !slices.Contains(d, id) {
 					delete(idScores, id)
 				}
@@ -479,7 +476,7 @@ func (db *Engine[Schema]) deindexDocument(id int64, document map[string]string, 
 	})
 }
 
-func (db *Engine[Schema]) getFieldsFromMap(obj map[string]any, prefix ...string) map[string]string {
+func (db *Engine[Schema]) getFieldsFromMap(obj map[string]any) map[string]string {
 	fields := make(map[string]string)
 	rules := make(map[string]bool)
 	if db.rules != nil {
@@ -556,11 +553,11 @@ func (db *Engine[Schema]) flattenSchema(obj any, prefix ...string) map[string]st
 			fields[db.sliceField] = fmt.Sprintf("%v", obj)
 			return fields
 		case map[string]any:
-			return db.getFieldsFromMap(obj, prefix...)
+			return db.getFieldsFromMap(obj)
 		default:
 			switch obj := obj.(type) {
 			case map[string]any:
-				return db.getFieldsFromMap(obj, prefix...)
+				return db.getFieldsFromMap(obj)
 			default:
 				return db.getFieldsFromStruct(obj, prefix...)
 			}
