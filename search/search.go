@@ -395,47 +395,50 @@ func (db *Engine[Schema]) Search(params *Params) (Result[Schema], error) {
 	if err != nil {
 		return Result[Schema]{}, err
 	}
-	if len(params.Extra) > 0 {
-		idScores := make(map[int64]float64)
-		commonKeys := make(map[string][]int64)
-		for key, val := range params.Extra {
-			param := &Params{
-				Query:      fmt.Sprintf("%v", val),
-				Properties: []string{key},
-				BoolMode:   params.BoolMode,
-				Exact:      true,
-				Tolerance:  params.Tolerance,
-				Relevance:  params.Relevance,
-				Language:   params.Language,
+	if len(params.Extra) == 0 {
+		if cachedKey != 0 {
+			db.cache.Set(cachedKey, allIdScores)
+		}
+		return db.prepareResult(allIdScores, params)
+	}
+	idScores := make(map[int64]float64)
+	commonKeys := make(map[string][]int64)
+	for key, val := range params.Extra {
+		param := &Params{
+			Query:      fmt.Sprintf("%v", val),
+			Properties: []string{key},
+			BoolMode:   params.BoolMode,
+			Exact:      true,
+			Tolerance:  params.Tolerance,
+			Relevance:  params.Relevance,
+			Language:   params.Language,
+		}
+		scores, err := db.findWithParams(param)
+		if err != nil {
+			return Result[Schema]{}, err
+		}
+		for id := range scores {
+			if v, k := allIdScores[id]; k {
+				idScores[id] = v
+				commonKeys[key] = append(commonKeys[key], id)
 			}
-			scores, err := db.findWithParams(param)
-			if err != nil {
-				return Result[Schema]{}, err
+		}
+		var keys [][]int64
+		for _, k := range commonKeys {
+			keys = append(keys, k)
+		}
+		d := utils.Intersection(keys...)
+		for id := range idScores {
+			if !slices.Contains(d, id) {
+				delete(idScores, id)
 			}
-			for id := range scores {
-				if v, k := allIdScores[id]; k {
-					idScores[id] = v
-					commonKeys[key] = append(commonKeys[key], id)
-				}
-			}
-			var keys [][]int64
-			for _, k := range commonKeys {
-				keys = append(keys, k)
-			}
-			commonKeys = nil
-			d := utils.Intersection(keys...)
-			for id := range idScores {
-				if !slices.Contains(d, id) {
-					delete(idScores, id)
-				}
-			}
-			if cachedKey != 0 {
-				db.cache.Set(cachedKey, idScores)
-			}
-			return db.prepareResult(idScores, params)
 		}
 	}
-	return db.prepareResult(allIdScores, params)
+	commonKeys = nil
+	if cachedKey != 0 {
+		db.cache.Set(cachedKey, idScores)
+	}
+	return db.prepareResult(idScores, params)
 }
 
 func (db *Engine[Schema]) indexDocument(id int64, document map[string]string, language tokenizer.Language) {
