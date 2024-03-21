@@ -112,13 +112,12 @@ type Config struct {
 	TokenizerConfig *tokenizer.Config
 	IndexKeys       []string
 	Rules           map[string]bool
-	Compress        bool
 	SliceField      string
 }
 
 type Engine[Schema SchemaProps] struct {
 	mutex           sync.RWMutex
-	documents       maps.IMap[int64, []byte]
+	documents       maps.IMap[int64, Schema]
 	indexes         maps.IMap[string, *Index]
 	indexKeys       []string
 	defaultLanguage tokenizer.Language
@@ -127,7 +126,6 @@ type Engine[Schema SchemaProps] struct {
 	cache           maps.IMap[uint64, map[int64]float64]
 	key             string
 	sliceField      string
-	compress        bool
 }
 
 func New[Schema SchemaProps](c *Config) *Engine[Schema] {
@@ -142,13 +140,12 @@ func New[Schema SchemaProps](c *Config) *Engine[Schema] {
 	}
 	db := &Engine[Schema]{
 		key:             c.Key,
-		documents:       maps.New[int64, []byte](),
+		documents:       maps.New[int64, Schema](),
 		indexes:         maps.New[string, *Index](),
 		defaultLanguage: c.DefaultLanguage,
 		tokenizerConfig: c.TokenizerConfig,
 		rules:           c.Rules,
 		sliceField:      c.SliceField,
-		compress:        c.Compress,
 	}
 	db.buildIndexes()
 	if len(db.indexKeys) == 0 {
@@ -187,11 +184,7 @@ func (db *Engine[Schema]) Insert(doc Schema, lang ...tokenizer.Language) (Record
 		return Record[Schema]{}, fmt.Errorf("not supported language")
 	}
 
-	bt, _ := json.Marshal(doc)
-	if db.compress {
-		bt, _ = Compress(bt)
-	}
-	db.documents.Set(id, bt)
+	db.documents.Set(id, doc)
 	db.indexDocument(id, document, language)
 	return Record[Schema]{Id: id, Data: doc}, nil
 }
@@ -274,11 +267,7 @@ func (db *Engine[Schema]) Update(params *UpdateParams[Schema]) (Record[Schema], 
 	db.indexDocument(params.Id, document, language)
 	document = db.flattenSchema(oldDocument)
 	db.deindexDocument(params.Id, document, language)
-	bt, _ := json.Marshal(params.Document)
-	if db.compress {
-		bt, _ = Compress(bt)
-	}
-	db.documents.Set(params.Id, bt)
+	db.documents.Set(params.Id, params.Document)
 
 	return Record[Schema]{Id: params.Id, Data: params.Document}, nil
 }
@@ -308,12 +297,7 @@ func (db *Engine[Schema]) prepareResult(idScores map[int64]float64, params *Para
 
 	for id, score := range idScores {
 		if doc, ok := db.documents.Get(id); ok {
-			if db.compress {
-				doc, _ = Decompress(doc)
-			}
-			var t Schema
-			_ = json.Unmarshal(doc, &t)
-			results = append(results, Hit[Schema]{Id: id, Data: t, Score: score})
+			results = append(results, Hit[Schema]{Id: id, Data: doc, Score: score})
 		}
 	}
 
@@ -331,6 +315,16 @@ func (db *Engine[Schema]) prepareResult(idScores map[int64]float64, params *Para
 
 func (db *Engine[Schema]) ClearCache() {
 	db.cache = nil
+}
+
+func (db *Engine[Schema]) Filter(slice []Schema, f func(Schema) bool) []Schema {
+	var n []Schema
+	for _, e := range slice {
+		if f(e) {
+			n = append(n, e)
+		}
+	}
+	return n
 }
 
 func (db *Engine[Schema]) findWithParams(params *Params) (map[int64]float64, error) {
@@ -427,10 +421,12 @@ func (db *Engine[Schema]) Search(params *Params) (Result[Schema], error) {
 		for _, k := range commonKeys {
 			keys = append(keys, k)
 		}
-		d := utils.Intersection(keys...)
-		for id := range idScores {
-			if !slices.Contains(d, id) {
-				delete(idScores, id)
+		if len(keys) > 0 {
+			d := utils.Intersection(keys...)
+			for id := range idScores {
+				if !slices.Contains(d, id) {
+					delete(idScores, id)
+				}
 			}
 		}
 	}
