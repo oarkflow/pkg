@@ -292,17 +292,8 @@ func (db *Engine[Schema]) Delete(params *DeleteParams[Schema]) error {
 	return nil
 }
 
-func (db *Engine[Schema]) prepareResult(idScores map[int64]float64, params *Params) (Result[Schema], error) {
-	results := make(Hits[Schema], 0)
-
-	for id, score := range idScores {
-		if doc, ok := db.documents.Get(id); ok {
-			results = append(results, Hit[Schema]{Id: id, Data: doc, Score: score})
-		}
-	}
-
+func (db *Engine[Schema]) prepareResult(results Hits[Schema], params *Params) (Result[Schema], error) {
 	sort.Sort(results)
-
 	if !params.Paginate {
 		return Result[Schema]{Hits: results, Count: len(results)}, nil
 	}
@@ -370,23 +361,30 @@ func (db *Engine[Schema]) Check(data Schema, filter map[string]any) bool {
 			}
 		}
 		return true
+
 	case reflect.Struct:
 		dataValue := reflect.ValueOf(data)
-		dataType := reflect.TypeOf(data)
 		for key, value := range filter {
-			field := dataValue.FieldByName(key)
-			if !field.IsValid() || !reflect.DeepEqual(field.Interface(), value) {
-				return false
-			}
-			fieldType, _ := dataType.FieldByName(key)
-			if !fieldType.Type.Comparable() {
+			fieldValue := dataValue.FieldByName(key)
+			if !fieldValue.IsValid() || !reflect.DeepEqual(fieldValue.Interface(), value) {
 				return false
 			}
 		}
 		return true
+
 	default:
 		return false
 	}
+}
+
+func (db *Engine[Schema]) getDocuments(scores map[int64]float64) Hits[Schema] {
+	results := make(Hits[Schema], 0)
+	for id, score := range scores {
+		if doc, ok := db.documents.Get(id); ok {
+			results = append(results, Hit[Schema]{Id: id, Data: doc, Score: score})
+		}
+	}
+	return results
 }
 
 func (db *Engine[Schema]) SearchOld(params *Params) (Result[Schema], error) {
@@ -396,7 +394,7 @@ func (db *Engine[Schema]) SearchOld(params *Params) (Result[Schema], error) {
 	cachedKey := params.ToInt64()
 	if cachedKey != 0 {
 		if score, ok := db.cache.Get(cachedKey); ok {
-			return db.prepareResult(score, params)
+			return db.prepareResult(db.getDocuments(score), params)
 		}
 	}
 	if params.Query == "" && len(params.Extra) > 0 {
@@ -415,7 +413,7 @@ func (db *Engine[Schema]) SearchOld(params *Params) (Result[Schema], error) {
 		if cachedKey != 0 {
 			db.cache.Set(cachedKey, allIdScores)
 		}
-		return db.prepareResult(allIdScores, params)
+		return db.prepareResult(db.getDocuments(allIdScores), params)
 	}
 	idScores := make(map[int64]float64)
 	commonKeys := make(map[string][]int64)
@@ -456,7 +454,7 @@ func (db *Engine[Schema]) SearchOld(params *Params) (Result[Schema], error) {
 	if cachedKey != 0 {
 		db.cache.Set(cachedKey, idScores)
 	}
-	return db.prepareResult(idScores, params)
+	return db.prepareResult(db.getDocuments(idScores), params)
 }
 
 func (db *Engine[Schema]) Search(params *Params) (Result[Schema], error) {
@@ -465,8 +463,8 @@ func (db *Engine[Schema]) Search(params *Params) (Result[Schema], error) {
 	}
 	cachedKey := params.ToInt64()
 	if cachedKey != 0 {
-		if score, ok := db.cache.Get(cachedKey); ok {
-			return db.prepareResult(score, params)
+		if scores, ok := db.cache.Get(cachedKey); ok {
+			return db.prepareResult(db.getDocuments(scores), params)
 		}
 	}
 	if params.Query == "" && len(params.Extra) > 0 {
@@ -483,6 +481,10 @@ func (db *Engine[Schema]) Search(params *Params) (Result[Schema], error) {
 	}
 	results := make(Hits[Schema], 0)
 	cache := make(map[int64]float64)
+	defer func() {
+		results = nil
+		cache = nil
+	}()
 	for id, score := range allIdScores {
 		if doc, ok := db.documents.Get(id); ok {
 			if len(params.Extra) > 0 {
@@ -499,16 +501,7 @@ func (db *Engine[Schema]) Search(params *Params) (Result[Schema], error) {
 	if cachedKey != 0 {
 		db.cache.Set(cachedKey, cache)
 	}
-	sort.Sort(results)
-
-	if !params.Paginate {
-		return Result[Schema]{Hits: results, Count: len(results)}, nil
-	}
-	if params.Limit == 0 {
-		params.Limit = 20
-	}
-	start, stop := lib.Paginate(params.Offset, params.Limit, len(results))
-	return Result[Schema]{Hits: results[start:stop], Count: len(results)}, nil
+	return db.prepareResult(results, params)
 }
 
 func (db *Engine[Schema]) indexDocument(id int64, document map[string]string, language tokenizer.Language) {
