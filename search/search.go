@@ -356,7 +356,7 @@ func (db *Engine[Schema]) Check(data Schema, filter map[string]any) bool {
 		for key, value := range filter {
 			keyValue := reflect.ValueOf(key)
 			dataValue := dataMap.MapIndex(keyValue)
-			if !dataValue.IsValid() || !reflect.DeepEqual(dataValue.Interface(), value) {
+			if !dataValue.IsValid() || !isEqual(dataValue.Interface(), value) {
 				return false
 			}
 		}
@@ -366,7 +366,7 @@ func (db *Engine[Schema]) Check(data Schema, filter map[string]any) bool {
 		dataValue := reflect.ValueOf(data)
 		for key, value := range filter {
 			fieldValue := dataValue.FieldByName(key)
-			if !fieldValue.IsValid() || !reflect.DeepEqual(fieldValue.Interface(), value) {
+			if !dataValue.IsValid() || !isEqual(fieldValue.Interface(), value) {
 				return false
 			}
 		}
@@ -387,6 +387,7 @@ func (db *Engine[Schema]) getDocuments(scores map[int64]float64) Hits[Schema] {
 	return results
 }
 
+// Deprecated: use Search function instead. It's optimized version. This function will be removed in future version
 func (db *Engine[Schema]) SearchOld(params *Params) (Result[Schema], error) {
 	if db.cache == nil {
 		db.cache = maps.New[uint64, map[int64]float64]()
@@ -457,6 +458,7 @@ func (db *Engine[Schema]) SearchOld(params *Params) (Result[Schema], error) {
 	return db.prepareResult(db.getDocuments(idScores), params)
 }
 
+// Search - uses params to search
 func (db *Engine[Schema]) Search(params *Params) (Result[Schema], error) {
 	if db.cache == nil {
 		db.cache = maps.New[uint64, map[int64]float64]()
