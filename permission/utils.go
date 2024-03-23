@@ -82,140 +82,139 @@ func IsMatch(item map[string]any, fields map[string]any) (bool, error) {
 	return true, nil
 }
 
-var CasFunc = map[string]govaluate.ExpressionFunction{
-	"isMatch": func(args ...interface{}) (interface{}, error) {
-		switch requestData := args[0].(type) {
-		case map[string]any:
-			switch policyCondition := args[1].(type) {
+func (cm *Engine) Cas() map[string]govaluate.ExpressionFunction {
+	return map[string]govaluate.ExpressionFunction{
+		"isMatch": func(args ...interface{}) (interface{}, error) {
+			switch requestData := args[0].(type) {
 			case map[string]any:
-				return IsMatch(requestData, policyCondition)
+				switch policyCondition := args[1].(type) {
+				case map[string]any:
+					return IsMatch(requestData, policyCondition)
+				case string:
+					t, err := getMapFromString(policyCondition)
+					if err != nil || len(t) == 0 {
+						return true, nil
+					}
+					return IsMatch(requestData, t)
+				}
 			case string:
-				t, err := getMapFromString(policyCondition)
-				if err != nil || len(t) == 0 {
-					return true, nil
-				}
-				return IsMatch(requestData, t)
-			}
-		case string:
-			if requestData != "" {
-				attr, err := getMapFromString(requestData)
-				if err != nil {
-					return false, nil
-				}
-				switch policyCondition := args[1].(type) {
-				case map[string]any:
-					return IsMatch(attr, policyCondition)
-				case string:
-					if policyCondition == "" {
-						return true, nil
-					}
-					t, err := getMapFromString(policyCondition)
+				if requestData != "" {
+					attr, err := getMapFromString(requestData)
 					if err != nil {
-						return true, nil
+						return false, nil
 					}
-					if len(t) == 0 {
-						return str.EqualFold(requestData, policyCondition), nil
+					switch policyCondition := args[1].(type) {
+					case map[string]any:
+						return IsMatch(attr, policyCondition)
+					case string:
+						if policyCondition == "" {
+							return true, nil
+						}
+						t, err := getMapFromString(policyCondition)
+						if err != nil {
+							return true, nil
+						}
+						if len(t) == 0 {
+							return str.EqualFold(requestData, policyCondition), nil
+						}
+						return IsMatch(attr, t)
 					}
-					return IsMatch(attr, t)
-				}
-			} else {
-				attr := make(map[string]any)
-				switch policyCondition := args[1].(type) {
-				case map[string]any:
-					return IsMatch(attr, policyCondition)
-				case string:
-					if policyCondition == "" {
-						return true, nil
+				} else {
+					attr := make(map[string]any)
+					switch policyCondition := args[1].(type) {
+					case map[string]any:
+						return IsMatch(attr, policyCondition)
+					case string:
+						if policyCondition == "" {
+							return true, nil
+						}
+						t, err := getMapFromString(policyCondition)
+						if err != nil {
+							return true, nil
+						}
+						if len(t) == 0 {
+							return str.EqualFold(requestData, policyCondition), nil
+						}
+						return IsMatch(attr, t)
 					}
-					t, err := getMapFromString(policyCondition)
-					if err != nil {
-						return true, nil
-					}
-					if len(t) == 0 {
-						return str.EqualFold(requestData, policyCondition), nil
-					}
-					return IsMatch(attr, t)
 				}
 			}
-		}
-		return false, nil
-	},
-	"relatedDomain": func(args ...interface{}) (interface{}, error) {
-		if len(args) != 2 || Instance == nil {
-			return args[0], nil
-		}
-		reqDomain := args[0]
-		ds := Instance.GetFilteredNamedGroupingPolicy("g", 0, args[1].(string))
-		for _, dGroup := range ds {
-			if len(dGroup) == 6 {
-				d := strings.TrimSpace(dGroup[2])
-				if d == "*" {
-					return reqDomain, nil
-				}
-				if dGroup[5] == "true" {
-					if d != "" {
-						domains := Instance.GetRelatedDomains(d)
-						if str.Contains(domains, reqDomain.(string)) {
-							return d, nil
+			return false, nil
+		},
+		"relatedDomain": func(args ...interface{}) (interface{}, error) {
+			if len(args) != 2 || Instance == nil {
+				return args[0], nil
+			}
+			reqDomain := args[0]
+			ds := cm.GetFilteredNamedGroupingPolicy("g", 0, args[1].(string))
+			for _, dGroup := range ds {
+				if len(dGroup) == 6 {
+					d := strings.TrimSpace(dGroup[2])
+					if d == "*" {
+						return reqDomain, nil
+					}
+					if dGroup[5] == "true" {
+						if d != "" {
+							domains := cm.GetRelatedDomains(d)
+							if str.Contains(domains, reqDomain.(string)) {
+								return d, nil
+							}
 						}
 					}
 				}
 			}
-		}
-		return reqDomain, nil
-	},
-	// inArray is used to parse the policy entities and match the request entity.
-	"inArray": func(args ...interface{}) (interface{}, error) {
-		entity := args[0].(string)
-		entity = strings.TrimSpace(entity)
-		if entity == "" {
-			return false, nil
-		}
-		policyEntities := args[1].(string)
-		// We assume that the entities in the policy are separated by commas.
-		for _, policyEntity := range strings.Split(policyEntities, ",") {
-			policyEntity = strings.TrimSpace(policyEntity)
-			if policyEntity == "*" || policyEntity == "" {
-				return true, nil
+			return reqDomain, nil
+		},
+		"inArray": func(args ...interface{}) (interface{}, error) {
+			entity := args[0].(string)
+			entity = strings.TrimSpace(entity)
+			if entity == "" {
+				return false, nil
 			}
-			matched, err := regexp.MatchString(policyEntity, entity)
-			if err != nil {
-				return false, err
-			}
-			if matched {
-				return true, nil
-			}
-		}
-		return false, nil
-	},
-
-	// hasAccess is used to parse the policy entities and match the request entity.
-	"hasAccess": func(args ...interface{}) (interface{}, error) {
-		if len(args) != 2 || Instance == nil {
-			return true, nil
-		}
-		sub := args[0]
-		entity := args[1]
-		ds := Instance.GetFilteredNamedGroupingPolicy("g", 0, sub.(string))
-		for _, dGroup := range ds {
-			if len(dGroup) == 6 {
-				d := strings.TrimSpace(dGroup[4])
-				if d == "*" || d == "" {
+			policyEntities := args[1].(string)
+			// We assume that the entities in the policy are separated by commas.
+			for _, policyEntity := range strings.Split(policyEntities, ",") {
+				policyEntity = strings.TrimSpace(policyEntity)
+				if policyEntity == "*" || policyEntity == "" {
 					return true, nil
 				}
-				splitted := strings.Split(d, ",")
-				for _, policyEntity := range splitted {
-					policyEntity = strings.TrimSpace(policyEntity)
-					matched, err := regexp.MatchString(policyEntity, entity.(string))
-					if err != nil {
-						return false, nil
-					}
-					if matched {
+				matched, err := regexp.MatchString(policyEntity, entity)
+				if err != nil {
+					return false, err
+				}
+				if matched {
+					return true, nil
+				}
+			}
+			return false, nil
+		},
+		"hasAccess": func(args ...interface{}) (interface{}, error) {
+			if len(args) != 2 || Instance == nil {
+				return true, nil
+			}
+			sub := args[0]
+			entity := args[1]
+			ds := cm.GetFilteredNamedGroupingPolicy("g", 0, sub.(string))
+			for _, dGroup := range ds {
+				if len(dGroup) == 6 {
+					d := strings.TrimSpace(dGroup[4])
+					if d == "*" || d == "" {
 						return true, nil
+					}
+					splitted := strings.Split(d, ",")
+					for _, policyEntity := range splitted {
+						policyEntity = strings.TrimSpace(policyEntity)
+						matched, err := regexp.MatchString(policyEntity, entity.(string))
+						if err != nil {
+							return false, nil
+						}
+						if matched {
+							return true, nil
+						}
 					}
 				}
 			}
-		}
-		return false, nil
-	},
+			return false, nil
+		},
+	}
 }

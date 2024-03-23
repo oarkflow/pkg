@@ -1,11 +1,22 @@
-p, role_admin, company_z, service_y, feature_x, write, "entity_1,entity_2"
-p, role_admin, company_a, service_y, feature_y, read, entity_2
-p, role_editor, company_b, service_y, feature_z, edit, entity_3
-p, super_admin, *, *, *, *, *
-g, userA, super_admin, company_z, service_y, "entity_1,entity_2", true
-g, userB, role_viewer, company_a, service_y, "", true
-g, userC, role_editor, company_b, service_y, "", true
-g, userD, role_generic, company_x, service_y, "", true
-g2, company_z, company_a
-g2, company_z, company_b
-g3, role_admin, super_admin
+p, account-manager, company-a, service-a, *, *, *
+p, admin, company-a, service-a, /users, POST, "1,2,3,4,5,6,7,8,9,10"
+p, admin, company-a, service-a, /users, PUT, "1,2,3,4,5,6,7,8,9,10"
+p, admin, company-a, service-a, /facilities, GET, "1,2,3,4,5,6,7,8,9,10"
+p, coder, company-a, service-a, /open, GET, "1,2,3,4,5,6,7,8,9,10"
+p, coder, company-a, service-a, /in-progress, GET, "1,2,3,4,5,6,7,8,9,10"
+p, qa, company-a, service-a, /qa, GET, "1,2,3,4,5,6,7,8,9,10"
+p, qa, company-a, service-a, /qa-in-progress, GET, "1,2,3,4,5,6,7,8,9,10"
+p, de, company-a, service-a, /de, GET, "1,2,3,4,5,6,7,8,9,10"
+p, de, company-a, service-a, /de-in-progress, GET, "1,2,3,4,5,6,7,8,9,10"
+p, suspend-manager, company-a, service-a, /suspend, GET, "1,2,3,4,5,6,7,8,9,10"
+
+g, userA, account-manager, company-a, service-a, *, true
+g, userB, admin, company-a, service-a, *, true
+g, userC, coder, company-a, service-a, *, true
+g, userD, coder, company-a, service-a, "2,4,7", true
+g, userE, qa, company-a, service-a, "5,8,9", true
+g3, account-manager, admin
+g3, admin, qa
+g3, admin, coder
+g3, admin, de
+g3, admin, suspend-manager

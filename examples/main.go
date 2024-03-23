@@ -34,10 +34,21 @@ func updated() {
 	if err != nil {
 		log.Fatalf("unable to create Casbin enforcer: %v", err)
 	}
-	slice := [][]any{
-		{"userA", "company_z", "service_y", "feature_x", "write", "entity_1"},
-		{"userA", "company_a", "service_y", "feature_y", "read", "entity_1"},
-		{"userD", "company_x", "service_y", "feature_any", "any_action", "any_entity"},
+	fmt.Println(et.GetUserPermissions("userB", "company-a"))
+	fmt.Println(et.GetDomainsForUser("userB"))
+	fmt.Println(et.GetRolesInDomain("company-a"))
+	fmt.Println(et.GetAllUsersInDomainWithRole("company-a"))
+	fmt.Println(et.GetUserRole("company-a", "userB"))
+	fmt.Println(et.GetModuleRelatedByRole("company-a", "coder"))
+	fmt.Println(et.GetImplicitRolesForUser("userB", "company-a"))
+	fmt.Println(et.GetImplicitResourcesForUser("userB", "company-a"))
+	fmt.Println(et.GetAllNamedActions("p"))
+	/*slice := [][]any{
+		{"userA", "company-a", "service-a", "/qa", "GET", "1"},        // expected true, actual true
+		{"userA", "company-a", "service-a", "/companies", "GET", "1"}, // expected true, actual true
+		{"userB", "company-a", "service-a", "/users", "POST", "1"},    // expected true, actual true
+		{"userB", "company-a", "service-a", "/qa", "GET", "1"},        // expected true, actual false
+		{"userC", "company-a", "service-a", "/open", "GET", "1"},      // expected true, actual true
 	}
 	for _, rVals := range slice {
 		ok, err := et.Enforce(rVals...)
@@ -46,7 +57,7 @@ func updated() {
 			panic(err)
 		}
 		fmt.Println("Route Valid", ok)
-	}
+	}*/
 }
 
 func attributes() {

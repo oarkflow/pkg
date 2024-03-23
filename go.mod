@@ -2,7 +2,7 @@ module github.com/oarkflow/pkg
 
 go 1.22.0
 
-replace github.com/casbin/casbin/v2 => github.com/sujit-baniya/casbin/v2 v2.77.2
+replace github.com/casbin/casbin/v2 => github.com/oarkflow/casbin/v2 v2.0.1
 
 require (
 	github.com/boombuler/barcode v1.0.1
@@ -65,7 +65,6 @@ require (
 	github.com/oarkflow/log v1.0.74 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
-	github.com/tidwall/gjson v1.17.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.9.0 // indirect

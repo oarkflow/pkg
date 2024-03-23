@@ -85,10 +85,8 @@ func New(cfg Config) (*Engine, error) {
 		Enforcer: &Enforcer{Enforcer: enforcer},
 		config:   cfg,
 	}
-	if len(CasFunc) > 0 {
-		for key, fn := range CasFunc {
-			engine.AddFunction(key, fn)
-		}
+	for key, fn := range engine.Cas() {
+		engine.AddFunction(key, fn)
 	}
 	if len(cfg.CustomFunctions) > 0 {
 		for key, fn := range cfg.CustomFunctions {
