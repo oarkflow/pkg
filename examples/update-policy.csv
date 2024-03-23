@@ -1,0 +1,9 @@
+p, role_admin, feature_x, write, service_y, company_z, "entity_1,entity_2"
+p, role_viewer, feature_y, read, service_y, company_a, entity_2
+p, role_editor, feature_z, edit, service_z, company_b, entity_3
+p, super_admin, *, *, *, *, *
+g, userA, role_admin, service_y, company_z, "entity_1,entity_2"
+g, userB, role_viewer, service_y, company_a, ""
+g, userC, role_editor, service_z, company_b, ""
+g, userD, role_generic, service_y, company_x, ""
+g2, super_user, super_admin

@@ -164,4 +164,54 @@ var CasFunc = map[string]govaluate.ExpressionFunction{
 		}
 		return reqDomain, nil
 	},
+	// inArray is used to parse the policy entities and match the request entity.
+	"inArray": func(args ...interface{}) (interface{}, error) {
+		entity := args[0].(string)
+		entity = strings.TrimSpace(entity)
+		if entity == "" {
+			return false, nil
+		}
+		policyEntities := args[1].(string)
+		// We assume that the entities in the policy are separated by commas.
+		for _, policyEntity := range strings.Split(policyEntities, ",") {
+			matched, err := regexp.MatchString(policyEntity, entity)
+			if err != nil {
+				return false, err
+			}
+			if matched {
+				return true, nil
+			}
+		}
+		return false, nil
+	},
+
+	// hasAccess is used to parse the policy entities and match the request entity.
+	"hasAccess": func(args ...interface{}) (interface{}, error) {
+		if len(args) != 2 || Instance == nil {
+			return true, nil
+		}
+		sub := args[0]
+		entity := args[1]
+		ds := Instance.GetFilteredNamedGroupingPolicy("g", 0, sub.(string))
+		for _, dGroup := range ds {
+			if len(dGroup) == 5 {
+				d := strings.TrimSpace(dGroup[4])
+				if d == "*" || d == "" {
+					return true, nil
+				}
+				splitted := strings.Split(d, ",")
+				for _, policyEntity := range splitted {
+					policyEntity = strings.TrimSpace(policyEntity)
+					matched, err := regexp.MatchString(policyEntity, entity.(string))
+					if err != nil {
+						return false, nil
+					}
+					if matched {
+						return true, nil
+					}
+				}
+			}
+		}
+		return false, nil
+	},
 }

@@ -14,6 +14,42 @@ import (
 )
 
 func main() {
+	updated()
+}
+
+func updated() {
+	et, err := permission.Default(permission.Config{
+		Model:  "updated-model.conf",
+		Policy: "update-policy.csv",
+		ParamExtractor: func(c context.Context, ctx *frame.Context) []string {
+			bt, _ := json.Marshal(map[string]any{
+				"service":   "medical-coding",
+				"entity":    "work-item",
+				"entity_id": "1",
+			})
+			// "user", "company", "url/feature", "method/action", "json attributes"
+			return []string{"sujit", "arnet", string(ctx.Path()), string(ctx.Method()), string(bt)}
+		},
+	})
+	if err != nil {
+		log.Fatalf("unable to create Casbin enforcer: %v", err)
+	}
+	slice := [][]any{
+		{"userA", "feature_x", "write", "service_y", "company_z", "entity_1"},
+		{"super_user", "feature_any", "any_action", "service_any", "any_company", "any_entity"},
+		{"userD", "feature_any", "any_action", "service_any", "company_x", "any_entity"},
+	}
+	for _, rVals := range slice {
+		ok, err := et.Enforce(rVals...)
+		if err != nil {
+			fmt.Println("error: ")
+			panic(err)
+		}
+		fmt.Println("Route Valid", ok)
+	}
+}
+
+func attributes() {
 	et, err := permission.Default(permission.Config{
 		Model:  "model.conf",
 		Policy: "policy.csv",
