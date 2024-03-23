@@ -174,6 +174,10 @@ var CasFunc = map[string]govaluate.ExpressionFunction{
 		policyEntities := args[1].(string)
 		// We assume that the entities in the policy are separated by commas.
 		for _, policyEntity := range strings.Split(policyEntities, ",") {
+			policyEntity = strings.TrimSpace(policyEntity)
+			if policyEntity == "*" || policyEntity == "" {
+				return true, nil
+			}
 			matched, err := regexp.MatchString(policyEntity, entity)
 			if err != nil {
 				return false, err
