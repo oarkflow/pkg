@@ -35,9 +35,9 @@ func updated() {
 		log.Fatalf("unable to create Casbin enforcer: %v", err)
 	}
 	slice := [][]any{
-		{"userA", "feature_x", "write", "service_y", "company_z", "entity_1"},
-		{"super_user", "feature_any", "any_action", "service_any", "any_company", "any_entity"},
-		{"userD", "feature_any", "any_action", "service_any", "company_x", "any_entity"},
+		{"userA", "company_z", "service_y", "feature_x", "write", "entity_1"},
+		{"super_user", "any_company", "service_any", "feature_any", "any_action", "any_entity"},
+		{"userD", "company_x", "service_any", "feature_any", "any_action", "any_entity"},
 	}
 	for _, rVals := range slice {
 		ok, err := et.Enforce(rVals...)

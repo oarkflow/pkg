@@ -147,7 +147,7 @@ var CasFunc = map[string]govaluate.ExpressionFunction{
 		reqDomain := args[0]
 		ds := Instance.GetFilteredNamedGroupingPolicy("g", 0, args[1].(string))
 		for _, dGroup := range ds {
-			if len(dGroup) == 4 {
+			if len(dGroup) == 5 {
 				d := strings.TrimSpace(dGroup[2])
 				if d == "*" {
 					return reqDomain, nil
