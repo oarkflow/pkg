@@ -36,8 +36,8 @@ func updated() {
 	}
 	slice := [][]any{
 		{"userA", "company_z", "service_y", "feature_x", "write", "entity_1"},
-		{"super_user", "any_company", "service_any", "feature_any", "any_action", "any_entity"},
-		{"userD", "company_x", "service_any", "feature_any", "any_action", "any_entity"},
+		{"userA", "company_a", "service_y", "feature_y", "read", "entity_1"},
+		{"userD", "company_x", "service_y", "feature_any", "any_action", "any_entity"},
 	}
 	for _, rVals := range slice {
 		ok, err := et.Enforce(rVals...)

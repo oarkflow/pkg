@@ -147,12 +147,12 @@ var CasFunc = map[string]govaluate.ExpressionFunction{
 		reqDomain := args[0]
 		ds := Instance.GetFilteredNamedGroupingPolicy("g", 0, args[1].(string))
 		for _, dGroup := range ds {
-			if len(dGroup) == 5 {
+			if len(dGroup) == 6 {
 				d := strings.TrimSpace(dGroup[2])
 				if d == "*" {
 					return reqDomain, nil
 				}
-				if dGroup[3] == "true" {
+				if dGroup[5] == "true" {
 					if d != "" {
 						domains := Instance.GetRelatedDomains(d)
 						if str.Contains(domains, reqDomain.(string)) {
@@ -194,7 +194,7 @@ var CasFunc = map[string]govaluate.ExpressionFunction{
 		entity := args[1]
 		ds := Instance.GetFilteredNamedGroupingPolicy("g", 0, sub.(string))
 		for _, dGroup := range ds {
-			if len(dGroup) == 5 {
+			if len(dGroup) == 6 {
 				d := strings.TrimSpace(dGroup[4])
 				if d == "*" || d == "" {
 					return true, nil
