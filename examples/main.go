@@ -20,7 +20,7 @@ func main() {
 func updated() {
 	et, err := permission.Default(permission.Config{
 		Model:  "updated-model.conf",
-		Policy: "update-policy.csv",
+		Policy: "updated-policy.csv",
 		ParamExtractor: func(c context.Context, ctx *frame.Context) []string {
 			bt, _ := json.Marshal(map[string]any{
 				"service":   "medical-coding",
