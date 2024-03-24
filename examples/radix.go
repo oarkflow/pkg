@@ -27,11 +27,12 @@ func companyRolePermission() {
 
 	fmt.Println("Global role check: ", userA.Can("code add"), " expected: true")
 	fmt.Println("With company that has only Admin role: ", userA.WithCompany(company).Can("code add"), " expected: false")
-	fmt.Println("With company and module that has only Admin role: ", userA.WithCompany(company, module).Can("code add"), " expected: false")
-	fmt.Println("Global role check: ", userA.Can("code add"), " expected: true")
+	fmt.Println("With company and module that has only Admin role: ", userA.WithCompany(company, module.Name).Can("code add"), " expected: false")
 	company.AddRole(coderRole)
 	fmt.Println("with company that has Admin and Coder role", userA.WithCompany(company).Can("code add"), " expected: true")
-	fmt.Println("With company and module that has Admin and Coder role: ", userA.WithCompany(company, module).Can("code add"), " expected: true")
+	fmt.Println("With company and module that has Admin and Coder role before adding userA to module: ", userA.WithCompany(company, module.Name).Can("code add"), " expected: false")
+	company.AddUserToModule(module.Name, userA)
+	fmt.Println("With company and module that has Admin and Coder role after adding userA to module: ", userA.WithCompany(company, module.Name).Can("code add"), " expected: true")
 }
 
 func addRoles() (radix.IRole, radix.IRole, radix.IRole, radix.IRole, radix.IRole) {

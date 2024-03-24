@@ -2,6 +2,7 @@ package radix
 
 import (
 	"errors"
+	"slices"
 )
 
 type UserRole struct {
@@ -31,6 +32,10 @@ func (c *Company) AddUser(user IUser, role string) error {
 
 func (c *Company) Roles() map[string]IRole {
 	return c.roles
+}
+
+func (c *Company) Users() []*UserRole {
+	return c.users
 }
 
 func (c *Company) AddRole(roles ...IRole) {
@@ -65,9 +70,30 @@ func (c *Company) AddEntity(id string, entity *Entity) {
 	c.entities[id] = entity
 }
 
-func (c *Company) AddUserToModule(module *Module, user IUser, role string) error {
-
-	return errors.New("module not available for company")
+func (c *Company) AddUserToModule(module string, user IUser, roles ...string) error {
+	mod, ok := c.modules[module]
+	if !ok {
+		return errors.New("module not available for company")
+	}
+	rolesToAssign := len(roles)
+	for name, role := range c.roles {
+		if rolesToAssign > 0 && !slices.Contains(roles, name) {
+			return errors.New("role not available for company")
+		}
+		if rolesToAssign > 0 && slices.Contains(roles, name) {
+			mod.users = append(mod.users, &UserRole{
+				User: user,
+				Role: role,
+			})
+		}
+		if rolesToAssign == 0 {
+			mod.users = append(mod.users, &UserRole{
+				User: user,
+				Role: role,
+			})
+		}
+	}
+	return nil
 }
 
 type Module struct {
