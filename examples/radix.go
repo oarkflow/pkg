@@ -7,6 +7,34 @@ import (
 )
 
 func main() {
+	companyRolePermission()
+}
+
+func companyRolePermission() {
+	company := radix.NewCompany("Edelberg")
+
+	module := radix.NewModule("Coding")
+	company.AddModule(module, true, true)
+
+	coderRole, _, _, adminRole, _ := addRoles()
+	company.AddRole(adminRole)
+
+	userA := radix.NewUser("userA")
+	err := company.AddUser(userA, adminRole.Name())
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("Global role check: ", userA.Can("code add"), " expected: true")
+	fmt.Println("With company that has only Admin role: ", userA.WithCompany(company).Can("code add"), " expected: false")
+	fmt.Println("With company and module that has only Admin role: ", userA.WithCompany(company, module).Can("code add"), " expected: false")
+	fmt.Println("Global role check: ", userA.Can("code add"), " expected: true")
+	company.AddRole(coderRole)
+	fmt.Println("with company that has Admin and Coder role", userA.WithCompany(company).Can("code add"), " expected: true")
+	fmt.Println("With company and module that has Admin and Coder role: ", userA.WithCompany(company, module).Can("code add"), " expected: true")
+}
+
+func addRoles() (radix.IRole, radix.IRole, radix.IRole, radix.IRole, radix.IRole) {
 	coderRole := radix.NewRole("Coder")
 	coderRole.AddPermission(radix.NewAttribute("code", "add"))
 
@@ -24,7 +52,11 @@ func main() {
 
 	adminRole.AddDescendent(coderRole, qaRole, suspendManagerRole)
 	accountManagerRole.AddDescendent(adminRole)
+	return coderRole, qaRole, suspendManagerRole, adminRole, accountManagerRole
+}
 
+func userRolePermission() {
+	coderRole, qaRole, _, adminRole, accountManagerRole := addRoles()
 	userA := radix.NewUser("userA")
 	userA.Assign(coderRole)
 	userB := radix.NewUser("userB")
