@@ -28,10 +28,16 @@ func (u *User) Can(activity string) bool {
 		if len(u.module.users) == 0 {
 			return false
 		}
+		// Check if the user's name matches any user in the module
+		foundUser := false
 		for _, userRole := range u.module.users {
-			if u.name != userRole.User.Name() {
-				return false
+			if u.name == userRole.User.Name() {
+				foundUser = true
+				break
 			}
+		}
+		if !foundUser {
+			return false
 		}
 		for role := range u.module.roles {
 			allowed = append(allowed, role)
@@ -40,10 +46,16 @@ func (u *User) Can(activity string) bool {
 		if len(u.company.Users()) == 0 {
 			return false
 		}
+		// Check if the user's name matches any user in the company
+		foundUser := false
 		for _, userRole := range u.company.Users() {
 			if u.name != userRole.User.Name() {
-				return false
+				foundUser = true
+				break
 			}
+		}
+		if !foundUser {
+			return false
 		}
 		for role := range u.company.Roles() {
 			allowed = append(allowed, role)
@@ -51,9 +63,45 @@ func (u *User) Can(activity string) bool {
 	}
 	if len(u.entities) > 0 {
 		id := u.entities[0]
+		var entityMap []string
+
+		// Determine the entity map based on whether the user has a module or a company
 		if u.module != nil {
+			entityMap = u.module.userEntities[u.name]
+			if entities := u.module.entities; len(entities) > 0 {
+				// Check if the entity ID is present in the module's entities
+				if _, found := entities[id]; !found {
+					return false
+				}
+			}
+		} else if u.company != nil {
+			entityMap = u.company.UserEntities()[u.name]
+			if entities := u.company.Entities(); len(entities) > 0 {
+				// Check if the entity ID is present in the company's entities
+				if _, found := entities[id]; !found {
+					return false
+				}
+			}
+		}
+		if len(entityMap) > 0 && !slices.Contains(entityMap, id) {
+			return false
+		}
+		/*if u.module != nil {
 			if moduleEntities, ok := u.module.userEntities[u.name]; ok {
 				if !slices.Contains(moduleEntities, id) {
+					return false
+				}
+			}
+			entities := u.module.entities
+			if len(entities) > 0 {
+				found := false
+				for eID := range entities {
+					if id == eID {
+						found = true
+						break
+					}
+				}
+				if !found {
 					return false
 				}
 			}
@@ -77,7 +125,7 @@ func (u *User) Can(activity string) bool {
 					return false
 				}
 			}
-		}
+		}*/
 	}
 	for _, role := range u.roles {
 		if role.Has(activity, allowed...) {
