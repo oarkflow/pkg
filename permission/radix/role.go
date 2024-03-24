@@ -16,14 +16,14 @@ func (a Attribute) String() string {
 
 // Role represents a user role with its permissions
 type Role struct {
-	name        string
+	id          string
 	lock        bool
 	permissions map[string]Attribute
 	descendants map[string]IRole
 }
 
-func (r *Role) Name() string {
-	return r.name
+func (r *Role) ID() string {
+	return r.id
 }
 
 func (r *Role) Lock() {
@@ -42,7 +42,7 @@ func (r *Role) Has(permissionName string, allowedDescendants ...string) bool {
 	// Check inherited permissions recursively
 	for _, descendant := range r.GetDescendantRoles() {
 		if totalD > 0 {
-			if slices.Contains(allowedDescendants, descendant.Name()) {
+			if slices.Contains(allowedDescendants, descendant.ID()) {
 				if descendant.Has(permissionName, allowedDescendants...) {
 					return true
 				}
@@ -71,7 +71,7 @@ func (r *Role) AddDescendent(descendants ...IRole) error {
 		return errors.New("changes not allowed")
 	}
 	for _, descendant := range descendants {
-		r.descendants[descendant.Name()] = descendant
+		r.descendants[descendant.ID()] = descendant
 	}
 	return nil
 }

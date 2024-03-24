@@ -6,11 +6,12 @@ import (
 
 // User represents a user with a role
 type User struct {
-	id       string
-	roles    []IRole
-	company  ICompany
-	module   *Module
-	entities []string
+	id        string
+	roles     []IRole
+	company   string
+	companies map[string]ICompany
+	module    *Module
+	entities  []string
 }
 
 func (u *User) ID() string {
@@ -19,6 +20,10 @@ func (u *User) ID() string {
 
 func (u *User) Roles() []IRole {
 	return u.roles
+}
+
+func (u *User) AssignTo(company ICompany) {
+	u.companies[company.ID()] = company
 }
 
 // Can check if a user is allowed to do an activity based on their role and inherited permissions
@@ -42,14 +47,18 @@ func (u *User) Can(activity string) bool {
 		for role := range u.module.roles {
 			allowed = append(allowed, role)
 		}
-	} else if u.company != nil {
-		if len(u.company.Users()) == 0 {
+	} else if u.company != "" {
+		company, ok := u.companies[u.company]
+		if !ok {
+			return false
+		}
+		if len(company.Users()) == 0 {
 			return false
 		}
 
 		// Check if the user's id matches any user in the company
 		foundUser := false
-		for _, userRole := range u.company.Users() {
+		for _, userRole := range company.Users() {
 			if u.id == userRole.User.ID() {
 				foundUser = true
 				break
@@ -58,7 +67,7 @@ func (u *User) Can(activity string) bool {
 		if !foundUser {
 			return false
 		}
-		for role := range u.company.Roles() {
+		for role := range company.Roles() {
 			allowed = append(allowed, role)
 		}
 	}
@@ -75,9 +84,13 @@ func (u *User) Can(activity string) bool {
 					return false
 				}
 			}
-		} else if u.company != nil {
-			entityMap = u.company.UserEntities()[u.id]
-			if entities := u.company.Entities(); len(entities) > 0 {
+		} else if u.company != "" {
+			company, ok := u.companies[u.company]
+			if !ok {
+				return false
+			}
+			entityMap = company.UserEntities()[u.id]
+			if entities := company.Entities(); len(entities) > 0 {
 				// Check if the entity ID is present in the company's entities
 				if _, found := entities[id]; !found {
 					return false
@@ -103,16 +116,20 @@ func (u *User) Assign(roles ...IRole) {
 	u.roles = append(u.roles, roles...)
 }
 
-func (u *User) WithCompany(company ICompany, module ...string) IUser {
+func (u *User) WithCompany(company string, module ...string) IUser {
 	user := &User{
-		id:      u.id,
-		roles:   u.roles,
-		company: company,
+		id:        u.id,
+		roles:     u.roles,
+		companies: u.companies,
+		company:   company,
 	}
 	if len(module) > 0 {
-		mod, ok := company.GetModule(module[0])
+		company, ok := u.companies[company]
 		if ok {
-			user.module = mod
+			mod, o := company.GetModule(module[0])
+			if o {
+				user.module = mod
+			}
 		}
 	}
 	return user
@@ -120,10 +137,11 @@ func (u *User) WithCompany(company ICompany, module ...string) IUser {
 
 func (u *User) WithEntity(entities ...string) IUser {
 	return &User{
-		id:       u.id,
-		roles:    u.roles,
-		company:  u.company,
-		module:   u.module,
-		entities: entities,
+		id:        u.id,
+		roles:     u.roles,
+		company:   u.company,
+		companies: u.companies,
+		module:    u.module,
+		entities:  entities,
 	}
 }

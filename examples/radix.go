@@ -25,7 +25,7 @@ func companyRolePermission() {
 	company.AddRole(adminRole)
 
 	userA := radix.NewUser("userA")
-	err := company.AddUser(userA, adminRole.Name())
+	err := company.AddUser(userA, adminRole.ID())
 	if err != nil {
 		panic(err)
 	}
@@ -33,25 +33,25 @@ func companyRolePermission() {
 	company.AddEntity(entity1, entity2, entity3, entity4)
 	company.AddEntityToModule(module.ID(), entity2.ID)
 	fmt.Println(fmt.Sprintf(pattern, 1, "Admin", "code", "no", "no", "no", "no", "n/a", "true", panicIfNotExpected(userA.Can("code add"), "true")))
-	fmt.Println(fmt.Sprintf(pattern, 2, "Admin", "code", "yes", "no", "no", "no", "n/a", "false", panicIfNotExpected(userA.WithCompany(company).Can("code add"), "false")))
-	fmt.Println(fmt.Sprintf(pattern, 3, "Admin", "code", "yes", "yes", "no", "no", "n/a", "false", panicIfNotExpected(userA.WithCompany(company, module.ID()).Can("code add"), "false")))
+	fmt.Println(fmt.Sprintf(pattern, 2, "Admin", "code", "yes", "no", "no", "no", "n/a", "false", panicIfNotExpected(userA.WithCompany(company.ID()).Can("code add"), "false")))
+	fmt.Println(fmt.Sprintf(pattern, 3, "Admin", "code", "yes", "yes", "no", "no", "n/a", "false", panicIfNotExpected(userA.WithCompany(company.ID(), module.ID()).Can("code add"), "false")))
 	company.AddRole(coderRole)
-	fmt.Println(fmt.Sprintf(pattern, 4, "Admin&Coder", "code", "yes", "no", "no", "no", "n/a", "true", panicIfNotExpected(userA.WithCompany(company).Can("code add"), "true")))
-	fmt.Println(fmt.Sprintf(pattern, 5, "Admin&Coder", "code", "yes", "yes", "no", "no", "n/a", "false", panicIfNotExpected(userA.WithCompany(company, module.ID()).Can("code add"), "false")))
-	fmt.Println(fmt.Sprintf(pattern, 6, "Admin&Coder", "code", "yes", "no", "no", "yes", "yes", "true", panicIfNotExpected(userA.WithCompany(company).WithEntity(entity1.ID).Can("code add"), "true")))
-	fmt.Println(fmt.Sprintf(pattern, 7, "Admin&Coder", "code", "yes", "no", "no", "yes", "no", "false", panicIfNotExpected(userA.WithCompany(company).WithEntity("5").Can("code add"), "false")))
-	fmt.Println(fmt.Sprintf(pattern, 8, "Admin&Coder", "code", "yes", "yes", "no", "yes", "no", "false", panicIfNotExpected(userA.WithCompany(company, module.ID()).Can("code add"), "false")))
-	fmt.Println(fmt.Sprintf(pattern, 9, "Admin&Coder", "code", "yes", "yes", "no", "yes", "yes", "false", panicIfNotExpected(userA.WithCompany(company, module.ID()).WithEntity(entity1.ID).Can("code add"), "false")))
-	fmt.Println(fmt.Sprintf(pattern, 10, "Admin&Coder", "code", "yes", "yes", "no", "yes", "no", "false", panicIfNotExpected(userA.WithCompany(company, module.ID()).WithEntity("6").Can("code add"), "false")))
+	fmt.Println(fmt.Sprintf(pattern, 4, "Admin&Coder", "code", "yes", "no", "no", "no", "n/a", "true", panicIfNotExpected(userA.WithCompany(company.ID()).Can("code add"), "true")))
+	fmt.Println(fmt.Sprintf(pattern, 5, "Admin&Coder", "code", "yes", "yes", "no", "no", "n/a", "false", panicIfNotExpected(userA.WithCompany(company.ID(), module.ID()).Can("code add"), "false")))
+	fmt.Println(fmt.Sprintf(pattern, 6, "Admin&Coder", "code", "yes", "no", "no", "yes", "yes", "true", panicIfNotExpected(userA.WithCompany(company.ID()).WithEntity(entity1.ID).Can("code add"), "true")))
+	fmt.Println(fmt.Sprintf(pattern, 7, "Admin&Coder", "code", "yes", "no", "no", "yes", "no", "false", panicIfNotExpected(userA.WithCompany(company.ID()).WithEntity("5").Can("code add"), "false")))
+	fmt.Println(fmt.Sprintf(pattern, 8, "Admin&Coder", "code", "yes", "yes", "no", "yes", "no", "false", panicIfNotExpected(userA.WithCompany(company.ID(), module.ID()).Can("code add"), "false")))
+	fmt.Println(fmt.Sprintf(pattern, 9, "Admin&Coder", "code", "yes", "yes", "no", "yes", "yes", "false", panicIfNotExpected(userA.WithCompany(company.ID(), module.ID()).WithEntity(entity1.ID).Can("code add"), "false")))
+	fmt.Println(fmt.Sprintf(pattern, 10, "Admin&Coder", "code", "yes", "yes", "no", "yes", "no", "false", panicIfNotExpected(userA.WithCompany(company.ID(), module.ID()).WithEntity("6").Can("code add"), "false")))
 	company.AddUserToModule(module.ID(), userA)
-	fmt.Println(fmt.Sprintf(pattern, 11, "Admin&Coder", "code", "yes", "yes", "yes", "no", "n/a", "true", panicIfNotExpected(userA.WithCompany(company, module.ID()).Can("code add"), "true")))
-	fmt.Println(fmt.Sprintf(pattern, 12, "Admin&Coder", "code", "yes", "yes", "yes", "yes", "yes", "false", panicIfNotExpected(userA.WithCompany(company, module.ID()).WithEntity(entity1.ID).Can("code add"), "false")))
-	fmt.Println(fmt.Sprintf(pattern, 12, "Admin&Coder", "code", "yes", "yes", "yes", "yes", "yes", "true", panicIfNotExpected(userA.WithCompany(company, module.ID()).WithEntity(entity2.ID).Can("code add"), "true")))
+	fmt.Println(fmt.Sprintf(pattern, 11, "Admin&Coder", "code", "yes", "yes", "yes", "no", "n/a", "true", panicIfNotExpected(userA.WithCompany(company.ID(), module.ID()).Can("code add"), "true")))
+	fmt.Println(fmt.Sprintf(pattern, 12, "Admin&Coder", "code", "yes", "yes", "yes", "yes", "yes", "false", panicIfNotExpected(userA.WithCompany(company.ID(), module.ID()).WithEntity(entity1.ID).Can("code add"), "false")))
+	fmt.Println(fmt.Sprintf(pattern, 12, "Admin&Coder", "code", "yes", "yes", "yes", "yes", "yes", "true", panicIfNotExpected(userA.WithCompany(company.ID(), module.ID()).WithEntity(entity2.ID).Can("code add"), "true")))
 }
 
 func panicIfNotExpected(condition bool, expected string) bool {
 	if fmt.Sprintf("%v", condition) != expected {
-		panic("not a match")
+		panic(fmt.Sprintf("not a match: expected %v, actual: %v", expected, condition))
 	}
 	return condition
 }

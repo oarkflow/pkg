@@ -7,28 +7,29 @@ func NewAttribute(resource, action string) Attribute {
 	}
 }
 
-func NewRole(name string, lock ...bool) IRole {
+func NewRole(id string, lock ...bool) IRole {
 	var disable bool
 	if len(lock) > 0 {
 		disable = lock[0]
 	}
 	return &Role{
-		name:        name,
+		id:          id,
 		permissions: make(map[string]Attribute),
 		descendants: make(map[string]IRole),
 		lock:        disable,
 	}
 }
 
-func NewUser(name string) IUser {
+func NewUser(id string) IUser {
 	return &User{
-		id: name,
+		id:        id,
+		companies: make(map[string]ICompany),
 	}
 }
 
-func NewCompany(name string) *Company {
+func NewCompany(id string) *Company {
 	return &Company{
-		id:           name,
+		id:           id,
 		roles:        make(map[string]IRole),
 		modules:      make(map[string]*Module),
 		entities:     make(map[string]*Entity),
@@ -36,9 +37,9 @@ func NewCompany(name string) *Company {
 	}
 }
 
-func NewModule(name string) *Module {
+func NewModule(id string) *Module {
 	return &Module{
-		id:       name,
+		id:       id,
 		roles:    make(map[string]IRole),
 		entities: make(map[string]string),
 	}

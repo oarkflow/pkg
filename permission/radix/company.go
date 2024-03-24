@@ -29,6 +29,7 @@ func (c *Company) AddUser(user IUser, role string) error {
 			User: user,
 			Role: role,
 		})
+		user.AssignTo(c)
 		user.Assign(role)
 		return nil
 	}
@@ -45,9 +46,9 @@ func (c *Company) Users() []*UserRole {
 
 func (c *Company) AddRole(roles ...IRole) {
 	for _, role := range roles {
-		c.roles[role.Name()] = role
+		c.roles[role.ID()] = role
 		for _, module := range c.modules {
-			module.roles[role.Name()] = role
+			module.roles[role.ID()] = role
 		}
 	}
 }

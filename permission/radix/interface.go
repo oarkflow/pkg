@@ -22,7 +22,7 @@ type ICompany interface {
 }
 
 type IRole interface {
-	Name() string
+	ID() string
 	Has(permission string, allowedDescendants ...string) bool
 	Lock()
 	Unlock()
@@ -33,8 +33,9 @@ type IRole interface {
 
 type IUser interface {
 	PermittedUser
-	WithCompany(company ICompany, module ...string) IUser
+	WithCompany(company string, module ...string) IUser
 	WithEntity(entity ...string) IUser
+	AssignTo(company ICompany)
 	Assign(roles ...IRole)
 	ID() string
 	Roles() []IRole
