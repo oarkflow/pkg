@@ -36,6 +36,6 @@ type IUser interface {
 	WithCompany(company ICompany, module ...string) IUser
 	WithEntity(entity ...string) IUser
 	Assign(roles ...IRole)
-	Name() string
+	ID() string
 	Roles() []IRole
 }

@@ -22,7 +22,7 @@ func NewRole(name string, lock ...bool) IRole {
 
 func NewUser(name string) IUser {
 	return &User{
-		name: name,
+		id: name,
 	}
 }
 
@@ -38,7 +38,7 @@ func NewCompany(name string) *Company {
 
 func NewModule(name string) *Module {
 	return &Module{
-		Name:     name,
+		id:       name,
 		roles:    make(map[string]IRole),
 		entities: make(map[string]string),
 	}

@@ -58,7 +58,7 @@ func (c *Company) GetModule(name string) (*Module, bool) {
 }
 
 func (c *Company) AddModule(mod *Module, copyUserRoles, copyEntities bool) {
-	module := NewModule(mod.Name)
+	module := NewModule(mod.id)
 	if copyUserRoles {
 		module.roles = c.roles
 	}
@@ -67,7 +67,7 @@ func (c *Company) AddModule(mod *Module, copyUserRoles, copyEntities bool) {
 			module.entities[id] = id
 		}
 	}
-	c.modules[module.Name] = module
+	c.modules[module.id] = module
 }
 
 func (c *Company) AddEntity(entities ...*Entity) {
@@ -155,11 +155,15 @@ func (c *Company) AddUserToModule(module string, user IUser, roles ...string) er
 }
 
 type Module struct {
-	Name         string
+	id           string
 	users        []*UserRole
 	roles        map[string]IRole
 	entities     map[string]string
 	userEntities map[string][]string
+}
+
+func (m *Module) ID() string {
+	return m.id
 }
 
 type Entity struct {

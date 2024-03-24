@@ -6,15 +6,15 @@ import (
 
 // User represents a user with a role
 type User struct {
-	name     string
+	id       string
 	roles    []IRole
 	company  ICompany
 	module   *Module
 	entities []string
 }
 
-func (u *User) Name() string {
-	return u.name
+func (u *User) ID() string {
+	return u.id
 }
 
 func (u *User) Roles() []IRole {
@@ -31,7 +31,7 @@ func (u *User) Can(activity string) bool {
 		// Check if the user's id matches any user in the module
 		foundUser := false
 		for _, userRole := range u.module.users {
-			if u.name == userRole.User.Name() {
+			if u.id == userRole.User.ID() {
 				foundUser = true
 				break
 			}
@@ -50,7 +50,7 @@ func (u *User) Can(activity string) bool {
 		// Check if the user's id matches any user in the company
 		foundUser := false
 		for _, userRole := range u.company.Users() {
-			if u.name == userRole.User.Name() {
+			if u.id == userRole.User.ID() {
 				foundUser = true
 				break
 			}
@@ -68,7 +68,7 @@ func (u *User) Can(activity string) bool {
 
 		// Determine the entity map based on whether the user has a module or a company
 		if u.module != nil {
-			entityMap = u.module.userEntities[u.name]
+			entityMap = u.module.userEntities[u.id]
 			if entities := u.module.entities; len(entities) > 0 {
 				// Check if the entity ID is present in the module's entities
 				if _, found := entities[id]; !found {
@@ -76,7 +76,7 @@ func (u *User) Can(activity string) bool {
 				}
 			}
 		} else if u.company != nil {
-			entityMap = u.company.UserEntities()[u.name]
+			entityMap = u.company.UserEntities()[u.id]
 			if entities := u.company.Entities(); len(entities) > 0 {
 				// Check if the entity ID is present in the company's entities
 				if _, found := entities[id]; !found {
@@ -105,7 +105,7 @@ func (u *User) Assign(roles ...IRole) {
 
 func (u *User) WithCompany(company ICompany, module ...string) IUser {
 	user := &User{
-		name:    u.name,
+		id:      u.id,
 		roles:   u.roles,
 		company: company,
 	}
@@ -120,7 +120,7 @@ func (u *User) WithCompany(company ICompany, module ...string) IUser {
 
 func (u *User) WithEntity(entities ...string) IUser {
 	return &User{
-		name:     u.name,
+		id:       u.id,
 		roles:    u.roles,
 		company:  u.company,
 		module:   u.module,
