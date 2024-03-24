@@ -8,19 +8,19 @@ import (
 
 func main() {
 	coderRole := radix.NewRole("Coder")
-	coderRole.AddPermission(radix.NewPermission("code"))
+	coderRole.AddPermission(radix.NewAttribute("code", "add"))
 
 	qaRole := radix.NewRole("QA")
-	qaRole.AddPermission(radix.NewPermission("qa"))
+	qaRole.AddPermission(radix.NewAttribute("qa", "add"))
 
 	suspendManagerRole := radix.NewRole("SuspendManager")
-	suspendManagerRole.AddPermission(radix.NewPermission("suspend"))
+	suspendManagerRole.AddPermission(radix.NewAttribute("suspend", "release"))
 
 	adminRole := radix.NewRole("Admin")
-	adminRole.AddPermission(radix.NewPermission("add-user"))
+	adminRole.AddPermission(radix.NewAttribute("user", "add"))
 
 	accountManagerRole := radix.NewRole("AccountManager")
-	accountManagerRole.AddPermission(radix.NewPermission("add-company"))
+	accountManagerRole.AddPermission(radix.NewAttribute("company", "add"))
 
 	adminRole.AddDescendent(coderRole, qaRole, suspendManagerRole)
 	accountManagerRole.AddDescendent(adminRole)
@@ -35,17 +35,17 @@ func main() {
 	userD.Assign(accountManagerRole)
 
 	// Check permissions
-	fmt.Println(userA.Name(), "can code:", userA.Can("code"))
-	fmt.Println(userB.Name(), "can suspend:", userB.Can("suspend"))
-	fmt.Println(userC.Name(), "can create user:", userC.Can("add-user")) // Inherited from AccountManager
-	fmt.Println(userD.Name(), "can qa:", userD.Can("qa"))
-	fmt.Println(userD.Name(), "can qa:", userD.Can("delete-user"))
+	fmt.Println(userA.Name(), "can code:", userA.Can("code add"))
+	fmt.Println(userB.Name(), "can suspend:", userB.Can("suspend add"))
+	fmt.Println(userC.Name(), "can create user:", userC.Can("user add")) // Inherited from AccountManager
+	fmt.Println(userD.Name(), "can qa:", userD.Can("qa add"))
+	fmt.Println(userD.Name(), "can qa:", userD.Can("user delete"))
 
 	// Add a new permission dynamically (inherited by Admin)
-	newPermission := radix.NewPermission("delete-user")
+	newPermission := radix.NewAttribute("user", "delete")
 
 	adminRole.AddPermission(newPermission)
 
-	fmt.Println(userC.Name(), "can delete user (after adding permission to Admin):", userC.Can("delete-user"))
-	fmt.Println(userD.Name(), "can qa user (after adding permission to Admin):", userD.Can("delete-user"))
+	fmt.Println(userC.Name(), "can delete user (after adding permission to Admin):", userC.Can("user delete"))
+	fmt.Println(userD.Name(), "can qa user (after adding permission to Admin):", userD.Can("user delete"))
 }

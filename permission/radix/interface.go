@@ -9,7 +9,7 @@ type IRole interface {
 	Has(string) bool
 	GetDescendantRoles() []IRole
 	AddDescendent(descendants ...IRole)
-	AddPermission(permissions ...Permission)
+	AddPermission(permissions ...Attribute)
 }
 
 type IUser interface {

@@ -1,14 +1,18 @@
 package radix
 
-// Permission defines a single permission for an activity
-type Permission struct {
-	Name string
+type Attribute struct {
+	Resource string
+	Action   string
+}
+
+func (a Attribute) String() string {
+	return a.Resource + " " + a.Action
 }
 
 // Role represents a user role with its permissions
 type Role struct {
 	name        string
-	permissions map[string]Permission
+	permissions map[string]Attribute
 	descendants map[string]IRole
 }
 
@@ -46,39 +50,8 @@ func (r *Role) AddDescendent(descendants ...IRole) {
 }
 
 // AddPermission adds a new permission to the role
-func (r *Role) AddPermission(permissions ...Permission) {
+func (r *Role) AddPermission(permissions ...Attribute) {
 	for _, permission := range permissions {
-		r.permissions[permission.Name] = permission
+		r.permissions[permission.String()] = permission
 	}
-}
-
-// User represents a user with a role
-type User struct {
-	name  string
-	roles []IRole
-}
-
-func (u *User) Name() string {
-	return u.name
-}
-
-func (u *User) Roles() []IRole {
-	return u.roles
-}
-
-// Can check if a user is allowed to do an activity based on their role and inherited permissions
-func (u *User) Can(activity string) bool {
-	for _, role := range u.roles {
-		if role.Has(activity) {
-			return true
-		}
-	}
-	return false
-}
-
-func (u *User) Assign(roles ...IRole) {
-	if len(roles) == 0 {
-		return
-	}
-	u.roles = append(u.roles, roles...)
 }
