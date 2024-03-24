@@ -11,12 +11,16 @@ type UserRole struct {
 }
 
 type Company struct {
-	name         string
+	id           string
 	users        []*UserRole
 	roles        map[string]IRole
 	modules      map[string]*Module
 	entities     map[string]*Entity
 	userEntities map[string][]string
+}
+
+func (c *Company) ID() string {
+	return c.id
 }
 
 func (c *Company) AddUser(user IUser, role string) error {

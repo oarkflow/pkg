@@ -5,6 +5,7 @@ type PermittedUser interface {
 }
 
 type ICompany interface {
+	ID() string
 	AddUser(user IUser, role string) error
 	Roles() map[string]IRole
 	Users() []*UserRole

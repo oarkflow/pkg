@@ -28,7 +28,7 @@ func NewUser(name string) IUser {
 
 func NewCompany(name string) *Company {
 	return &Company{
-		name:         name,
+		id:           name,
 		roles:        make(map[string]IRole),
 		modules:      make(map[string]*Module),
 		entities:     make(map[string]*Entity),

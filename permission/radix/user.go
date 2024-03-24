@@ -28,7 +28,7 @@ func (u *User) Can(activity string) bool {
 		if len(u.module.users) == 0 {
 			return false
 		}
-		// Check if the user's name matches any user in the module
+		// Check if the user's id matches any user in the module
 		foundUser := false
 		for _, userRole := range u.module.users {
 			if u.name == userRole.User.Name() {
@@ -47,7 +47,7 @@ func (u *User) Can(activity string) bool {
 			return false
 		}
 
-		// Check if the user's name matches any user in the company
+		// Check if the user's id matches any user in the company
 		foundUser := false
 		for _, userRole := range u.company.Users() {
 			if u.name == userRole.User.Name() {
