@@ -29,16 +29,24 @@ func companyRolePermission() {
 	if err != nil {
 		panic(err)
 	}
+	pattern := `[Roles: %s, Feature: %s, Company: %s, Module: %s, Assigned To Module: %s, Entities: %s, Valid Entities: %s] ===> Expected %s, Actual %v`
 	company.AddEntity(entity1, entity2, entity3, entity4)
-	fmt.Println("Global role check: ", userA.Can("code add"), " expected: true")
-	fmt.Println("With company that has only Admin role: ", userA.WithCompany(company).Can("code add"), " expected: false")
-	fmt.Println("With company and module that has only Admin role: ", userA.WithCompany(company, module.Name).Can("code add"), " expected: false")
+	company.AddEntityToModule(module.Name, entity2.ID)
+	fmt.Println(fmt.Sprintf(pattern, "Admin", "code", "no", "no", "no", "no", "n/a", "true", userA.Can("code add")))
+	fmt.Println(fmt.Sprintf(pattern, "Admin", "code", "yes", "no", "no", "no", "n/a", "false", userA.WithCompany(company).Can("code add")))
+	fmt.Println(fmt.Sprintf(pattern, "Admin", "code", "yes", "yes", "no", "no", "n/a", "false", userA.WithCompany(company, module.Name).Can("code add")))
 	company.AddRole(coderRole)
-	fmt.Println("with company that has Admin and Coder role", userA.WithCompany(company).Can("code add"), " expected: true")
-	fmt.Println("with company that has Admin and Coder role with entity", userA.WithCompany(company).WithEntity(entity1.ID).Can("code add"), " expected: true")
-	fmt.Println("With company and module that has Admin and Coder role before adding userA to module: ", userA.WithCompany(company, module.Name).Can("code add"), " expected: false")
+	fmt.Println(fmt.Sprintf(pattern, "Admin&Coder", "code", "yes", "no", "no", "no", "n/a", "true", userA.WithCompany(company).Can("code add")))
+	fmt.Println(fmt.Sprintf(pattern, "Admin&Coder", "code", "yes", "yes", "no", "no", "n/a", "false", userA.WithCompany(company, module.Name).Can("code add")))
+	fmt.Println(fmt.Sprintf(pattern, "Admin&Coder", "code", "yes", "no", "no", "yes", "yes", "true", userA.WithCompany(company).WithEntity(entity1.ID).Can("code add")))
+	fmt.Println(fmt.Sprintf(pattern, "Admin&Coder", "code", "yes", "no", "no", "yes", "no", "false", userA.WithCompany(company).WithEntity("5").Can("code add")))
+	fmt.Println(fmt.Sprintf(pattern, "Admin&Coder", "code", "yes", "yes", "no", "yes", "no", "false", userA.WithCompany(company, module.Name).Can("code add")))
+	fmt.Println(fmt.Sprintf(pattern, "Admin&Coder", "code", "yes", "yes", "no", "yes", "yes", "false", userA.WithCompany(company, module.Name).WithEntity(entity1.ID).Can("code add")))
+	fmt.Println(fmt.Sprintf(pattern, "Admin&Coder", "code", "yes", "yes", "no", "yes", "no", "false", userA.WithCompany(company, module.Name).WithEntity("6").Can("code add")))
 	company.AddUserToModule(module.Name, userA)
-	fmt.Println("With company and module that has Admin and Coder role after adding userA to module: ", userA.WithCompany(company, module.Name).Can("code add"), " expected: true")
+	fmt.Println(fmt.Sprintf(pattern, "Admin&Coder", "code", "yes", "yes", "yes", "no", "n/a", "true", userA.WithCompany(company, module.Name).Can("code add")))
+	fmt.Println(fmt.Sprintf(pattern, "Admin&Coder", "code", "yes", "yes", "yes", "yes", "yes", "false", userA.WithCompany(company, module.Name).WithEntity(entity1.ID).Can("code add")))
+	fmt.Println(fmt.Sprintf(pattern, "Admin&Coder", "code", "yes", "yes", "yes", "yes", "yes", "true", userA.WithCompany(company, module.Name).WithEntity(entity2.ID).Can("code add")))
 }
 
 func addRoles() (radix.IRole, radix.IRole, radix.IRole, radix.IRole, radix.IRole) {

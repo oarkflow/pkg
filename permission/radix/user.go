@@ -46,10 +46,11 @@ func (u *User) Can(activity string) bool {
 		if len(u.company.Users()) == 0 {
 			return false
 		}
+
 		// Check if the user's name matches any user in the company
 		foundUser := false
 		for _, userRole := range u.company.Users() {
-			if u.name != userRole.User.Name() {
+			if u.name == userRole.User.Name() {
 				foundUser = true
 				break
 			}
@@ -86,46 +87,6 @@ func (u *User) Can(activity string) bool {
 		if len(entityMap) > 0 && !slices.Contains(entityMap, id) {
 			return false
 		}
-		/*if u.module != nil {
-			if moduleEntities, ok := u.module.userEntities[u.name]; ok {
-				if !slices.Contains(moduleEntities, id) {
-					return false
-				}
-			}
-			entities := u.module.entities
-			if len(entities) > 0 {
-				found := false
-				for eID := range entities {
-					if id == eID {
-						found = true
-						break
-					}
-				}
-				if !found {
-					return false
-				}
-			}
-		}
-		if u.company != nil {
-			if moduleEntities, ok := u.company.UserEntities()[u.name]; ok {
-				if !slices.Contains(moduleEntities, id) {
-					return false
-				}
-			}
-			entities := u.company.Entities()
-			if len(entities) > 0 {
-				found := false
-				for eID := range entities {
-					if id == eID {
-						found = true
-						break
-					}
-				}
-				if !found {
-					return false
-				}
-			}
-		}*/
 	}
 	for _, role := range u.roles {
 		if role.Has(activity, allowed...) {

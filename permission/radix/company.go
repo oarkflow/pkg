@@ -54,9 +54,7 @@ func (c *Company) GetModule(name string) (*Module, bool) {
 }
 
 func (c *Company) AddModule(mod *Module, copyUserRoles, copyEntities bool) {
-	module := &Module{
-		Name: mod.Name,
-	}
+	module := NewModule(mod.Name)
 	if copyUserRoles {
 		module.roles = c.roles
 	}
