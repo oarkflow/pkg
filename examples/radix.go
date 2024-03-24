@@ -11,6 +11,11 @@ func main() {
 }
 
 func companyRolePermission() {
+	entity1 := &radix.Entity{ID: "1"}
+	entity2 := &radix.Entity{ID: "2"}
+	entity3 := &radix.Entity{ID: "3"}
+	entity4 := &radix.Entity{ID: "4"}
+
 	company := radix.NewCompany("Edelberg")
 
 	module := radix.NewModule("Coding")
@@ -24,12 +29,13 @@ func companyRolePermission() {
 	if err != nil {
 		panic(err)
 	}
-
+	company.AddEntity(entity1, entity2, entity3, entity4)
 	fmt.Println("Global role check: ", userA.Can("code add"), " expected: true")
 	fmt.Println("With company that has only Admin role: ", userA.WithCompany(company).Can("code add"), " expected: false")
 	fmt.Println("With company and module that has only Admin role: ", userA.WithCompany(company, module.Name).Can("code add"), " expected: false")
 	company.AddRole(coderRole)
 	fmt.Println("with company that has Admin and Coder role", userA.WithCompany(company).Can("code add"), " expected: true")
+	fmt.Println("with company that has Admin and Coder role with entity", userA.WithCompany(company).WithEntity(entity1.ID).Can("code add"), " expected: true")
 	fmt.Println("With company and module that has Admin and Coder role before adding userA to module: ", userA.WithCompany(company, module.Name).Can("code add"), " expected: false")
 	company.AddUserToModule(module.Name, userA)
 	fmt.Println("With company and module that has Admin and Coder role after adding userA to module: ", userA.WithCompany(company, module.Name).Can("code add"), " expected: true")

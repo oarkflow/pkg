@@ -11,11 +11,12 @@ type UserRole struct {
 }
 
 type Company struct {
-	name     string
-	users    []*UserRole
-	roles    map[string]IRole
-	modules  map[string]*Module
-	entities map[string]*Entity
+	name         string
+	users        []*UserRole
+	roles        map[string]IRole
+	modules      map[string]*Module
+	entities     map[string]*Entity
+	userEntities map[string][]string
 }
 
 func (c *Company) AddUser(user IUser, role string) error {
@@ -52,7 +53,7 @@ func (c *Company) GetModule(name string) (*Module, bool) {
 	return mod, ok
 }
 
-func (c *Company) AddModule(mod *Module, copyUserRoles, copyEntities bool) *Module {
+func (c *Company) AddModule(mod *Module, copyUserRoles, copyEntities bool) {
 	module := &Module{
 		Name: mod.Name,
 	}
@@ -60,14 +61,69 @@ func (c *Company) AddModule(mod *Module, copyUserRoles, copyEntities bool) *Modu
 		module.roles = c.roles
 	}
 	if copyEntities {
-		module.entities = c.entities
+		for id := range c.entities {
+			module.entities[id] = id
+		}
 	}
 	c.modules[module.Name] = module
-	return module
 }
 
-func (c *Company) AddEntity(id string, entity *Entity) {
-	c.entities[id] = entity
+func (c *Company) AddEntity(entities ...*Entity) {
+	for _, entity := range entities {
+		c.entities[entity.ID] = entity
+	}
+}
+
+func (c *Company) Entities() map[string]*Entity {
+	return c.entities
+}
+
+func (c *Company) UserEntities() map[string][]string {
+	return c.userEntities
+}
+
+func (c *Company) AddEntityToModule(module, entityID string) error {
+	mod, ok := c.modules[module]
+	if !ok {
+		return errors.New("module not available for company")
+	}
+	entity, ok := c.entities[entityID]
+	if !ok {
+		return errors.New("entity not available for company")
+	}
+	mod.entities[entityID] = entity.ID
+	return nil
+}
+
+func (c *Company) AssignEntityToUser(userID string, entityIDs []string) {
+	var entities []string
+	for id, entity := range c.entities {
+		if slices.Contains(entityIDs, id) {
+			entities = append(entities, entity.ID)
+		}
+	}
+	if len(entities) > 0 {
+		c.userEntities[userID] = append(c.userEntities[userID], entities...)
+	}
+}
+
+func (c *Company) AssignEntityToUserInModules(userID string, entityIDs []string, modules []string) {
+	var entities []string
+	if len(modules) == 0 {
+		return
+	}
+	for _, mod := range modules {
+		if module, ok := c.modules[mod]; ok {
+			for id, entity := range module.entities {
+				if slices.Contains(entityIDs, id) {
+					entities = append(entities, entity)
+				}
+			}
+			if len(entities) > 0 {
+				module.userEntities[userID] = append(module.userEntities[userID], entities...)
+			}
+		}
+	}
 }
 
 func (c *Company) AddUserToModule(module string, user IUser, roles ...string) error {
@@ -97,26 +153,11 @@ func (c *Company) AddUserToModule(module string, user IUser, roles ...string) er
 }
 
 type Module struct {
-	Name     string
-	users    []*UserRole
-	roles    map[string]IRole
-	entities map[string]*Entity
-}
-
-func (c *Module) Roles() map[string]IRole {
-	return c.roles
-}
-
-func (c *Module) AddUser(user IUser, role string) error {
-	if role, ok := c.roles[role]; ok {
-		c.users = append(c.users, &UserRole{
-			User: user,
-			Role: role,
-		})
-		user.Assign(role)
-		return nil
-	}
-	return errors.New("role not available for module")
+	Name         string
+	users        []*UserRole
+	roles        map[string]IRole
+	entities     map[string]string
+	userEntities map[string][]string
 }
 
 type Entity struct {

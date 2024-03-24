@@ -28,10 +28,11 @@ func NewUser(name string) IUser {
 
 func NewCompany(name string) *Company {
 	return &Company{
-		name:     name,
-		roles:    make(map[string]IRole),
-		modules:  make(map[string]*Module),
-		entities: make(map[string]*Entity),
+		name:         name,
+		roles:        make(map[string]IRole),
+		modules:      make(map[string]*Module),
+		entities:     make(map[string]*Entity),
+		userEntities: make(map[string][]string),
 	}
 }
 
@@ -39,6 +40,6 @@ func NewModule(name string) *Module {
 	return &Module{
 		Name:     name,
 		roles:    make(map[string]IRole),
-		entities: make(map[string]*Entity),
+		entities: make(map[string]string),
 	}
 }

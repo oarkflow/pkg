@@ -1,11 +1,16 @@
 package radix
 
+import (
+	"slices"
+)
+
 // User represents a user with a role
 type User struct {
-	name    string
-	roles   []IRole
-	company ICompany
-	module  *Module
+	name     string
+	roles    []IRole
+	company  ICompany
+	module   *Module
+	entities []string
 }
 
 func (u *User) Name() string {
@@ -44,6 +49,36 @@ func (u *User) Can(activity string) bool {
 			allowed = append(allowed, role)
 		}
 	}
+	if len(u.entities) > 0 {
+		id := u.entities[0]
+		if u.module != nil {
+			if moduleEntities, ok := u.module.userEntities[u.name]; ok {
+				if !slices.Contains(moduleEntities, id) {
+					return false
+				}
+			}
+		}
+		if u.company != nil {
+			if moduleEntities, ok := u.company.UserEntities()[u.name]; ok {
+				if !slices.Contains(moduleEntities, id) {
+					return false
+				}
+			}
+			entities := u.company.Entities()
+			if len(entities) > 0 {
+				found := false
+				for eID := range entities {
+					if id == eID {
+						found = true
+						break
+					}
+				}
+				if !found {
+					return false
+				}
+			}
+		}
+	}
 	for _, role := range u.roles {
 		if role.Has(activity, allowed...) {
 			return true
@@ -72,4 +107,14 @@ func (u *User) WithCompany(company ICompany, module ...string) IUser {
 		}
 	}
 	return user
+}
+
+func (u *User) WithEntity(entities ...string) IUser {
+	return &User{
+		name:     u.name,
+		roles:    u.roles,
+		company:  u.company,
+		module:   u.module,
+		entities: entities,
+	}
 }
