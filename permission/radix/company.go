@@ -11,26 +11,30 @@ type UserRole struct {
 }
 
 type Company struct {
-	id           string
-	users        []*UserRole
-	roles        map[string]IRole
-	modules      map[string]*Module
-	entities     map[string]*Entity
-	userEntities map[string][]string
+	id            string
+	users         []*UserRole
+	roles         map[string]IRole
+	modules       map[string]*Module
+	entities      map[string]*Entity
+	userEntities  map[string][]string
+	defaultModule *Module
 }
 
 func (c *Company) ID() string {
 	return c.id
 }
 
-func (c *Company) AddUser(user IUser, role string) error {
-	if role, ok := c.roles[role]; ok {
+func (c *Company) AddUser(user IUser, roleID string) error {
+	if role, ok := c.roles[roleID]; ok {
 		c.users = append(c.users, &UserRole{
 			User: user,
 			Role: role,
 		})
 		user.AssignTo(c)
 		user.Assign(role)
+		if c.defaultModule != nil {
+			c.AddUserToModule(c.defaultModule.id, user, roleID)
+		}
 		return nil
 	}
 	return errors.New("role not available for company")
@@ -38,6 +42,12 @@ func (c *Company) AddUser(user IUser, role string) error {
 
 func (c *Company) Roles() map[string]IRole {
 	return c.roles
+}
+
+func (c *Company) SetDefaultModule(mod string) {
+	if module, ok := c.modules[mod]; ok {
+		c.defaultModule = module
+	}
 }
 
 func (c *Company) Users() []*UserRole {
@@ -58,7 +68,7 @@ func (c *Company) GetModule(name string) (*Module, bool) {
 	return mod, ok
 }
 
-func (c *Company) AddModule(mod *Module, copyUserRoles, copyEntities bool) {
+func (c *Company) AddModule(mod *Module, defaultModule, copyUserRoles, copyEntities bool) {
 	module := NewModule(mod.id)
 	if copyUserRoles {
 		module.roles = c.roles
@@ -69,11 +79,17 @@ func (c *Company) AddModule(mod *Module, copyUserRoles, copyEntities bool) {
 		}
 	}
 	c.modules[module.id] = module
+	if defaultModule {
+		c.SetDefaultModule(module.id)
+	}
 }
 
 func (c *Company) AddEntity(entities ...*Entity) {
 	for _, entity := range entities {
 		c.entities[entity.ID] = entity
+		if c.defaultModule != nil {
+			c.defaultModule.entities[entity.ID] = entity.ID
+		}
 	}
 }
 
@@ -107,6 +123,9 @@ func (c *Company) AssignEntityToUser(userID string, entityIDs []string) {
 	}
 	if len(entities) > 0 {
 		c.userEntities[userID] = append(c.userEntities[userID], entities...)
+	}
+	if c.defaultModule != nil {
+		c.defaultModule.userEntities = c.userEntities
 	}
 }
 

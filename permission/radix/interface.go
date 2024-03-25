@@ -12,7 +12,7 @@ type ICompany interface {
 	UserEntities() map[string][]string
 	AddRole(roles ...IRole)
 	GetModule(name string) (*Module, bool)
-	AddModule(module *Module, copyUserRoles, copyEntities bool)
+	AddModule(mod *Module, defaultModule, copyUserRoles, copyEntities bool)
 	AddEntityToModule(module, entityID string) error
 	AddUserToModule(module string, user IUser, roles ...string) error
 	AssignEntityToUser(userID string, entityIDs []string)

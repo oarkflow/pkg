@@ -27,7 +27,7 @@ func NewUser(id string) IUser {
 	}
 }
 
-func NewCompany(id string) *Company {
+func NewCompany(id string) ICompany {
 	return &Company{
 		id:           id,
 		roles:        make(map[string]IRole),
