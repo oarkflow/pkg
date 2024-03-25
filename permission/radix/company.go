@@ -6,15 +6,15 @@ import (
 )
 
 type UserRole struct {
-	User     IUser
-	Role     IRole
+	User     *User
+	Role     *Role
 	EntityID string
 }
 
 type Company struct {
 	id            string
 	users         []*UserRole
-	roles         map[string]IRole
+	roles         map[string]*Role
 	modules       map[string]*Module
 	entities      map[string]bool
 	userEntities  map[string][]string
@@ -25,7 +25,7 @@ func (c *Company) ID() string {
 	return c.id
 }
 
-func (c *Company) AddUser(user IUser, roleID string) error {
+func (c *Company) AddUser(user *User, roleID string) error {
 	if role, ok := c.roles[roleID]; ok {
 		c.users = append(c.users, &UserRole{
 			User: user,
@@ -41,7 +41,7 @@ func (c *Company) AddUser(user IUser, roleID string) error {
 	return errors.New("role not available for company")
 }
 
-func (c *Company) Roles() map[string]IRole {
+func (c *Company) Roles() map[string]*Role {
 	return c.roles
 }
 
@@ -55,7 +55,7 @@ func (c *Company) Users() []*UserRole {
 	return c.users
 }
 
-func (c *Company) AddRole(roles ...IRole) {
+func (c *Company) AddRole(roles ...*Role) {
 	for _, role := range roles {
 		c.roles[role.ID()] = role
 		for _, module := range c.modules {
@@ -185,7 +185,7 @@ func (c *Company) AssignEntityToUserInModules(userID string, entityIDs []string,
 	}
 }
 
-func (c *Company) AddUserToModule(module string, user IUser, roles ...string) error {
+func (c *Company) AddUserToModule(module string, user *User, roles ...string) error {
 	mod, ok := c.modules[module]
 	if !ok {
 		return errors.New("module not available for company")
@@ -214,7 +214,7 @@ func (c *Company) AddUserToModule(module string, user IUser, roles ...string) er
 type Module struct {
 	id           string
 	users        []*UserRole
-	roles        map[string]IRole
+	roles        map[string]*Role
 	entities     map[string]bool
 	userEntities map[string][]string
 }

@@ -7,9 +7,9 @@ import (
 // User represents a user with a role
 type User struct {
 	id        string
-	roles     []IRole
+	roles     []*Role
 	company   string
-	companies map[string]ICompany
+	companies map[string]*Company
 	module    *Module
 	entities  []string
 }
@@ -18,11 +18,11 @@ func (u *User) ID() string {
 	return u.id
 }
 
-func (u *User) Roles() []IRole {
+func (u *User) Roles() []*Role {
 	return u.roles
 }
 
-func (u *User) AssignTo(company ICompany) {
+func (u *User) AssignTo(company *Company) {
 	u.companies[company.ID()] = company
 }
 
@@ -109,14 +109,14 @@ func (u *User) Can(activity string) bool {
 	return false
 }
 
-func (u *User) Assign(roles ...IRole) {
+func (u *User) Assign(roles ...*Role) {
 	if len(roles) == 0 {
 		return
 	}
 	u.roles = append(u.roles, roles...)
 }
 
-func (u *User) WithCompany(company string, module ...string) IUser {
+func (u *User) WithCompany(company string, module ...string) *User {
 	user := &User{
 		id:        u.id,
 		roles:     u.roles,
@@ -135,7 +135,7 @@ func (u *User) WithCompany(company string, module ...string) IUser {
 	return user
 }
 
-func (u *User) WithEntity(entities ...string) IUser {
+func (u *User) WithEntity(entities ...string) *User {
 	return &User{
 		id:        u.id,
 		roles:     u.roles,

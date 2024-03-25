@@ -86,7 +86,7 @@ func panicIfNotExpected(condition bool, expected string) bool {
 	return condition
 }
 
-func addRoles() (radix.IRole, radix.IRole, radix.IRole, radix.IRole, radix.IRole) {
+func addRoles() (*radix.Role, *radix.Role, *radix.Role, *radix.Role, *radix.Role) {
 	coderRole := radix.NewRole("Coder")
 	coderRole.AddPermission(radix.NewAttribute("code", "add"))
 

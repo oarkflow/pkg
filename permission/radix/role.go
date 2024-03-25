@@ -19,7 +19,7 @@ type Role struct {
 	id          string
 	lock        bool
 	permissions map[string]Attribute
-	descendants map[string]IRole
+	descendants map[string]*Role
 }
 
 func (r *Role) ID() string {
@@ -56,8 +56,8 @@ func (r *Role) Has(permissionName string, allowedDescendants ...string) bool {
 	return false
 }
 
-func (r *Role) GetDescendantRoles() []IRole {
-	var descendants []IRole
+func (r *Role) GetDescendantRoles() []*Role {
+	var descendants []*Role
 	for _, child := range r.descendants { // Simulate descendent-child relationship through permissions
 		descendants = append(descendants, child)
 		descendants = append(descendants, child.GetDescendantRoles()...)
@@ -66,7 +66,7 @@ func (r *Role) GetDescendantRoles() []IRole {
 }
 
 // AddDescendent adds a new permission to the role
-func (r *Role) AddDescendent(descendants ...IRole) error {
+func (r *Role) AddDescendent(descendants ...*Role) error {
 	if r.lock {
 		return errors.New("changes not allowed")
 	}
