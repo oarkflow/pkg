@@ -154,9 +154,6 @@ func (c *Company) AddUserToModule(module string, user IUser, roles ...string) er
 		return errors.New("module not available for company")
 	}
 	rolesToAssign := len(roles)
-	if rolesToAssign == 0 {
-		return nil
-	}
 	for name, role := range c.roles {
 		if rolesToAssign > 0 && !slices.Contains(roles, name) {
 			return errors.New("role not available for company")
