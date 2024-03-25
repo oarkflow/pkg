@@ -32,7 +32,7 @@ func NewCompany(id string) ICompany {
 		id:           id,
 		roles:        make(map[string]IRole),
 		modules:      make(map[string]*Module),
-		entities:     make(map[string]*Entity),
+		entities:     make(map[string]bool),
 		userEntities: make(map[string][]string),
 	}
 }
@@ -41,6 +41,6 @@ func NewModule(id string) *Module {
 	return &Module{
 		id:       id,
 		roles:    make(map[string]IRole),
-		entities: make(map[string]string),
+		entities: make(map[string]bool),
 	}
 }

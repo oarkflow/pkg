@@ -17,8 +17,8 @@ type ICompany interface {
 	AddUserToModule(module string, user IUser, roles ...string) error
 	AssignEntityToUser(userID string, entityIDs []string)
 	AssignEntityToUserInModules(userID string, entityIDs []string, modules []string)
-	AddEntity(entity ...*Entity)
-	Entities() map[string]*Entity
+	AddEntity(entity ...string)
+	Entities() map[string]bool
 }
 
 type IRole interface {
