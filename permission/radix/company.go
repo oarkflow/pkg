@@ -6,8 +6,9 @@ import (
 )
 
 type UserRole struct {
-	User IUser
-	Role IRole
+	User     IUser
+	Role     IRole
+	EntityID string
 }
 
 type Company struct {
@@ -114,7 +115,31 @@ func (c *Company) AddEntityToModule(module, entityID string) error {
 	return nil
 }
 
-func (c *Company) AssignEntityToUser(userID string, entityIDs []string) {
+func (c *Company) TopUpEntityToUser(userID, entityID, roleID string) {
+	if role, ok := c.roles[roleID]; ok {
+		for _, ur := range c.users {
+			if ur.User.ID() == userID {
+				userRole := &UserRole{
+					User:     ur.User,
+					Role:     role,
+					EntityID: entityID,
+				}
+				c.users = append(c.users, userRole)
+				if c.defaultModule != nil {
+					c.defaultModule.entities[entityID] = true
+				}
+				for _, mod := range c.modules {
+					mod.entities[entityID] = true
+					mod.roles[roleID] = role
+					mod.users = append(mod.users, userRole)
+				}
+				break
+			}
+		}
+	}
+}
+
+func (c *Company) AssignEntityToUser(userID string, entityIDs []string, assignToModules bool) {
 	var entities []string
 	for id := range c.entities {
 		if slices.Contains(entityIDs, id) {
@@ -126,6 +151,18 @@ func (c *Company) AssignEntityToUser(userID string, entityIDs []string) {
 	}
 	if c.defaultModule != nil {
 		c.defaultModule.userEntities = c.userEntities
+	}
+	if assignToModules {
+		for _, module := range c.modules {
+			for id := range module.entities {
+				if slices.Contains(entityIDs, id) {
+					entities = append(entities, id)
+				}
+			}
+			if len(entities) > 0 {
+				module.userEntities[userID] = append(module.userEntities[userID], entities...)
+			}
+		}
 	}
 }
 

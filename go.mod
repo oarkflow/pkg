@@ -2,12 +2,10 @@ module github.com/oarkflow/pkg
 
 go 1.22.0
 
-replace github.com/casbin/casbin/v2 => github.com/oarkflow/casbin/v2 v2.0.1
-
 require (
 	github.com/boombuler/barcode v1.0.1
 	github.com/carlmjohnson/deque v0.23.1
-	github.com/casbin/casbin/v2 v2.68.0
+	github.com/casbin/casbin/v2 v2.85.0
 	github.com/goccy/go-reflect v1.2.0
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/securecookie v1.1.2
@@ -45,6 +43,7 @@ require (
 	github.com/apcera/termtables v0.0.0-20170405184538-bcbc5dc54055 // indirect
 	github.com/bytedance/go-tagexpr/v2 v2.9.11 // indirect
 	github.com/bytedance/gopkg v0.0.0-20240202110943-5e26950c5e57 // indirect
+	github.com/casbin/govaluate v1.1.1 // indirect
 	github.com/cloudwego/netpoll v0.5.2-0.20240220090456-7ba622bf763b // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/glebarez/go-sqlite v1.21.1 // indirect

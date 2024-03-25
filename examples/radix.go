@@ -8,6 +8,33 @@ import (
 
 func main() {
 	companyRolePermission()
+	// extraRolePermission()
+}
+
+func extraRolePermission() {
+	entity1 := "1"
+	entity2 := "2"
+	entity3 := "3"
+	entity4 := "4"
+
+	company := radix.NewCompany("Edelberg")
+
+	module := radix.NewModule("Coding")
+	company.AddModule(module, true, true, true)
+	coderRole, qaRole, _, _, _ := addRoles()
+	company.AddRole(qaRole)
+	userA := radix.NewUser("userA")
+	err := company.AddUser(userA, qaRole.ID())
+	if err != nil {
+		panic(err)
+	}
+	pattern := `%d) [Roles: %s, Feature: %s, Company: %s, Module: %s, Assigned To Module: %s, Entities: %s, Valid Entities: %s] ===> Expected %s, Actual %v`
+	company.AddEntity(entity1, entity2, entity3, entity4)
+	company.AddEntityToModule(module.ID(), entity2)
+	fmt.Println(fmt.Sprintf(pattern, 1, "Admin", "code", "no", "no", "no", "no", "n/a", "true", panicIfNotExpected(userA.Can("code add"), "false")))
+	fmt.Println(fmt.Sprintf(pattern, 2, "Admin", "code", "no", "no", "no", "no", "n/a", "true", panicIfNotExpected(userA.WithCompany(company.ID(), module.ID()).WithEntity(entity2).Can("code add"), "false")))
+	company.TopUpEntityToUser(userA.ID(), entity2, coderRole.ID())
+	fmt.Println(fmt.Sprintf(pattern, 3, "Admin", "code", "no", "no", "no", "no", "n/a", "true", panicIfNotExpected(userA.WithCompany(company.ID(), module.ID()).WithEntity(entity2).Can("code add"), "true")))
 }
 
 func companyRolePermission() {

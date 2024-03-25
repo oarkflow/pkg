@@ -1,22 +1,13 @@
-p, account-manager, company-a, service-a, *, *, *
-p, admin, company-a, service-a, /users, POST, "1,2,3,4,5,6,7,8,9,10"
-p, admin, company-a, service-a, /users, PUT, "1,2,3,4,5,6,7,8,9,10"
-p, admin, company-a, service-a, /facilities, GET, "1,2,3,4,5,6,7,8,9,10"
-p, coder, company-a, service-a, /open, GET, "1,2,3,4,5,6,7,8,9,10"
-p, coder, company-a, service-a, /in-progress, GET, "1,2,3,4,5,6,7,8,9,10"
-p, qa, company-a, service-a, /qa, GET, "1,2,3,4,5,6,7,8,9,10"
-p, qa, company-a, service-a, /qa-in-progress, GET, "1,2,3,4,5,6,7,8,9,10"
-p, de, company-a, service-a, /de, GET, "1,2,3,4,5,6,7,8,9,10"
-p, de, company-a, service-a, /de-in-progress, GET, "1,2,3,4,5,6,7,8,9,10"
-p, suspend-manager, company-a, service-a, /suspend, GET, "1,2,3,4,5,6,7,8,9,10"
+p, coder, companyA, /code, write
+p, qa, companyA, /check, read
+p, suspend-manager, companyA, /suspend, execute
+p, admin, companyA, /users, create-user
+p, account-manager, companyA, /companies, create-company
 
-g, userA, account-manager, company-a, service-a, *, true
-g, userB, admin, company-a, service-a, *, true
-g, userC, coder, company-a, service-a, *, true
-g, userD, coder, company-a, service-a, "2,4,7", true
-g, userE, qa, company-a, service-a, "5,8,9", true
-g3, account-manager, admin
-g3, admin, qa
-g3, admin, coder
-g3, admin, de
-g3, admin, suspend-manager
+g, alice, companyA, coder
+g, bob, companyA, admin
+g, carol, companyA, account-manager
+g2, admin, companyA, coder
+g2, admin, companyA, qa
+g2, admin, companyA, suspend-manager
+g2, account-manager, companyA, admin
