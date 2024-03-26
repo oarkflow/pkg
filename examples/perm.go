@@ -3,104 +3,45 @@ package main
 import (
 	"fmt"
 
-	"github.com/oarkflow/pkg/filter"
+	v2 "github.com/oarkflow/pkg/permission/v2"
 )
 
-type PermissionRule struct {
-	Role     string
-	Company  string
-	Module   string
-	Resource string
-	Action   string
-	Entities string
-}
-
-type UserRolePolicy struct {
-	User        string
-	Role        string
-	Company     string
-	Module      string
-	Entities    string
-	HandleChild string
-}
-
-type CompanyPolicy struct {
-	Parent string
-	Child  string
-}
-
-type RolePolicy struct {
-	Parent string
-	Child  string
-}
-
-type Request struct {
-	User     string
-	Company  string
-	Module   string
-	Resource string
-	Action   string
-	Entities string
-}
-
 func main() {
-	pRules := []PermissionRule{
-		{"super-admin", "*", "*", "*", "*", "*"},
-		{"account-manager", "company-a", "service-a", "*", "*", "*"},
-		{"admin", "company-a", "service-a", "/users", "POST", "1,2,3,4,5,6,7,8,9,10"},
-		{"admin", "company-a", "service-a", "/users", "PUT", "1,2,3,4,5,6,7,8,9,10"},
-		{"admin", "company-a", "service-a", "/facilities", "GET", "1,2,3,4,5,6,7,8,9,10"},
-		{"coder", "company-a", "service-a", "/open", "GET", "1,2,3,4,5,6,7,8,9,10"},
-		{"coder", "company-a", "service-a", "/in-progress", "GET", "1,2,3,4,5,6,7,8,9,10"},
-		{"qa", "company-a", "service-a", "/qa", "GET", "1,2,3,4,5,6,7,8,9,10"},
-		{"qa", "company-a", "service-a", "/qa-in-progress", "GET", "1,2,3,4,5,6,7,8,9,10"},
-		{"de", "company-a", "service-a", "/de", "GET", "1,2,3,4,5,6,7,8,9,10"},
-		{"de", "company-a", "service-a", "/de-in-progress", "GET", "1,2,3,4,5,6,7,8,9,10"},
-		{"suspend-manager", "company-a", "service-a", "/suspend", "GET", "1,2,3,4,5,6,7,8,9,10"},
-	}
-	uRoles := []UserRolePolicy{
-		{"userA", "account - manager", "company - a", "service - a", "*", "true"},
-		{"sujit", "super-admin", "*", "*", "*", "true"},
-		{"userB", "admin", "company - a", "service - a", "*", "true"},
-		{"userC", "coder", "company - a", "service - a", "*", "true"},
-		{"userD", "coder", "company - a", "service - a", "2,4,7", "true"},
-		{"userE", "qa", "company - a", "service - a", "5,8,9", "true"},
-	}
+	company := v2.NewCompany("Edelberg")
+	module := v2.NewModule("Coding")
+	company.AddModule(module)
+	company.SetDefaultModule(module.ID)
+	entity1 := &v2.Entity{ID: "entity1"}
+	entity2 := &v2.Entity{ID: "entity2"}
+	entity3 := &v2.Entity{ID: "entity3"}
+	entity4 := &v2.Entity{ID: "entity4"}
+	company.AddEntities(entity1, entity2, entity3, entity4)
+	coder, qa, suspend, admin, _ := addRoles()
+	company.AddRole(coder, qa, suspend, admin)
+	user := v2.User{ID: "sujit"}
+	company.AddUser(user.ID, qa.ID)
+	company.AssignEntitiesToUser("sujit", coder.ID, entity1.ID, entity2.ID)
 
-	rPolicy := []RolePolicy{
-		{"account - manager", "admin"},
-		{"admin", "qa"},
-		{"admin", "coder"},
-		{"admin", "de"},
-		{"admin", "suspend - manager"},
-	}
-	requests := [][]string{
-		{"userA", "company-a", "service-a", "/qa", "GET", "1"},
-		{"userA", "company-a", "service-a", "/companies", "GET", "1"},
-		{"userB", "company-a", "service-a", "/users", "POST", "1"},
-		{"userB", "company-a", "service-a", "/qa", "GET", "1"},
-		{"userC", "company-a", "service-a", "/open", "GET", "1"},
-	}
-	fmt.Println(len(pRules), len(rPolicy))
-	for _, request := range requests {
-		req := sliceToRequest(request)
-		filter.Apply(uRoles, func(rp UserRolePolicy) UserRolePolicy {
-			if rp.User == req.User &&
-				(rp.Company == req.Company || rp.Company == "*") &&
-				(rp.Module == req.Module || rp.Module == "*") {
-
-			}
-		})
-	}
+	fmt.Println(user.WithCompany("Edelberg").WithModule("Coding").WithEntity(entity2.ID).Can("code add"))
 }
 
-func sliceToRequest(req []string) Request {
-	return Request{
-		User:     req[0],
-		Company:  req[1],
-		Module:   req[2],
-		Resource: req[3],
-		Action:   req[4],
-		Entities: req[5],
-	}
+func addRoles() (*v2.Role, *v2.Role, *v2.Role, *v2.Role, *v2.Role) {
+	coderRole := v2.NewRole("Coder")
+	coderRole.AddPermission(v2.NewAttribute("code", "add"))
+
+	qaRole := v2.NewRole("QA")
+	qaRole.AddPermission(v2.NewAttribute("qa", "add"))
+
+	suspendManagerRole := v2.NewRole("SuspendManager")
+	suspendManagerRole.AddPermission(v2.NewAttribute("suspend", "release"))
+
+	adminRole := v2.NewRole("Admin")
+	adminRole.AddPermission(v2.NewAttribute("user", "add"))
+
+	accountManagerRole := v2.NewRole("AccountManager")
+	accountManagerRole.AddPermission(v2.NewAttribute("company", "add"))
+
+	adminRole.AddDescendent(coderRole, qaRole, suspendManagerRole)
+	accountManagerRole.AddDescendent(adminRole)
+	return coderRole, qaRole, suspendManagerRole, adminRole, accountManagerRole
 }
