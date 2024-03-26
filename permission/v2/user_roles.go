@@ -87,10 +87,13 @@ func (u *UserRoleManager) GetUserRoleByCompanyAndUser(company, userID string) (u
 }
 
 func (u *UserRoleManager) GetAllowedRoles(userRoles *CompanyUser, module, entity string) map[string]string {
+	if userRoles == nil {
+		return nil
+	}
 	allowedRoles := make(map[string]string)
 	mod, modExists := userRoles.Company.Modules[module]
 	_, entExists := userRoles.Company.Entities[entity]
-	if userRoles == nil || (entity != "" && !entExists) || (module != "" && !modExists) {
+	if (entity != "" && !entExists) || (module != "" && !modExists) {
 		return nil
 	}
 	var moduleRoles, moduleEntities, entities []string
@@ -122,7 +125,9 @@ func (u *UserRoleManager) GetAllowedRoles(userRoles *CompanyUser, module, entity
 			allowedRoles[r.RoleID] = r.RoleID
 		}
 	}
-	if (!slices.Contains(entities, entity) && len(userCompanyRole) == 0) || len(moduleEntities) > 0 && !slices.Contains(moduleEntities, entity) {
+	noCompanyEntities := !slices.Contains(entities, entity) && len(userCompanyRole) == 0
+	noModuleEntities := len(moduleEntities) > 0 && !slices.Contains(moduleEntities, entity)
+	if noCompanyEntities || noModuleEntities {
 		return nil
 	}
 	if module != "" && entity != "" && len(userModuleEntityRole) > 0 {
