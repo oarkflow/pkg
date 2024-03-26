@@ -1,5 +1,9 @@
 package v2
 
+import (
+	"fmt"
+)
+
 type Company struct {
 	ID            string
 	defaultModule *Module
@@ -73,9 +77,11 @@ func (c *Company) AddRolesToModule(module string, roles ...string) {
 }
 
 func (c *Company) AddUser(user, role string) {
-	RoleManager.AddUserRole(user, role, c, nil, nil)
-	if c.defaultModule != nil {
-		RoleManager.AddUserRole(user, role, c, c.defaultModule, nil)
+	if _, ok := c.Roles[role]; ok {
+		RoleManager.AddUserRole(user, role, c, nil, nil)
+		if c.defaultModule != nil {
+			RoleManager.AddUserRole(user, role, c, c.defaultModule, nil)
+		}
 	}
 }
 
@@ -99,7 +105,15 @@ func (c *Company) AddUserInModule(user, module string, roles ...string) {
 	}
 }
 
-func (c *Company) AssignEntitiesToUser(userID, roleId string, entities ...string) {
+func (c *Company) AssignEntitiesToUser(userID string, entities ...string) {
+	user := RoleManager.GetUserRoles(c.ID, userID)
+	if user == nil {
+		return
+	}
+	fmt.Println(user)
+}
+
+func (c *Company) AssignEntitiesWithRole(userID, roleId string, entities ...string) {
 	if len(entities) == 0 {
 		return
 	}

@@ -1,7 +1,7 @@
 package v2
 
 import (
-	"fmt"
+	"slices"
 )
 
 var RoleManager *UserRoleManager
@@ -101,11 +101,17 @@ func (u *UserRoleManager) GetAllowedRoles(userRoles *CompanyUser, module, entity
 			return ut
 		}
 	}
-	if entity != "" && module != "" {
-
+	var moduleEntities, entities []string
+	if mod, ok := userRoles.Company.Modules[module]; ok {
+		for id := range mod.Entities {
+			moduleEntities = append(moduleEntities, id)
+		}
 	}
 	var otherRole, userModuleRole, userCompanyEntityRole, userCompanyRole, userModuleEntityRole []*UserRole
 	for _, userRole := range userRoles.UserRoles {
+		if userRole.Entity != nil {
+			entities = append(entities, userRole.Entity.ID)
+		}
 		if userRole.Module != nil && userRole.Entity != nil { // if role for module and entity
 			userModuleEntityRole = append(userModuleEntityRole, userRole)
 		} else if userRole.Module == nil && userRole.Entity == nil { // if role for company
@@ -118,69 +124,32 @@ func (u *UserRoleManager) GetAllowedRoles(userRoles *CompanyUser, module, entity
 			otherRole = append(otherRole, userRole)
 		}
 	}
+	for _, r := range userCompanyRole {
+		_, ex := r.Company.Entities[entity]
+		if !ex {
+			return nil
+		}
+		ut[r.RoleID] = r.RoleID
+	}
+	if !slices.Contains(entities, entity) && len(userCompanyRole) == 0 {
+		return nil
+	}
+	if len(moduleEntities) > 0 && !slices.Contains(moduleEntities, entity) {
+		return nil
+	}
 	if module != "" && entity != "" {
 		if len(userModuleEntityRole) > 0 {
-			found := false
 			for _, r := range userModuleEntityRole {
 				if r.Module.ID == module && r.Entity.ID == entity {
-					found = true
 					ut[r.RoleID] = r.RoleID
 				}
 			}
-			if found {
-
-			}
 		}
 	}
-	for _, r := range otherRole {
-		fmt.Println(r.RoleID, r.Company, r.Module, r.Entity)
-	}
-	/*fmt.Println(userCompanyRole)
-	fmt.Println(userCompanyEntityRole)
-	fmt.Println(userModuleEntityRole)
-	fmt.Println(otherRole)*/
-	if entity != "" && module != "" {
-		entityModFound := false
-		for _, ur := range userRoles.UserRoles {
-			if ur.Module != nil && ur.Module.ID == module && ur.Entity != nil && ur.Entity.ID == entity {
-				entityModFound = true
-				ut[ur.RoleID] = ur.RoleID
-			}
-		}
-		if !entityModFound {
-			/*for _, ur := range userRoles.UserRoles {
-				if ur.Module == nil && ur.Entity != nil && ur.Entity.ID == entity {
-					ut[ur.RoleID] = ur.RoleID
-				}
-			}*/
+	for role := range ut {
+		if _, ok := userRoles.Company.Roles[role]; !ok {
+			return nil
 		}
 	}
-	/*for _, ur := range userRoles.UserRoles {
-		if ur.Entity != nil && ur.Entity.ID == entity {
-			// Entity role found, return roles
-			for _, ur := range userRoles {
-				if ur.Entity != nil && ur.Entity.ID == entity {
-					ut[ur.RoleID] = ur.RoleID
-				}
-			}
-			return ut
-		} else if ur.Module != nil && ur.Module.ID == module && ur.Entity == nil {
-			// Module role found, return roles (including entity roles within module)
-			for _, ur := range userRoles {
-				if (ur.Module != nil && ur.Module.ID == module) || (ur.Entity != nil && ur.Entity.ID == entity) {
-					ut[ur.RoleID] = ur.RoleID
-				}
-			}
-			return ut
-		} else if ur.Company != nil {
-			// Company role found, return roles
-			for _, ur := range userRoles {
-				if ur.Company != nil {
-					ut[ur.RoleID] = ur.RoleID
-				}
-			}
-			return ut
-		}
-	}*/
 	return ut
 }

@@ -28,7 +28,6 @@ func (u *User) Can(activity string) bool {
 		}
 		allowed = append(allowed, r.ID)
 	}
-
 	for _, role := range userRoles {
 		if role.Has(activity, allowed...) {
 			return true
