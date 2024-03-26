@@ -10,8 +10,12 @@ type Attribute struct {
 	Action   string
 }
 
-func (a Attribute) String() string {
-	return a.Resource + " " + a.Action
+func (a Attribute) String(delimiter ...string) string {
+	delim := " "
+	if len(delimiter) > 0 {
+		delim = delimiter[0]
+	}
+	return a.Resource + delim + a.Action
 }
 
 // Role represents a user role with its permissions

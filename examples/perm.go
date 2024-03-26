@@ -7,14 +7,10 @@ import (
 )
 
 func main() {
-	company := v2.NewCompany("Edelberg")
-	module := v2.NewModule("Coding")
+	company, module := v2.NewCompany("Edelberg"), v2.NewModule("Coding")
 	company.AddModule(module)
 	// company.SetDefaultModule(module.ID)
-	entity1 := &v2.Entity{ID: "entity1"}
-	entity2 := &v2.Entity{ID: "entity2"}
-	entity3 := &v2.Entity{ID: "entity3"}
-	entity4 := &v2.Entity{ID: "entity4"}
+	entity1, entity2, entity3, entity4 := &v2.Entity{ID: "entity1"}, &v2.Entity{ID: "entity2"}, &v2.Entity{ID: "entity3"}, &v2.Entity{ID: "entity4"}
 	company.AddEntities(entity1, entity2, entity3, entity4)
 	coder, qa, suspend, admin, _ := roles()
 	company.AddRole(coder, qa, suspend, admin)
@@ -30,7 +26,7 @@ func main() {
 	fmt.Println("After adding entities to module")
 	fmt.Println("R:", user.Can("Edelberg", "Coding", entity1.ID, "code add"), "E:", true)
 	fmt.Println("R:", user.Can("Edelberg", "Coding", entity1.ID, "qa add"), "E:", true)
-	fmt.Println("R:", user.Can("Edelberg", "Coding", entity2.ID, "qa add"), "E:", false)
+	fmt.Println("R:", user.Can("Edelberg", "Coding", entity2.ID, "qa add"), "E:", true)
 	fmt.Println("R:", user.Can("Edelberg", "Coding", entity3.ID, "user add"), "E:", false)
 	fmt.Println("R:", user.Can("Edelberg", "Coding", entity4.ID, "suspend release"), "E:", false)
 }
