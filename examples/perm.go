@@ -16,26 +16,26 @@ func main() {
 	entity3 := &v2.Entity{ID: "entity3"}
 	entity4 := &v2.Entity{ID: "entity4"}
 	company.AddEntities(entity1, entity2, entity3, entity4)
-	coder, qa, suspend, admin, _ := addRoles()
+	coder, qa, suspend, admin, _ := roles()
 	company.AddRole(coder, qa, suspend, admin)
 	user := v2.User{ID: "sujit"}
 	company.AddUser(user.ID, admin.ID)
 	company.AssignEntitiesWithRole("sujit", coder.ID, entity1.ID, entity2.ID)
-	fmt.Println("R:", user.WithCompany("Edelberg").WithModule("Coding").WithEntity(entity1.ID).Can("qa add"), "E:", true)
-	fmt.Println("R:", user.WithCompany("Edelberg").WithModule("Coding").WithEntity(entity2.ID).Can("qa add"), "E:", true)
-	fmt.Println("R:", user.WithCompany("Edelberg").WithModule("Coding").WithEntity(entity3.ID).Can("user add"), "E:", true)
-	fmt.Println("R:", user.WithCompany("Edelberg").WithModule("Coding").WithEntity(entity4.ID).Can("suspend release"), "E:", true)
+	fmt.Println("R:", user.Can("Edelberg", "Coding", entity1.ID, "qa add"), "E:", true)
+	fmt.Println("R:", user.Can("Edelberg", "Coding", entity2.ID, "qa add"), "E:", true)
+	fmt.Println("R:", user.Can("Edelberg", "Coding", entity3.ID, "user add"), "E:", true)
+	fmt.Println("R:", user.Can("Edelberg", "Coding", entity4.ID, "suspend release"), "E:", true)
 	company.AddEntitiesToModule("Coding", entity1.ID, entity2.ID)
 	company.AddRolesToModule("Coding", admin.ID, coder.ID, qa.ID)
 	fmt.Println("After adding entities to module")
-	fmt.Println("R:", user.WithCompany("Edelberg").WithModule("Coding").WithEntity(entity1.ID).Can("code add"), "E:", true)
-	fmt.Println("R:", user.WithCompany("Edelberg").WithModule("Coding").WithEntity(entity1.ID).Can("qa add"), "E:", false)
-	fmt.Println("R:", user.WithCompany("Edelberg").WithModule("Coding").WithEntity(entity2.ID).Can("qa add"), "E:", false)
-	fmt.Println("R:", user.WithCompany("Edelberg").WithModule("Coding").WithEntity(entity3.ID).Can("user add"), "E:", false)
-	fmt.Println("R:", user.WithCompany("Edelberg").WithModule("Coding").WithEntity(entity4.ID).Can("suspend release"), "E:", false)
+	fmt.Println("R:", user.Can("Edelberg", "Coding", entity1.ID, "code add"), "E:", true)
+	fmt.Println("R:", user.Can("Edelberg", "Coding", entity1.ID, "qa add"), "E:", true)
+	fmt.Println("R:", user.Can("Edelberg", "Coding", entity2.ID, "qa add"), "E:", false)
+	fmt.Println("R:", user.Can("Edelberg", "Coding", entity3.ID, "user add"), "E:", false)
+	fmt.Println("R:", user.Can("Edelberg", "Coding", entity4.ID, "suspend release"), "E:", false)
 }
 
-func addRoles() (*v2.Role, *v2.Role, *v2.Role, *v2.Role, *v2.Role) {
+func roles() (*v2.Role, *v2.Role, *v2.Role, *v2.Role, *v2.Role) {
 	coderRole := v2.NewRole("Coder")
 	coderRole.AddPermission(v2.NewAttribute("code", "add"))
 
