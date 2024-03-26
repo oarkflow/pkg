@@ -17,35 +17,35 @@ func main() {
 	user := v2.User{ID: "sujit"}
 	company.AddUser(user.ID, admin.ID)
 	company.AssignEntitiesWithRole("sujit", coder.ID, entity1.ID, entity2.ID)
-	fmt.Println("R:", user.Can("Edelberg", "Coding", entity1.ID, "qa add"), "E:", true)
-	fmt.Println("R:", user.Can("Edelberg", "Coding", entity2.ID, "qa add"), "E:", true)
-	fmt.Println("R:", user.Can("Edelberg", "Coding", entity3.ID, "user add"), "E:", true)
-	fmt.Println("R:", user.Can("Edelberg", "Coding", entity4.ID, "suspend release"), "E:", true)
+	fmt.Println("R:", user.Can("Edelberg", "Coding", entity1.ID, "backend", "qa add"), "E:", true)
+	fmt.Println("R:", user.Can("Edelberg", "Coding", entity2.ID, "backend", "qa add"), "E:", true)
+	fmt.Println("R:", user.Can("Edelberg", "Coding", entity3.ID, "backend", "user add"), "E:", true)
+	fmt.Println("R:", user.Can("Edelberg", "Coding", entity4.ID, "backend", "suspend release"), "E:", true)
 	company.AddEntitiesToModule("Coding", entity1.ID, entity2.ID)
 	company.AddRolesToModule("Coding", admin.ID, coder.ID, qa.ID)
 	fmt.Println("After adding entities to module")
-	fmt.Println("R:", user.Can("Edelberg", "Coding", entity1.ID, "code add"), "E:", true)
-	fmt.Println("R:", user.Can("Edelberg", "Coding", entity1.ID, "qa add"), "E:", true)
-	fmt.Println("R:", user.Can("Edelberg", "Coding", entity2.ID, "qa add"), "E:", true)
-	fmt.Println("R:", user.Can("Edelberg", "Coding", entity3.ID, "user add"), "E:", false)
-	fmt.Println("R:", user.Can("Edelberg", "Coding", entity4.ID, "suspend release"), "E:", false)
+	fmt.Println("R:", user.Can("Edelberg", "Coding", entity1.ID, "backend", "code add"), "E:", true)
+	fmt.Println("R:", user.Can("Edelberg", "Coding", entity1.ID, "backend", "qa add"), "E:", true)
+	fmt.Println("R:", user.Can("Edelberg", "Coding", entity2.ID, "backend", "qa add"), "E:", true)
+	fmt.Println("R:", user.Can("Edelberg", "Coding", entity3.ID, "backend", "user add"), "E:", false)
+	fmt.Println("R:", user.Can("Edelberg", "Coding", entity4.ID, "backend", "suspend release"), "E:", false)
 }
 
 func roles() (*v2.Role, *v2.Role, *v2.Role, *v2.Role, *v2.Role) {
 	coderRole := v2.NewRole("Coder")
-	coderRole.AddPermission(v2.NewAttribute("code", "add"))
+	coderRole.AddPermission("backend", v2.NewAttribute("code", "add"))
 
 	qaRole := v2.NewRole("QA")
-	qaRole.AddPermission(v2.NewAttribute("qa", "add"))
+	qaRole.AddPermission("backend", v2.NewAttribute("qa", "add"))
 
 	suspendManagerRole := v2.NewRole("SuspendManager")
-	suspendManagerRole.AddPermission(v2.NewAttribute("suspend", "release"))
+	suspendManagerRole.AddPermission("backend", v2.NewAttribute("suspend", "release"))
 
 	adminRole := v2.NewRole("Admin")
-	adminRole.AddPermission(v2.NewAttribute("user", "add"))
+	adminRole.AddPermission("backend", v2.NewAttribute("user", "add"))
 
 	accountManagerRole := v2.NewRole("AccountManager")
-	accountManagerRole.AddPermission(v2.NewAttribute("company", "add"))
+	accountManagerRole.AddPermission("backend", v2.NewAttribute("company", "add"))
 
 	adminRole.AddDescendent(coderRole, qaRole, suspendManagerRole)
 	accountManagerRole.AddDescendent(adminRole)

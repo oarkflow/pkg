@@ -18,11 +18,16 @@ func (a Attribute) String(delimiter ...string) string {
 	return a.Resource + delim + a.Action
 }
 
+type AttributeGroup struct {
+	ID          string
+	permissions map[string]Attribute
+}
+
 // Role represents a user role with its permissions
 type Role struct {
 	ID          string
 	lock        bool
-	permissions map[string]Attribute
+	permissions map[string]*AttributeGroup
 	descendants map[string]*Role
 }
 
@@ -34,8 +39,12 @@ func (r *Role) Unlock() {
 	r.lock = false
 }
 
-func (r *Role) Has(permissionName string, allowedDescendants ...string) bool {
-	if _, ok := r.permissions[permissionName]; ok {
+func (r *Role) Has(group, permissionName string, allowedDescendants ...string) bool {
+	groupPermissions, ok := r.permissions[group]
+	if !ok {
+		return false
+	}
+	if _, ok := groupPermissions.permissions[permissionName]; ok {
 		return true
 	}
 	totalD := len(allowedDescendants)
@@ -43,12 +52,12 @@ func (r *Role) Has(permissionName string, allowedDescendants ...string) bool {
 	for _, descendant := range r.GetDescendantRoles() {
 		if totalD > 0 {
 			if slices.Contains(allowedDescendants, descendant.ID) {
-				if descendant.Has(permissionName, allowedDescendants...) {
+				if descendant.Has(group, permissionName, allowedDescendants...) {
 					return true
 				}
 			}
 		} else {
-			if descendant.Has(permissionName, allowedDescendants...) {
+			if descendant.Has(group, permissionName, allowedDescendants...) {
 				return true
 			}
 		}
@@ -77,13 +86,29 @@ func (r *Role) AddDescendent(descendants ...*Role) error {
 }
 
 // AddPermission adds a new permission to the role
-func (r *Role) AddPermission(permissions ...Attribute) error {
+func (r *Role) AddPermission(group string, permissions ...Attribute) error {
 	if r.lock {
 		return errors.New("changes not allowed")
 	}
-	for _, permission := range permissions {
-		r.permissions[permission.String()] = permission
+	groupAttributes, exists := r.permissions[group]
+	if !exists || groupAttributes == nil {
+		groupAttributes = &AttributeGroup{
+			ID:          group,
+			permissions: make(map[string]Attribute),
+		}
 	}
+	for _, permission := range permissions {
+		groupAttributes.permissions[permission.String()] = permission
+	}
+	r.permissions[group] = groupAttributes
+	return nil
+}
+
+func (r *Role) AddPermissionGroup(group *AttributeGroup) error {
+	if r.lock {
+		return errors.New("changes not allowed")
+	}
+	r.permissions[group.ID] = group
 	return nil
 }
 
@@ -101,7 +126,7 @@ func NewRole(id string, lock ...bool) *Role {
 	}
 	return &Role{
 		ID:          id,
-		permissions: make(map[string]Attribute),
+		permissions: make(map[string]*AttributeGroup),
 		descendants: make(map[string]*Role),
 		lock:        disable,
 	}

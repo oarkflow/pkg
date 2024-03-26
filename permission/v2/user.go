@@ -6,7 +6,7 @@ type User struct {
 }
 
 // Can check if a user is allowed to do an activity based on their role and inherited permissions
-func (u *User) Can(company, module, entity, activity string) bool {
+func (u *User) Can(company, module, entity, group, activity string) bool {
 	var allowed []string
 	if company == "" {
 		return false
@@ -26,7 +26,7 @@ func (u *User) Can(company, module, entity, activity string) bool {
 		allowed = append(allowed, r.ID)
 	}
 	for _, role := range userRoles {
-		if role.Has(activity, allowed...) {
+		if role.Has(group, activity, allowed...) {
 			return true
 		}
 	}
