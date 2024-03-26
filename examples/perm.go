@@ -26,11 +26,12 @@ func main() {
 	fmt.Println("R:", user.WithCompany("Edelberg").WithModule("Coding").WithEntity(entity3.ID).Can("user add"), "E:", true)
 	fmt.Println("R:", user.WithCompany("Edelberg").WithModule("Coding").WithEntity(entity4.ID).Can("suspend release"), "E:", true)
 	company.AddEntitiesToModule("Coding", entity1.ID)
+	company.AddRolesToModule("Coding", coder.ID)
 	fmt.Println("After adding entities to module")
 	fmt.Println("R:", user.WithCompany("Edelberg").WithModule("Coding").WithEntity(entity1.ID).Can("qa add"), "E:", true)
-	fmt.Println("R:", user.WithCompany("Edelberg").WithModule("Coding").WithEntity(entity2.ID).Can("qa add"), "E:", true)
-	fmt.Println("R:", user.WithCompany("Edelberg").WithModule("Coding").WithEntity(entity3.ID).Can("user add"), "E:", true)
-	fmt.Println("R:", user.WithCompany("Edelberg").WithModule("Coding").WithEntity(entity4.ID).Can("suspend release"), "E:", true)
+	fmt.Println("R:", user.WithCompany("Edelberg").WithModule("Coding").WithEntity(entity2.ID).Can("qa add"), "E:", false)
+	fmt.Println("R:", user.WithCompany("Edelberg").WithModule("Coding").WithEntity(entity3.ID).Can("user add"), "E:", false)
+	fmt.Println("R:", user.WithCompany("Edelberg").WithModule("Coding").WithEntity(entity4.ID).Can("suspend release"), "E:", false)
 }
 
 func addRoles() (*v2.Role, *v2.Role, *v2.Role, *v2.Role, *v2.Role) {

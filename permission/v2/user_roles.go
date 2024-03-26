@@ -107,7 +107,7 @@ func (u *UserRoleManager) GetAllowedRoles(userRoles *CompanyUser, module, entity
 			moduleEntities = append(moduleEntities, id)
 		}
 	}
-	var otherRole, userModuleRole, userCompanyEntityRole, userCompanyRole, userModuleEntityRole []*UserRole
+	var userCompanyRole, userModuleEntityRole []*UserRole
 	for _, userRole := range userRoles.UserRoles {
 		if userRole.Entity != nil {
 			entities = append(entities, userRole.Entity.ID)
@@ -116,12 +116,6 @@ func (u *UserRoleManager) GetAllowedRoles(userRoles *CompanyUser, module, entity
 			userModuleEntityRole = append(userModuleEntityRole, userRole)
 		} else if userRole.Module == nil && userRole.Entity == nil { // if role for company
 			userCompanyRole = append(userCompanyRole, userRole)
-		} else if userRole.Module == nil && userRole.Entity != nil {
-			userCompanyEntityRole = append(userCompanyEntityRole, userRole)
-		} else if userRole.Module != nil && userRole.Entity == nil {
-			userModuleRole = append(userModuleRole, userRole)
-		} else {
-			otherRole = append(otherRole, userRole)
 		}
 	}
 	for _, r := range userCompanyRole {
@@ -147,9 +141,26 @@ func (u *UserRoleManager) GetAllowedRoles(userRoles *CompanyUser, module, entity
 		}
 	}
 	for role := range ut {
+		if module != "" {
+			if mod, ok := userRoles.Company.Modules[module]; ok {
+				if len(mod.Roles) > 0 {
+					if _, ok := mod.Roles[role]; !ok {
+						return nil
+					}
+				}
+			}
+		}
 		if _, ok := userRoles.Company.Roles[role]; !ok {
 			return nil
 		}
 	}
 	return ut
 }
+
+/* else if userRole.Module == nil && userRole.Entity != nil {
+	userCompanyEntityRole = append(userCompanyEntityRole, userRole)
+}else if userRole.Module != nil && userRole.Entity == nil {
+	userModuleRole = append(userModuleRole, userRole)
+} else {
+	otherRole = append(otherRole, userRole)
+}*/
