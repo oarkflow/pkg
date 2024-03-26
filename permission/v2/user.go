@@ -7,11 +7,15 @@ type User struct {
 
 // Can check if a user is allowed to do an activity based on their role and inherited permissions
 func (u *User) Can(company, module, entity, group, activity string) bool {
+	return Can(u.ID, company, module, entity, group, activity)
+}
+
+func Can(userID, company, module, entity, group, activity string) bool {
 	var allowed []string
 	if company == "" {
 		return false
 	}
-	companyUser := RoleManager.GetUserRoles(company, u.ID)
+	companyUser := RoleManager.GetUserRoles(company, userID)
 	if companyUser == nil {
 		return false
 	}

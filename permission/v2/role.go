@@ -47,6 +47,11 @@ func (r *Role) Has(group, permissionName string, allowedDescendants ...string) b
 	if _, ok := groupPermissions.permissions[permissionName]; ok {
 		return true
 	}
+	for perm := range groupPermissions.permissions {
+		if MatchResource(permissionName, perm) {
+			return true
+		}
+	}
 	totalD := len(allowedDescendants)
 	// Check inherited permissions recursively
 	for _, descendant := range r.GetDescendantRoles() {
