@@ -32,9 +32,9 @@ func main() {
 	company.AssignEntitiesToUser(sujit.ID, e29.ID)
 	company.AssignEntitiesToUser(alex.ID, e30.ID)
 	company.AssignEntitiesToUser(josh.ID, e33.ID)
-	fmt.Println("R:", sujit.Can("Edelberg", "Coding", e29.ID, "route", "/coding/1/2/start-coding POST"), "E:", true)
-	fmt.Println("R:", sujit.Can("Edelberg", "Coding", e29.ID, "route", "/coding/1/open GET"), "E:", true)
-	fmt.Println("R:", sujit.Can("Edelberg", "Coding", e29.ID, "backend", "/coding/1/2/start-coding POST"), "E:", false)
+	fmt.Println("R:", v2.Can(sujit.ID, "Edelberg", "Coding", e29.ID, "route", "/coding/1/2/start-coding POST"), "E:", true)
+	fmt.Println("R:", v2.Can(sujit.ID, "Edelberg", "Coding", e29.ID, "route", "/coding/1/open GET"), "E:", true)
+	fmt.Println("R:", v2.Can(sujit.ID, "Edelberg", "Coding", e29.ID, "backend", "/coding/1/2/start-coding POST"), "E:", false)
 }
 
 func myRoles() (coder *v2.Role, qa *v2.Role, suspendManager *v2.Role) {
