@@ -10,6 +10,25 @@ type Company struct {
 	Modules       maps.IMap[string, *Module]
 	Roles         maps.IMap[string, *Role]
 	Entities      maps.IMap[string, *Entity]
+	descendants   maps.IMap[string, *Company]
+}
+
+func (c *Company) GetDescendantCompanies() []*Company {
+	var descendants []*Company
+	c.descendants.ForEach(func(_ string, child *Company) bool {
+		descendants = append(descendants, child)
+		descendants = append(descendants, child.GetDescendantCompanies()...)
+		return true
+	})
+	return descendants
+}
+
+// AddDescendent adds a new permission to the role
+func (c *Company) AddDescendent(descendants ...*Company) error {
+	for _, descendant := range descendants {
+		c.descendants.Set(descendant.ID, descendant)
+	}
+	return nil
 }
 
 func (c *Company) SetDefaultModule(module string) {
@@ -139,14 +158,6 @@ type Module struct {
 	ID       string
 	Roles    maps.IMap[string, *Role]
 	Entities maps.IMap[string, *Entity]
-}
-
-type UserRole struct {
-	UserID  string
-	RoleID  string
-	Company *Company
-	Module  *Module
-	Entity  *Entity
 }
 type Entity struct {
 	ID string

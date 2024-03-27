@@ -96,10 +96,11 @@ func Entities() map[string]*Entity {
 }
 func NewCompany(id string) *Company {
 	company := &Company{
-		ID:       id,
-		Modules:  maps.New[string, *Module](),
-		Roles:    maps.New[string, *Role](),
-		Entities: maps.New[string, *Entity](),
+		ID:          id,
+		Modules:     maps.New[string, *Module](),
+		Roles:       maps.New[string, *Role](),
+		Entities:    maps.New[string, *Entity](),
+		descendants: maps.New[string, *Company](),
 	}
 	AddCompany(company)
 	return company

@@ -22,6 +22,15 @@ func (u *User) Can(company, module, entity, group, activity string) bool {
 	return Can(u.ID, company, module, entity, group, activity)
 }
 
+type UserRole struct {
+	UserID              string
+	RoleID              string
+	CanManageDescendant bool
+	Company             *Company
+	Module              *Module
+	Entity              *Entity
+}
+
 type CompanyUser struct {
 	Company *Company
 	User    *User
