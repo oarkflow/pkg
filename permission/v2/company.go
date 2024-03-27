@@ -12,17 +12,6 @@ type Company struct {
 	Entities      maps.IMap[string, *Entity]
 }
 
-func NewCompany(id string) *Company {
-	company := &Company{
-		ID:       id,
-		Modules:  maps.New[string, *Module](),
-		Roles:    maps.New[string, *Role](),
-		Entities: maps.New[string, *Entity](),
-	}
-	AddCompany(company)
-	return company
-}
-
 func (c *Company) SetDefaultModule(module string) {
 	if mod, ok := c.Modules.Get(module); ok {
 		c.defaultModule = mod
@@ -152,16 +141,6 @@ type Module struct {
 	Entities maps.IMap[string, *Entity]
 }
 
-func NewModule(id string) *Module {
-	module := &Module{
-		ID:       id,
-		Roles:    maps.New[string, *Role](),
-		Entities: maps.New[string, *Entity](),
-	}
-	AddModule(module)
-	return module
-}
-
 type UserRole struct {
 	UserID  string
 	RoleID  string
@@ -171,10 +150,4 @@ type UserRole struct {
 }
 type Entity struct {
 	ID string
-}
-
-func NewEntity(id string) *Entity {
-	entity := &Entity{ID: id}
-	AddEntity(entity)
-	return entity
 }

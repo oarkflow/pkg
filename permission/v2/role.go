@@ -171,25 +171,3 @@ func (r *Role) GetPermissions() map[string][]Attribute {
 	})
 	return grpPermissions
 }
-
-func NewAttribute(resource, action string) Attribute {
-	return Attribute{
-		Resource: resource,
-		Action:   action,
-	}
-}
-
-func NewRole(id string, lock ...bool) *Role {
-	var disable bool
-	if len(lock) > 0 {
-		disable = lock[0]
-	}
-	role := &Role{
-		ID:          id,
-		permissions: maps.New[string, *AttributeGroup](),
-		descendants: maps.New[string, *Role](),
-		lock:        disable,
-	}
-	AddRole(role)
-	return role
-}

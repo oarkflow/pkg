@@ -1,5 +1,9 @@
 package v2
 
+import (
+	"github.com/oarkflow/pkg/maps"
+)
+
 func Can(userID, company, module, entity, group, activity string) bool {
 	var allowed []string
 	if company == "" {
@@ -89,4 +93,53 @@ func GetEntity(id string) (*Entity, bool) {
 }
 func Entities() map[string]*Entity {
 	return roleManager.Entities()
+}
+func NewCompany(id string) *Company {
+	company := &Company{
+		ID:       id,
+		Modules:  maps.New[string, *Module](),
+		Roles:    maps.New[string, *Role](),
+		Entities: maps.New[string, *Entity](),
+	}
+	AddCompany(company)
+	return company
+}
+func NewModule(id string) *Module {
+	module := &Module{
+		ID:       id,
+		Roles:    maps.New[string, *Role](),
+		Entities: maps.New[string, *Entity](),
+	}
+	AddModule(module)
+	return module
+}
+func NewEntity(id string) *Entity {
+	entity := &Entity{ID: id}
+	AddEntity(entity)
+	return entity
+}
+func NewRole(id string, lock ...bool) *Role {
+	var disable bool
+	if len(lock) > 0 {
+		disable = lock[0]
+	}
+	role := &Role{
+		ID:          id,
+		permissions: maps.New[string, *AttributeGroup](),
+		descendants: maps.New[string, *Role](),
+		lock:        disable,
+	}
+	AddRole(role)
+	return role
+}
+func NewAttribute(resource, action string) Attribute {
+	return Attribute{
+		Resource: resource,
+		Action:   action,
+	}
+}
+func NewUser(id string) *User {
+	user := &User{ID: id}
+	AddUser(user)
+	return user
 }
