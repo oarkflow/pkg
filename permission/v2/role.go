@@ -22,7 +22,7 @@ func (a Attribute) String(delimiter ...string) string {
 
 type AttributeGroup struct {
 	ID          string
-	permissions map[string]Attribute
+	permissions maps.IMap[string, Attribute]
 }
 
 // Role represents a user role with its permissions
@@ -46,13 +46,19 @@ func (r *Role) Has(group, permissionName string, allowedDescendants ...string) b
 	if !ok {
 		return false
 	}
-	if _, ok := groupPermissions.permissions[permissionName]; ok {
+	if _, ok := groupPermissions.permissions.Get(permissionName); ok {
 		return true
 	}
-	for perm := range groupPermissions.permissions {
+	matched := false
+	groupPermissions.permissions.ForEach(func(perm string, _ Attribute) bool {
 		if MatchResource(permissionName, perm) {
-			return true
+			matched = true
+			return false
 		}
+		return true
+	})
+	if matched {
+		return true
 	}
 	totalD := len(allowedDescendants)
 	// Check inherited permissions recursively
@@ -102,11 +108,11 @@ func (r *Role) AddPermission(group string, permissions ...Attribute) error {
 	if !exists || groupAttributes == nil {
 		groupAttributes = &AttributeGroup{
 			ID:          group,
-			permissions: make(map[string]Attribute),
+			permissions: maps.New[string, Attribute](),
 		}
 	}
 	for _, permission := range permissions {
-		groupAttributes.permissions[permission.String()] = permission
+		groupAttributes.permissions.Set(permission.String(), permission)
 	}
 	r.permissions[group] = groupAttributes
 	return nil

@@ -2,6 +2,8 @@ package v2
 
 import (
 	"slices"
+
+	"github.com/oarkflow/pkg/maps"
 )
 
 var RoleManager *UserRoleManager
@@ -17,11 +19,11 @@ type CompanyUser struct {
 }
 
 type UserRoleManager struct {
-	userRoles map[string]*CompanyUser
+	userRoles maps.IMap[string, *CompanyUser]
 }
 
 func NewUserRoleManager() *UserRoleManager {
-	return &UserRoleManager{userRoles: make(map[string]*CompanyUser)}
+	return &UserRoleManager{userRoles: maps.New[string, *CompanyUser]()}
 }
 
 func (u *UserRoleManager) AddUserRole(userID string, roleID string, company *Company, module *Module, entity *Entity) {
@@ -32,17 +34,19 @@ func (u *UserRoleManager) AddUserRole(userID string, roleID string, company *Com
 		Module:  module,
 		Entity:  entity,
 	}
-	if _, ok := u.userRoles[company.ID]; !ok {
-		u.userRoles[company.ID] = &CompanyUser{
+	companyUser, ok := u.userRoles.Get(company.ID)
+	if !ok {
+		companyUser = &CompanyUser{
 			Company: company,
 			User:    &User{ID: userID},
 		}
 	}
-	u.userRoles[company.ID].UserRoles = append(u.userRoles[company.ID].UserRoles, role)
+	companyUser.UserRoles = append(companyUser.UserRoles, role)
+	u.userRoles.Set(company.ID, companyUser)
 }
 
 func (u *UserRoleManager) GetCompanyUserRoles(company string) *CompanyUser {
-	userRoles, ok := u.userRoles[company]
+	userRoles, ok := u.userRoles.Get(company)
 	if !ok {
 		return nil
 	}
@@ -50,7 +54,7 @@ func (u *UserRoleManager) GetCompanyUserRoles(company string) *CompanyUser {
 }
 
 func (u *UserRoleManager) GetUserRoles(company, userID string) *CompanyUser {
-	userRoles, ok := u.userRoles[company]
+	userRoles, ok := u.userRoles.Get(company)
 	if !ok {
 		return nil
 	}
@@ -66,7 +70,7 @@ func (u *UserRoleManager) GetUserRoles(company, userID string) *CompanyUser {
 }
 
 func (u *UserRoleManager) GetUserRolesByCompany(company string) []*UserRole {
-	userRoles, ok := u.userRoles[company]
+	userRoles, ok := u.userRoles.Get(company)
 	if !ok {
 		return nil
 	}
@@ -74,7 +78,7 @@ func (u *UserRoleManager) GetUserRolesByCompany(company string) []*UserRole {
 }
 
 func (u *UserRoleManager) GetUserRoleByCompanyAndUser(company, userID string) (ut []*UserRole) {
-	userRoles, ok := u.userRoles[company]
+	userRoles, ok := u.userRoles.Get(company)
 	if !ok {
 		return
 	}
