@@ -3,6 +3,8 @@ package v2
 import (
 	"errors"
 	"slices"
+
+	"github.com/oarkflow/pkg/maps"
 )
 
 type Attribute struct {
@@ -28,7 +30,7 @@ type Role struct {
 	ID          string
 	lock        bool
 	permissions map[string]*AttributeGroup
-	descendants map[string]*Role
+	descendants maps.IMap[string, *Role]
 }
 
 func (r *Role) Lock() {
@@ -72,10 +74,11 @@ func (r *Role) Has(group, permissionName string, allowedDescendants ...string) b
 
 func (r *Role) GetDescendantRoles() []*Role {
 	var descendants []*Role
-	for _, child := range r.descendants { // Simulate descendent-child relationship through permissions
+	r.descendants.ForEach(func(_ string, child *Role) bool {
 		descendants = append(descendants, child)
 		descendants = append(descendants, child.GetDescendantRoles()...)
-	}
+		return true
+	})
 	return descendants
 }
 
@@ -85,7 +88,7 @@ func (r *Role) AddDescendent(descendants ...*Role) error {
 		return errors.New("changes not allowed")
 	}
 	for _, descendant := range descendants {
-		r.descendants[descendant.ID] = descendant
+		r.descendants.Set(descendant.ID, descendant)
 	}
 	return nil
 }
@@ -132,7 +135,7 @@ func NewRole(id string, lock ...bool) *Role {
 	return &Role{
 		ID:          id,
 		permissions: make(map[string]*AttributeGroup),
-		descendants: make(map[string]*Role),
+		descendants: maps.New[string, *Role](),
 		lock:        disable,
 	}
 }

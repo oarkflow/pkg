@@ -1,9 +1,5 @@
 package v2
 
-import (
-	"fmt"
-)
-
 // User represents a user with a role
 type User struct {
 	ID string
@@ -25,15 +21,15 @@ func Can(userID, company, module, entity, group, activity string) bool {
 	}
 	var userRoles []*Role
 	roles := RoleManager.GetAllowedRoles(companyUser, module, entity)
-	for _, r := range companyUser.Company.Roles {
+	companyUser.Company.Roles.ForEach(func(_ string, r *Role) bool {
 		for _, rt := range roles {
 			if r.ID == rt {
 				userRoles = append(userRoles, r)
 			}
 		}
 		allowed = append(allowed, r.ID)
-	}
-	fmt.Println(allowed, userRoles[0])
+		return true
+	})
 	for _, role := range userRoles {
 		if role.Has(group, activity, allowed...) {
 			return true

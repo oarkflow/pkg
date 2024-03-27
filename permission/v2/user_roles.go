@@ -91,19 +91,21 @@ func (u *UserRoleManager) GetAllowedRoles(userRoles *CompanyUser, module, entity
 		return nil
 	}
 	allowedRoles := make(map[string]string)
-	mod, modExists := userRoles.Company.Modules[module]
-	_, entExists := userRoles.Company.Entities[entity]
+	mod, modExists := userRoles.Company.Modules.Get(module)
+	_, entExists := userRoles.Company.Entities.Get(entity)
 	if (entity != "" && !entExists) || (module != "" && !modExists) {
 		return nil
 	}
 	var moduleRoles, moduleEntities, entities []string
 	if modExists {
-		for id := range mod.Entities {
+		mod.Entities.ForEach(func(id string, _ *Entity) bool {
 			moduleEntities = append(moduleEntities, id)
-		}
-		for id := range mod.Roles {
+			return true
+		})
+		mod.Roles.ForEach(func(id string, _ *Role) bool {
 			moduleRoles = append(moduleRoles, id)
-		}
+			return true
+		})
 	}
 	var userCompanyRole, userModuleEntityRole []*UserRole
 	for _, userRole := range userRoles.UserRoles {
@@ -138,7 +140,7 @@ func (u *UserRoleManager) GetAllowedRoles(userRoles *CompanyUser, module, entity
 		}
 	}
 	for role := range allowedRoles {
-		if _, ok := userRoles.Company.Roles[role]; !ok {
+		if _, ok := userRoles.Company.Roles.Get(role); !ok {
 			return nil
 		}
 	}
