@@ -2,6 +2,32 @@ package v2
 
 import (
 	"strings"
+	"sync"
+)
+
+type Pool[T any] struct {
+	syncPool sync.Pool
+}
+
+func NewPool[T any](size int) *Pool[T] {
+	return &Pool[T]{
+		syncPool: sync.Pool{New: func() any {
+			return make([]T, 0, size)
+		}},
+	}
+}
+
+func (p *Pool[T]) Get() []T {
+	return p.syncPool.Get().([]T)
+}
+
+func (p *Pool[T]) Put(s []T) {
+	p.syncPool.Put(s[:0])
+}
+
+var (
+	stringSlice   = NewPool[string](100)
+	userRoleSlice = NewPool[*UserRole](100)
 )
 
 func MatchResource(value, pattern string) bool {

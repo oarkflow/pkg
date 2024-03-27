@@ -90,17 +90,40 @@ func (u *UserRoleManager) GetUserRoleByCompanyAndUser(company, userID string) (u
 	return
 }
 
-func (u *UserRoleManager) GetAllowedRoles(userRoles *CompanyUser, module, entity string) map[string]string {
+type Params struct {
+	U string
+	C string
+	M string
+	E string
+	R []*UserRole
+}
+
+func (u *UserRoleManager) GetAllowedRoles(userRoles *CompanyUser, module, entity string) []string {
 	if userRoles == nil {
 		return nil
 	}
-	allowedRoles := make(map[string]string)
+	// Reusable slices
+	moduleEntities := stringSlice.Get()
+	moduleRoles := stringSlice.Get()
+	entities := stringSlice.Get()
+	allowedRoles := stringSlice.Get()
+	userCompanyRole := userRoleSlice.Get()
+	userModuleEntityRole := userRoleSlice.Get()
+	defer func() {
+		stringSlice.Put(moduleEntities)
+		stringSlice.Put(moduleRoles)
+		stringSlice.Put(entities)
+		stringSlice.Put(allowedRoles)
+		userRoleSlice.Put(userCompanyRole)
+		userRoleSlice.Put(userModuleEntityRole)
+	}()
+
 	mod, modExists := userRoles.Company.Modules.Get(module)
 	_, entExists := userRoles.Company.Entities.Get(entity)
 	if (entity != "" && !entExists) || (module != "" && !modExists) {
 		return nil
 	}
-	var moduleRoles, moduleEntities, entities []string
+
 	if modExists {
 		mod.Entities.ForEach(func(id string, _ *Entity) bool {
 			moduleEntities = append(moduleEntities, id)
@@ -111,7 +134,7 @@ func (u *UserRoleManager) GetAllowedRoles(userRoles *CompanyUser, module, entity
 			return true
 		})
 	}
-	var userCompanyRole, userModuleEntityRole []*UserRole
+
 	for _, userRole := range userRoles.UserRoles {
 		if userRole.Entity != nil {
 			entities = append(entities, userRole.Entity.ID)
@@ -122,31 +145,35 @@ func (u *UserRoleManager) GetAllowedRoles(userRoles *CompanyUser, module, entity
 			userCompanyRole = append(userCompanyRole, userRole)
 		}
 	}
+
 	if len(moduleRoles) > 0 {
 		for _, modRole := range moduleRoles {
-			allowedRoles[modRole] = modRole
+			allowedRoles = append(allowedRoles, modRole)
 		}
 	} else {
 		for _, r := range userCompanyRole {
-			allowedRoles[r.RoleID] = r.RoleID
+			allowedRoles = append(allowedRoles, r.RoleID)
 		}
 	}
+
 	noCompanyEntities := !slices.Contains(entities, entity) && len(userCompanyRole) == 0
 	noModuleEntities := len(moduleEntities) > 0 && !slices.Contains(moduleEntities, entity)
 	if noCompanyEntities || noModuleEntities {
 		return nil
 	}
+
 	if module != "" && entity != "" && len(userModuleEntityRole) > 0 {
 		for _, r := range userModuleEntityRole {
 			if r.Module.ID == module && r.Entity.ID == entity {
-				allowedRoles[r.RoleID] = r.RoleID
+				allowedRoles = append(allowedRoles, r.RoleID)
 			}
 		}
 	}
-	for role := range allowedRoles {
+
+	for _, role := range allowedRoles {
 		if _, ok := userRoles.Company.Roles.Get(role); !ok {
 			return nil
 		}
 	}
-	return allowedRoles
+	return slices.Compact(allowedRoles)
 }
