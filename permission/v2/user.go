@@ -1,5 +1,9 @@
 package v2
 
+import (
+	"fmt"
+)
+
 // User represents a user with a role
 type User struct {
 	ID string
@@ -29,6 +33,7 @@ func Can(userID, company, module, entity, group, activity string) bool {
 		}
 		allowed = append(allowed, r.ID)
 	}
+	fmt.Println(allowed, userRoles[0])
 	for _, role := range userRoles {
 		if role.Has(group, activity, allowed...) {
 			return true
