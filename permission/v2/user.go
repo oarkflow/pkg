@@ -10,30 +10,8 @@ func (u *User) Can(company, module, entity, group, activity string) bool {
 	return Can(u.ID, company, module, entity, group, activity)
 }
 
-func Can(userID, company, module, entity, group, activity string) bool {
-	var allowed []string
-	if company == "" {
-		return false
-	}
-	companyUser := RoleManager.GetUserRoles(company, userID)
-	if companyUser == nil {
-		return false
-	}
-	var userRoles []*Role
-	roles := RoleManager.GetAllowedRoles(companyUser, module, entity)
-	companyUser.Company.Roles.ForEach(func(_ string, r *Role) bool {
-		for _, rt := range roles {
-			if r.ID == rt {
-				userRoles = append(userRoles, r)
-			}
-		}
-		allowed = append(allowed, r.ID)
-		return true
-	})
-	for _, role := range userRoles {
-		if role.Has(group, activity, allowed...) {
-			return true
-		}
-	}
-	return false
+func NewUser(id string) *User {
+	user := &User{ID: id}
+	AddUser(user)
+	return user
 }

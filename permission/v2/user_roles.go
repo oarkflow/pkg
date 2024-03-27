@@ -6,24 +6,96 @@ import (
 	"github.com/oarkflow/pkg/maps"
 )
 
-var RoleManager *UserRoleManager
+var roleManager *UserRoleManager
 
 func init() {
-	RoleManager = NewUserRoleManager()
+	roleManager = NewUserRoleManager()
 }
 
 type CompanyUser struct {
-	Company   *Company
-	User      *User
-	UserRoles []*UserRole
+	Company *Company
+	User    *User
+	Roles   []*UserRole
 }
 
 type UserRoleManager struct {
-	userRoles maps.IMap[string, *CompanyUser]
+	companies    maps.IMap[string, *Company]
+	modules      maps.IMap[string, *Module]
+	entities     maps.IMap[string, *Entity]
+	users        maps.IMap[string, *User]
+	roles        maps.IMap[string, *Role]
+	companyUsers maps.IMap[string, *CompanyUser]
 }
 
 func NewUserRoleManager() *UserRoleManager {
-	return &UserRoleManager{userRoles: maps.New[string, *CompanyUser]()}
+	return &UserRoleManager{
+		companies:    maps.New[string, *Company](),
+		modules:      maps.New[string, *Module](),
+		entities:     maps.New[string, *Entity](),
+		users:        maps.New[string, *User](),
+		roles:        maps.New[string, *Role](),
+		companyUsers: maps.New[string, *CompanyUser](),
+	}
+}
+
+func (u *UserRoleManager) AddRole(role *Role) {
+	u.roles.Set(role.ID, role)
+}
+
+func (u *UserRoleManager) GetRole(role string) (*Role, bool) {
+	return u.roles.Get(role)
+}
+
+func (u *UserRoleManager) Roles() map[string]*Role {
+	return u.roles.AsMap()
+}
+
+func (u *UserRoleManager) AddCompany(data *Company) {
+	u.companies.Set(data.ID, data)
+}
+
+func (u *UserRoleManager) GetCompany(id string) (*Company, bool) {
+	return u.companies.Get(id)
+}
+
+func (u *UserRoleManager) Companies() map[string]*Company {
+	return u.companies.AsMap()
+}
+
+func (u *UserRoleManager) AddModule(data *Module) {
+	u.modules.Set(data.ID, data)
+}
+
+func (u *UserRoleManager) GetModule(id string) (*Module, bool) {
+	return u.modules.Get(id)
+}
+
+func (u *UserRoleManager) Modules() map[string]*Module {
+	return u.modules.AsMap()
+}
+
+func (u *UserRoleManager) AddUser(data *User) {
+	u.users.Set(data.ID, data)
+}
+
+func (u *UserRoleManager) GetUser(id string) (*User, bool) {
+	return u.users.Get(id)
+}
+
+func (u *UserRoleManager) Users() map[string]*User {
+	return u.users.AsMap()
+}
+
+func (u *UserRoleManager) AddEntity(data *Entity) {
+	u.entities.Set(data.ID, data)
+}
+
+func (u *UserRoleManager) GetEntity(id string) (*Entity, bool) {
+	return u.entities.Get(id)
+}
+
+func (u *UserRoleManager) Entities() map[string]*Entity {
+	return u.entities.AsMap()
 }
 
 func (u *UserRoleManager) AddUserRole(userID string, roleID string, company *Company, module *Module, entity *Entity) {
@@ -34,19 +106,19 @@ func (u *UserRoleManager) AddUserRole(userID string, roleID string, company *Com
 		Module:  module,
 		Entity:  entity,
 	}
-	companyUser, ok := u.userRoles.Get(company.ID)
+	companyUser, ok := u.companyUsers.Get(company.ID)
 	if !ok {
 		companyUser = &CompanyUser{
 			Company: company,
 			User:    &User{ID: userID},
 		}
 	}
-	companyUser.UserRoles = append(companyUser.UserRoles, role)
-	u.userRoles.Set(company.ID, companyUser)
+	companyUser.Roles = append(companyUser.Roles, role)
+	u.companyUsers.Set(company.ID, companyUser)
 }
 
 func (u *UserRoleManager) GetCompanyUserRoles(company string) *CompanyUser {
-	userRoles, ok := u.userRoles.Get(company)
+	userRoles, ok := u.companyUsers.Get(company)
 	if !ok {
 		return nil
 	}
@@ -54,48 +126,40 @@ func (u *UserRoleManager) GetCompanyUserRoles(company string) *CompanyUser {
 }
 
 func (u *UserRoleManager) GetUserRoles(company, userID string) *CompanyUser {
-	userRoles, ok := u.userRoles.Get(company)
+	userRoles, ok := u.companyUsers.Get(company)
 	if !ok {
 		return nil
 	}
 	ur := &CompanyUser{
 		Company: userRoles.Company,
 	}
-	for _, ut := range userRoles.UserRoles {
+	for _, ut := range userRoles.Roles {
 		if ut.UserID == userID {
-			ur.UserRoles = append(ur.UserRoles, ut)
+			ur.Roles = append(ur.Roles, ut)
 		}
 	}
 	return ur
 }
 
 func (u *UserRoleManager) GetUserRolesByCompany(company string) []*UserRole {
-	userRoles, ok := u.userRoles.Get(company)
+	userRoles, ok := u.companyUsers.Get(company)
 	if !ok {
 		return nil
 	}
-	return userRoles.UserRoles
+	return userRoles.Roles
 }
 
 func (u *UserRoleManager) GetUserRoleByCompanyAndUser(company, userID string) (ut []*UserRole) {
-	userRoles, ok := u.userRoles.Get(company)
+	userRoles, ok := u.companyUsers.Get(company)
 	if !ok {
 		return
 	}
-	for _, ur := range userRoles.UserRoles {
+	for _, ur := range userRoles.Roles {
 		if ur.UserID == userID {
 			ut = append(ut, ur)
 		}
 	}
 	return
-}
-
-type Params struct {
-	U string
-	C string
-	M string
-	E string
-	R []*UserRole
 }
 
 func (u *UserRoleManager) GetAllowedRoles(userRoles *CompanyUser, module, entity string) []string {
@@ -135,7 +199,7 @@ func (u *UserRoleManager) GetAllowedRoles(userRoles *CompanyUser, module, entity
 		})
 	}
 
-	for _, userRole := range userRoles.UserRoles {
+	for _, userRole := range userRoles.Roles {
 		if userRole.Entity != nil {
 			entities = append(entities, userRole.Entity.ID)
 		}

@@ -126,6 +126,52 @@ func (r *Role) AddPermissionGroup(group *AttributeGroup) error {
 	return nil
 }
 
+func (r *Role) GetGroupPermissions(group string) (permissions []Attribute) {
+	if grp, exists := r.permissions.Get(group); exists {
+		grp.permissions.ForEach(func(_ string, attr Attribute) bool {
+			permissions = append(permissions, attr)
+			return true
+		})
+	}
+	return
+}
+
+func (r *Role) GetAllImplicitPermissions(perm ...map[string][]Attribute) map[string][]Attribute {
+	var grpPermissions map[string][]Attribute
+	if len(perm) > 0 {
+		grpPermissions = perm[0]
+	} else {
+		grpPermissions = make(map[string][]Attribute)
+	}
+	r.permissions.ForEach(func(group string, grp *AttributeGroup) bool {
+		var permissions []Attribute
+		grp.permissions.ForEach(func(_ string, attr Attribute) bool {
+			permissions = append(permissions, attr)
+			return true
+		})
+		grpPermissions[group] = append(grpPermissions[group], permissions...)
+		return true
+	})
+	for _, descendant := range r.GetDescendantRoles() {
+		descendant.GetAllImplicitPermissions(grpPermissions)
+	}
+	return grpPermissions
+}
+
+func (r *Role) GetPermissions() map[string][]Attribute {
+	grpPermissions := make(map[string][]Attribute)
+	r.permissions.ForEach(func(group string, grp *AttributeGroup) bool {
+		var permissions []Attribute
+		grp.permissions.ForEach(func(_ string, attr Attribute) bool {
+			permissions = append(permissions, attr)
+			return true
+		})
+		grpPermissions[group] = permissions
+		return true
+	})
+	return grpPermissions
+}
+
 func NewAttribute(resource, action string) Attribute {
 	return Attribute{
 		Resource: resource,
@@ -138,10 +184,12 @@ func NewRole(id string, lock ...bool) *Role {
 	if len(lock) > 0 {
 		disable = lock[0]
 	}
-	return &Role{
+	role := &Role{
 		ID:          id,
 		permissions: maps.New[string, *AttributeGroup](),
 		descendants: maps.New[string, *Role](),
 		lock:        disable,
 	}
+	AddRole(role)
+	return role
 }

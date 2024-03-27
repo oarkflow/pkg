@@ -12,18 +12,18 @@ func main() {
 	company.AddModule(module)
 	// company.SetDefaultModule(module.ID)
 
-	coder, qa, suspendManager := myRoles()
+	coder, qa, suspendManager, _ := myRoles()
 	company.AddRole(coder, qa, suspendManager)
 
-	e29 := &v2.Entity{ID: "29"}
-	e30 := &v2.Entity{ID: "30"}
-	e33 := &v2.Entity{ID: "33"}
+	e29 := v2.NewEntity("29")
+	e30 := v2.NewEntity("30")
+	e33 := v2.NewEntity("33")
 
 	company.AddEntities(e29, e30, e33)
 
-	sujit := &v2.User{ID: "sujit"}
-	alex := &v2.User{ID: "alex"}
-	josh := &v2.User{ID: "josh"}
+	sujit := v2.NewUser("sujit")
+	alex := v2.NewUser("alex")
+	josh := v2.NewUser("josh")
 
 	company.AddUser(sujit.ID, coder.ID)
 	company.AddUser(alex.ID, qa.ID)
@@ -37,7 +37,7 @@ func main() {
 	fmt.Println("R:", v2.Can(sujit.ID, "Edelberg", "Coding", e29.ID, "backend", "/coding/1/2/start-coding POST"), "E:", false)
 }
 
-func myRoles() (coder *v2.Role, qa *v2.Role, suspendManager *v2.Role) {
+func myRoles() (coder *v2.Role, qa *v2.Role, suspendManager *v2.Role, admin *v2.Role) {
 	coder = v2.NewRole("coder")
 	permission := []v2.Attribute{
 		{"/coding/:wid/:eid/start-coding", "POST"},
@@ -63,5 +63,13 @@ func myRoles() (coder *v2.Role, qa *v2.Role, suspendManager *v2.Role) {
 		{"/coding/:wid/:eid/request-abandon", "POST"},
 	}
 	suspendManager.AddPermission("route", permission...)
+
+	admin = v2.NewRole("admin")
+	permission = []v2.Attribute{
+		{"/admin/user/add", "POST"},
+		{"/admin/user/edit", "PUT"},
+	}
+	admin.AddPermission("route", permission...)
+	admin.AddDescendent(coder, qa, suspendManager)
 	return
 }
