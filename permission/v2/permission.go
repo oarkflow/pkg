@@ -1,170 +1,92 @@
 package v2
 
-import (
-	"github.com/oarkflow/pkg/maps"
-)
-
-type Company struct {
-	ID            string
-	defaultModule *Module
-	Modules       maps.IMap[string, *Module]
-	Roles         maps.IMap[string, *Role]
-	Entities      maps.IMap[string, *Entity]
-}
-
-func NewCompany(id string) *Company {
-	return &Company{
-		ID:       id,
-		Modules:  maps.New[string, *Module](),
-		Roles:    maps.New[string, *Role](),
-		Entities: maps.New[string, *Entity](),
+func Can(userID, company, module, entity, group, activity string) bool {
+	var allowed []string
+	if company == "" {
+		return false
 	}
-}
-
-func (c *Company) SetDefaultModule(module string) {
-	if mod, ok := c.Modules.Get(module); ok {
-		c.defaultModule = mod
+	companyUser := GetUserRoles(company, userID)
+	if companyUser == nil {
+		return false
 	}
-}
-
-func (c *Company) AddModule(modules ...*Module) {
-	for _, module := range modules {
-		c.Modules.Set(module.ID, module)
-	}
-}
-
-func (c *Company) AddRole(roles ...*Role) {
-	for _, role := range roles {
-		c.Roles.Set(role.ID, role)
-	}
-}
-
-func (c *Company) AddEntities(entities ...*Entity) {
-	for _, entity := range entities {
-		c.Entities.Set(entity.ID, entity)
-		if c.defaultModule != nil {
-			c.defaultModule.Entities.Set(entity.ID, entity)
-		}
-	}
-}
-
-func (c *Company) AddEntitiesToModule(module string, entities ...string) {
-	for _, id := range entities {
-		entity, exists := c.Entities.Get(id)
-		if !exists {
-			return
-		}
-		if mod, ok := c.Modules.Get(module); ok {
-			mod.Entities.Set(id, entity)
-		} else {
-			return
-		}
-	}
-}
-
-func (c *Company) AddRolesToModule(module string, roles ...string) {
-	for _, id := range roles {
-		role, exists := c.Roles.Get(id)
-		if !exists {
-			return
-		}
-		if mod, ok := c.Modules.Get(module); ok {
-			mod.Roles.Set(id, role)
-		} else {
-			return
-		}
-	}
-}
-
-func (c *Company) AddUser(user, role string) {
-	if _, ok := c.Roles.Get(role); ok {
-		RoleManager.AddUserRole(user, role, c, nil, nil)
-		if c.defaultModule != nil {
-			RoleManager.AddUserRole(user, role, c, c.defaultModule, nil)
-		}
-	}
-}
-
-func (c *Company) AddUserInModule(user, module string, roles ...string) {
-	mod, exists := c.Modules.Get(module)
-	if !exists {
-		return
-	}
-	if len(roles) > 0 {
-		for _, r := range roles {
-			if role, ok := c.Roles.Get(r); ok {
-				RoleManager.AddUserRole(user, role.ID, c, mod, nil)
+	var userRoles []*Role
+	roles := GetAllowedRoles(companyUser, module, entity)
+	companyUser.Company.Roles.ForEach(func(_ string, r *Role) bool {
+		for _, rt := range roles {
+			if r.ID == rt {
+				userRoles = append(userRoles, r)
 			}
 		}
-	} else {
-		for _, ur := range RoleManager.GetUserRolesByCompany(c.ID) {
-			if ur.UserID == user && ur.Module != nil && ur.Module.ID != module {
-				RoleManager.AddUserRole(user, ur.RoleID, c, mod, nil)
-			}
+		allowed = append(allowed, r.ID)
+		return true
+	})
+	for _, role := range userRoles {
+		if role.Has(group, activity, allowed...) {
+			return true
 		}
 	}
+	return false
 }
-
-func (c *Company) AssignEntitiesToUser(userID string, entities ...string) {
-	user := RoleManager.GetUserRoles(c.ID, userID)
-	if user == nil {
-		return
-	}
-	for _, role := range user.UserRoles {
-		for _, id := range entities {
-			if entity, ok := c.Entities.Get(id); ok {
-				RoleManager.AddUserRole(userID, role.RoleID, c, nil, entity)
-				if c.defaultModule != nil {
-					RoleManager.AddUserRole(userID, role.RoleID, c, c.defaultModule, entity)
-				}
-			}
-		}
-	}
+func AddRole(role *Role) {
+	roleManager.roles.Set(role.ID, role)
 }
-
-func (c *Company) AssignEntitiesWithRole(userID, roleId string, entities ...string) {
-	if len(entities) == 0 {
-		return
-	}
-	user := RoleManager.GetUserRoles(c.ID, userID)
-	if user == nil {
-		return
-	}
-	_, ok := c.Roles.Get(roleId)
-	if !ok {
-		return
-	}
-	for _, id := range entities {
-		if entity, ok := c.Entities.Get(id); ok {
-			RoleManager.AddUserRole(userID, roleId, c, nil, entity)
-			if c.defaultModule != nil {
-				RoleManager.AddUserRole(userID, roleId, c, c.defaultModule, entity)
-			}
-		}
-	}
+func GetRole(role string) (*Role, bool) {
+	return roleManager.roles.Get(role)
 }
-
-type Module struct {
-	ID       string
-	Roles    maps.IMap[string, *Role]
-	Entities maps.IMap[string, *Entity]
+func Roles() map[string]*Role {
+	return roleManager.roles.AsMap()
 }
-
-func NewModule(id string) *Module {
-	return &Module{
-		ID:       id,
-		Roles:    maps.New[string, *Role](),
-		Entities: maps.New[string, *Entity](),
-	}
+func AddUserRole(userID string, roleID string, company *Company, module *Module, entity *Entity) {
+	roleManager.AddUserRole(userID, roleID, company, module, entity)
 }
-
-type UserRole struct {
-	UserID  string
-	RoleID  string
-	Company *Company
-	Module  *Module
-	Entity  *Entity
+func GetCompanyUserRoles(company string) *CompanyUser {
+	return roleManager.GetCompanyUserRoles(company)
 }
-type Entity struct {
-	ID string
+func GetUserRoles(company, userID string) *CompanyUser {
+	return roleManager.GetUserRoles(company, userID)
+}
+func GetUserRolesByCompany(company string) []*UserRole {
+	return roleManager.GetUserRolesByCompany(company)
+}
+func GetUserRoleByCompanyAndUser(company, userID string) (ut []*UserRole) {
+	return roleManager.GetUserRoleByCompanyAndUser(company, userID)
+}
+func GetAllowedRoles(userRoles *CompanyUser, module, entity string) []string {
+	return roleManager.GetAllowedRoles(userRoles, module, entity)
+}
+func AddCompany(data *Company) {
+	roleManager.AddCompany(data)
+}
+func GetCompany(id string) (*Company, bool) {
+	return roleManager.GetCompany(id)
+}
+func Companies() map[string]*Company {
+	return roleManager.Companies()
+}
+func AddModule(data *Module) {
+	roleManager.AddModule(data)
+}
+func GetModule(id string) (*Module, bool) {
+	return roleManager.GetModule(id)
+}
+func Modules() map[string]*Module {
+	return roleManager.Modules()
+}
+func AddUser(data *User) {
+	roleManager.AddUser(data)
+}
+func GetUser(id string) (*User, bool) {
+	return roleManager.GetUser(id)
+}
+func Users() map[string]*User {
+	return roleManager.Users()
+}
+func AddEntity(data *Entity) {
+	roleManager.AddEntity(data)
+}
+func GetEntity(id string) (*Entity, bool) {
+	return roleManager.GetEntity(id)
+}
+func Entities() map[string]*Entity {
+	return roleManager.Entities()
 }
