@@ -206,7 +206,7 @@ func (d *Document) replace(placeholderMap PlaceholderMap, file string) ([]byte, 
 		pt := p
 		pt = strReplacer.Replace(pt)
 		data, err := expr.Eval(pt, placeholderMap)
-		if err != nil {
+		if err != nil || data == nil {
 			placeholderMap[p] = p
 		} else {
 			placeholderMap[p] = data
