@@ -41,6 +41,7 @@ require (
 )
 
 require (
+	github.com/akrylysov/pogreb v0.10.2 // indirect
 	github.com/andeya/ameda v1.5.3 // indirect
 	github.com/andeya/goutil v1.0.1 // indirect
 	github.com/apcera/termtables v0.0.0-20170405184538-bcbc5dc54055 // indirect

@@ -149,7 +149,7 @@ func New[Schema SchemaProps](c *Config) *Engine[Schema] {
 	if c.Path == "" {
 		c.Path = "fts/" + c.Key
 	}
-	store, _ := NewDiskStore[int64, Schema](c.Path, c.Compress)
+	store, _ := NewFlyDB[int64, Schema](c.Path, c.Compress)
 	db := &Engine[Schema]{
 		key:             c.Key,
 		documents:       store,
