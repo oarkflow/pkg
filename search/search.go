@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"hash/fnv"
 	"math"
+	"os"
 	"reflect"
 	"slices"
 	"sort"
@@ -129,6 +130,7 @@ type Engine[Schema SchemaProps] struct {
 	cache           maps.IMap[uint64, map[int64]float64]
 	key             string
 	sliceField      string
+	path            string
 }
 
 func New[Schema SchemaProps](c *Config) *Engine[Schema] {
@@ -141,8 +143,11 @@ func New[Schema SchemaProps](c *Config) *Engine[Schema] {
 	if c.DefaultLanguage == "" {
 		c.DefaultLanguage = tokenizer.ENGLISH
 	}
+	if c.Key == "" {
+		c.Key = xid.New().String()
+	}
 	if c.Path == "" {
-		c.Path = "fts/" + xid.New().String()
+		c.Path = "fts/" + c.Key
 	}
 	store, _ := NewDiskStore[int64, Schema](c.Path, c.Compress)
 	db := &Engine[Schema]{
@@ -154,12 +159,21 @@ func New[Schema SchemaProps](c *Config) *Engine[Schema] {
 		tokenizerConfig: c.TokenizerConfig,
 		rules:           c.Rules,
 		sliceField:      c.SliceField,
+		path:            c.Path,
 	}
 	db.buildIndexes()
 	if len(db.indexKeys) == 0 {
 		db.addIndexes(c.IndexKeys)
 	}
 	return db
+}
+
+func (db *Engine[Schema]) Compress() error {
+	err := compressFolder(db.path, db.path+".zip")
+	if err != nil {
+		return err
+	}
+	return os.RemoveAll(db.path)
 }
 
 func (db *Engine[Schema]) GetDocument(id int64) (Schema, bool) {

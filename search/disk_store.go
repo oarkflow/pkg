@@ -1,10 +1,11 @@
 package search
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"github.com/shamaton/msgpack/v2"
 )
 
 // KVStore defines the interface for our key-value store
@@ -30,8 +31,8 @@ func NewDiskStore[K comparable, V any](basePath string, compress bool) (KVStore[
 
 // Set stores a key-value pair on disk
 func (s *DiskStore[K, V]) Set(key K, value V) error {
-	fileName := filepath.Join(s.basePath, fmt.Sprintf("%v", key))
-	jsonData, err := json.Marshal(value)
+	fileName := filepath.Join(s.basePath, fmt.Sprintf("%v.json", key))
+	jsonData, err := msgpack.Marshal(value)
 	if err != nil {
 		return err
 	}
@@ -43,20 +44,13 @@ func (s *DiskStore[K, V]) Set(key K, value V) error {
 
 		return os.WriteFile(fileName, compressed, 0644)
 	}
-	file, err := os.Create(fileName)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	encoder := json.NewEncoder(file)
-	return encoder.Encode(value)
+	return os.WriteFile(fileName, jsonData, 0644)
 }
 
 // Get retrieves a value for a given key from disk
 func (s *DiskStore[K, V]) Get(key K) (V, bool) {
 	var err error
-	fileName := filepath.Join(s.basePath, fmt.Sprintf("%v", key))
+	fileName := filepath.Join(s.basePath, fmt.Sprintf("%v.json", key))
 	_, err = os.Stat(fileName)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -71,16 +65,13 @@ func (s *DiskStore[K, V]) Get(key K) (V, bool) {
 			return *new(V), false
 		}
 		jsonData, err := Decompress(compressedData)
-		err = json.Unmarshal(jsonData, &value)
+		err = msgpack.Unmarshal(jsonData, &value)
 	} else {
-		file, err := os.Open(fileName)
+		file, err := os.ReadFile(fileName)
 		if err != nil {
 			return *new(V), false
 		}
-		defer file.Close()
-
-		decoder := json.NewDecoder(file)
-		err = decoder.Decode(&value)
+		err = msgpack.Unmarshal(file, &value)
 	}
 	if err != nil {
 		return *new(V), false

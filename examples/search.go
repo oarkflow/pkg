@@ -85,6 +85,10 @@ func testMap() {
 	if len(errs) > 0 {
 		panic(errs)
 	}
+	/*err := db.Compress()
+	if err != nil {
+		panic(err)
+	}*/
 	fmt.Println("Total Documents", db.DocumentLen())
 	fmt.Println("Indexing took", time.Since(startTime))
 	startTime = time.Now()
@@ -111,6 +115,10 @@ func testStruct() {
 		for _, err := range errs {
 			panic(err)
 		}
+	}
+	err := ftsSearch.Compress()
+	if err != nil {
+		panic(err)
 	}
 	start := time.Now()
 	s, err := ftsSearch.Search(&search.Params{

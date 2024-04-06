@@ -15,7 +15,6 @@ require (
 	github.com/gosimple/slug v1.14.0
 	github.com/klauspost/compress v1.17.7
 	github.com/kljensen/snowball v0.9.0
-	github.com/msgpack/msgpack-go v0.0.0-20130625150338-8224460e6fa3
 	github.com/oarkflow/expr v0.0.7
 	github.com/oarkflow/frame v0.0.66
 	github.com/oarkflow/gorm-adapter v0.0.7
@@ -25,6 +24,7 @@ require (
 	github.com/ruudk/golang-pdf417 v0.0.0-20201230142125-a7e3863a1245
 	github.com/samber/lo v1.39.0
 	github.com/scylladb/termtables v1.0.0
+	github.com/shamaton/msgpack/v2 v2.2.0
 	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e
 	github.com/sourcegraph/conc v0.3.0
 	github.com/tidwall/pretty v1.2.1
