@@ -121,7 +121,6 @@ type Config struct {
 type Engine[Schema SchemaProps] struct {
 	mutex           sync.RWMutex
 	documents       KVStore[int64, Schema]
-	documentIDs     maps.IMap[int64, bool]
 	indexes         maps.IMap[string, *Index]
 	indexKeys       []string
 	defaultLanguage tokenizer.Language
@@ -153,7 +152,6 @@ func New[Schema SchemaProps](c *Config) *Engine[Schema] {
 	db := &Engine[Schema]{
 		key:             c.Key,
 		documents:       store,
-		documentIDs:     maps.New[int64, bool](),
 		indexes:         maps.New[string, *Index](),
 		defaultLanguage: c.DefaultLanguage,
 		tokenizerConfig: c.TokenizerConfig,
@@ -181,17 +179,15 @@ func (db *Engine[Schema]) GetDocument(id int64) (Schema, bool) {
 }
 
 func (db *Engine[Schema]) DelDocument(id int64) {
-	db.documentIDs.Del(id)
 	db.documents.Del(id)
 }
 
 func (db *Engine[Schema]) SetDocument(id int64, doc Schema) {
-	db.documentIDs.Set(id, true)
 	db.documents.Set(id, doc)
 }
 
 func (db *Engine[Schema]) DocumentLen() int {
-	return int(db.documentIDs.Len())
+	return int(db.documents.Len())
 }
 
 func (db *Engine[Schema]) buildIndexes() {

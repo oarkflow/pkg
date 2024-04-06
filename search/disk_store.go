@@ -15,15 +15,16 @@ type KVStore[K comparable, V any] interface {
 	Set(key K, value V) error
 	Get(key K) (V, bool)
 	Del(key K) error
+	Len() uint32
 }
 
 type FlyDB[K comparable, V any] struct {
-	client   *flydb.DB
+	client   *flydb.DB[[]byte, []byte]
 	compress bool
 }
 
 func NewFlyDB[K comparable, V any](basePath string, compressed bool) (*FlyDB[K, V], error) {
-	client, err := flydb.Open(basePath, nil)
+	client, err := flydb.Open[[]byte, []byte](basePath, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -56,6 +57,16 @@ func (s *FlyDB[K, V]) Del(key K) error {
 	return s.client.Delete([]byte(k))
 }
 
+// Close removes a key-value pair from disk
+func (s *FlyDB[K, V]) Close() error {
+	return s.client.Close()
+}
+
+// Len removes a key-value pair from disk
+func (s *FlyDB[K, V]) Len() uint32 {
+	return s.client.Count()
+}
+
 // Get retrieves a value for a given key from disk
 func (s *FlyDB[K, V]) Get(key K) (V, bool) {
 	var err error
@@ -85,6 +96,7 @@ func (s *FlyDB[K, V]) Get(key K) (V, bool) {
 type JsonStore[K comparable, V any] struct {
 	basePath string
 	compress bool
+	docLen   int
 }
 
 // NewJsonStore creates a new JsonStore instance
@@ -111,6 +123,30 @@ func (s *JsonStore[K, V]) Set(key K, value V) error {
 		return os.WriteFile(fileName, compressed, 0644)
 	}
 	return os.WriteFile(fileName, jsonData, 0644)
+}
+
+// Close removes a key-value pair from disk
+func (s *JsonStore[K, V]) Close() error {
+	return nil
+}
+
+// Len removes a key-value pair from disk
+func (s *JsonStore[K, V]) Len() uint32 {
+	if s.docLen == 0 {
+		dirs, err := os.ReadDir(s.basePath)
+		if err != nil {
+			return 0
+		}
+		total := 0
+		for _, dir := range dirs {
+			if !dir.IsDir() {
+				total++
+			}
+		}
+		s.docLen = total
+	}
+
+	return uint32(s.docLen)
 }
 
 // Get retrieves a value for a given key from disk
