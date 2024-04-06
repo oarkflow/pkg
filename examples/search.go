@@ -89,11 +89,7 @@ func testMap() {
 	fmt.Println("Indexing took", time.Since(startTime))
 	startTime = time.Now()
 	s, err := db.Search(&search.Params{
-		Query:    "food",
-		BoolMode: search.AND,
-		Extra: map[string]any{
-			"code": "A051",
-		},
+		Query: "food",
 	})
 	if err != nil {
 		panic(err)

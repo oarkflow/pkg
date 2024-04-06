@@ -107,6 +107,8 @@ github.com/microsoft/go-mssqldb v0.21.0 h1:p2rpHIL7TlSv1QrbXJUAcbyRKnIT0C9rRkH2E
 github.com/microsoft/go-mssqldb v0.21.0/go.mod h1:+4wZTUnz/SV6nffv+RRRB/ss8jPng5Sho2SmM1l2ts4=
 github.com/modocache/gover v0.0.0-20171022184752-b58185e213c5/go.mod h1:caMODM3PzxT8aQXRPkAt8xlV/e7d7w8GM5g0fa5F0D8=
 github.com/montanaflynn/stats v0.6.6/go.mod h1:etXPPgVO6n31NxCd9KQUMvCM+ve0ruNzt6R8Bnaayow=
+github.com/msgpack/msgpack-go v0.0.0-20130625150338-8224460e6fa3 h1:6pY2f1fJC+u27cqhH0sPkXRquVmGF0VOkLKqraRMYfg=
+github.com/msgpack/msgpack-go v0.0.0-20130625150338-8224460e6fa3/go.mod h1:jDCQZQaHCHpBYqM4WoGyujFc55bazGAEwK27iK4PQTI=
 github.com/nyaruka/phonenumbers v1.0.55/go.mod h1:sDaTZ/KPX5f8qyV9qN+hIm+4ZBARJrupC6LuhshJq1U=
 github.com/nyaruka/phonenumbers v1.3.4 h1:bF1Wdh++fxw09s3surhVeBhXEcUKG07pHeP8HQXqjn8=
 github.com/nyaruka/phonenumbers v1.3.4/go.mod h1:Ut+eFwikULbmCenH6InMKL9csUNLyxHuBLyfkpum11s=

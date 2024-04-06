@@ -113,11 +113,14 @@ type Config struct {
 	IndexKeys       []string
 	Rules           map[string]bool
 	SliceField      string
+	Path            string
+	Compress        bool
 }
 
 type Engine[Schema SchemaProps] struct {
 	mutex           sync.RWMutex
-	documents       maps.IMap[int64, Schema]
+	documents       KVStore[int64, Schema]
+	documentIDs     maps.IMap[int64, bool]
 	indexes         maps.IMap[string, *Index]
 	indexKeys       []string
 	defaultLanguage tokenizer.Language
@@ -138,9 +141,14 @@ func New[Schema SchemaProps](c *Config) *Engine[Schema] {
 	if c.DefaultLanguage == "" {
 		c.DefaultLanguage = tokenizer.ENGLISH
 	}
+	if c.Path == "" {
+		c.Path = "fts/" + xid.New().String()
+	}
+	store, _ := NewDiskStore[int64, Schema](c.Path, c.Compress)
 	db := &Engine[Schema]{
 		key:             c.Key,
-		documents:       maps.New[int64, Schema](),
+		documents:       store,
+		documentIDs:     maps.New[int64, bool](),
 		indexes:         maps.New[string, *Index](),
 		defaultLanguage: c.DefaultLanguage,
 		tokenizerConfig: c.TokenizerConfig,
@@ -159,15 +167,17 @@ func (db *Engine[Schema]) GetDocument(id int64) (Schema, bool) {
 }
 
 func (db *Engine[Schema]) DelDocument(id int64) {
+	db.documentIDs.Del(id)
 	db.documents.Del(id)
 }
 
 func (db *Engine[Schema]) SetDocument(id int64, doc Schema) {
+	db.documentIDs.Set(id, true)
 	db.documents.Set(id, doc)
 }
 
 func (db *Engine[Schema]) DocumentLen() int {
-	return int(db.documents.Len())
+	return int(db.documentIDs.Len())
 }
 
 func (db *Engine[Schema]) buildIndexes() {

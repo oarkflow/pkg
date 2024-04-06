@@ -15,6 +15,7 @@ require (
 	github.com/gosimple/slug v1.14.0
 	github.com/klauspost/compress v1.17.7
 	github.com/kljensen/snowball v0.9.0
+	github.com/msgpack/msgpack-go v0.0.0-20130625150338-8224460e6fa3
 	github.com/oarkflow/expr v0.0.7
 	github.com/oarkflow/frame v0.0.66
 	github.com/oarkflow/gorm-adapter v0.0.7
