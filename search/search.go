@@ -154,15 +154,27 @@ func New[Schema SchemaProps](c *Config) *Engine[Schema] {
 	return db
 }
 
+func (db *Engine[Schema]) GetDocument(id int64) (Schema, bool) {
+	return db.documents.Get(id)
+}
+
+func (db *Engine[Schema]) DelDocument(id int64) {
+	db.documents.Del(id)
+}
+
+func (db *Engine[Schema]) SetDocument(id int64, doc Schema) {
+	db.documents.Set(id, doc)
+}
+
+func (db *Engine[Schema]) DocumentLen() int {
+	return int(db.documents.Len())
+}
+
 func (db *Engine[Schema]) buildIndexes() {
 	var s Schema
 	for key := range db.flattenSchema(s) {
 		db.addIndex(key)
 	}
-}
-
-func (db *Engine[Schema]) DocumentLen() int {
-	return int(db.documents.Len())
 }
 
 func (db *Engine[Schema]) Insert(doc Schema, lang ...tokenizer.Language) (Record[Schema], error) {
@@ -184,20 +196,9 @@ func (db *Engine[Schema]) Insert(doc Schema, lang ...tokenizer.Language) (Record
 		return Record[Schema]{}, fmt.Errorf("not supported language")
 	}
 
-	db.documents.Set(id, doc)
+	db.SetDocument(id, doc)
 	db.indexDocument(id, document, language)
 	return Record[Schema]{Id: id, Data: doc}, nil
-}
-
-func (db *Engine[Schema]) addIndexes(keys []string) {
-	for _, key := range keys {
-		db.addIndex(key)
-	}
-}
-
-func (db *Engine[Schema]) addIndex(key string) {
-	db.indexes.Set(key, NewIndex())
-	db.indexKeys = append(db.indexKeys, key)
 }
 
 func (db *Engine[Schema]) InsertBatch(docs []Schema, batchSize int, lang ...tokenizer.Language) []error {
@@ -260,14 +261,14 @@ func (db *Engine[Schema]) Update(params *UpdateParams[Schema]) (Record[Schema], 
 		return Record[Schema]{}, fmt.Errorf("not supported language")
 	}
 
-	oldDocument, ok := db.documents.Get(params.Id)
+	oldDocument, ok := db.GetDocument(params.Id)
 	if !ok {
 		return Record[Schema]{}, fmt.Errorf("document not found")
 	}
 	db.indexDocument(params.Id, document, language)
 	document = db.flattenSchema(oldDocument)
 	db.deindexDocument(params.Id, document, language)
-	db.documents.Set(params.Id, params.Document)
+	db.SetDocument(params.Id, params.Document)
 
 	return Record[Schema]{Id: params.Id, Data: params.Document}, nil
 }
@@ -281,71 +282,19 @@ func (db *Engine[Schema]) Delete(params *DeleteParams[Schema]) error {
 		return fmt.Errorf("not supported language")
 	}
 
-	document, ok := db.documents.Get(params.Id)
+	document, ok := db.GetDocument(params.Id)
 	if !ok {
 		return fmt.Errorf("document not found")
 	}
 	doc := db.flattenSchema(document)
 	db.deindexDocument(params.Id, doc, language)
-	db.documents.Del(params.Id)
+	db.DelDocument(params.Id)
 
 	return nil
 }
 
-func (db *Engine[Schema]) prepareResult(results Hits[Schema], params *Params) (Result[Schema], error) {
-	sort.Sort(results)
-	if !params.Paginate {
-		return Result[Schema]{Hits: results, Count: len(results)}, nil
-	}
-	if params.Limit == 0 {
-		params.Limit = 20
-	}
-	start, stop := lib.Paginate(params.Offset, params.Limit, len(results))
-	return Result[Schema]{Hits: results[start:stop], Count: len(results)}, nil
-}
-
 func (db *Engine[Schema]) ClearCache() {
 	db.cache = nil
-}
-
-func (db *Engine[Schema]) findWithParams(params *Params) (map[int64]float64, error) {
-	allIdScores := make(map[int64]float64)
-
-	properties := params.Properties
-	if len(params.Properties) == 0 {
-		properties = db.indexKeys
-	}
-	language := params.Language
-	if language == "" {
-		language = db.defaultLanguage
-	} else if !tokenizer.IsSupportedLanguage(language) {
-		return nil, fmt.Errorf("not supported language")
-	}
-	if language == "" {
-		language = tokenizer.ENGLISH
-	}
-	tokens, _ := tokenizer.Tokenize(&tokenizer.TokenizeParams{
-		Text:            params.Query,
-		Language:        language,
-		AllowDuplicates: false,
-	}, db.tokenizerConfig)
-
-	for _, prop := range properties {
-		if index, ok := db.indexes.Get(prop); ok {
-			idScores := index.Find(&FindParams{
-				Tokens:    tokens,
-				BoolMode:  params.BoolMode,
-				Exact:     params.Exact,
-				Tolerance: params.Tolerance,
-				Relevance: params.Relevance,
-				DocsCount: db.DocumentLen(),
-			})
-			for id, score := range idScores {
-				allIdScores[id] += score
-			}
-		}
-	}
-	return allIdScores, nil
 }
 
 // Check function checks if a key-value map exists in any type of data
@@ -375,16 +324,6 @@ func (db *Engine[Schema]) Check(data Schema, filter map[string]any) bool {
 	default:
 		return false
 	}
-}
-
-func (db *Engine[Schema]) getDocuments(scores map[int64]float64) Hits[Schema] {
-	results := make(Hits[Schema], 0)
-	for id, score := range scores {
-		if doc, ok := db.documents.Get(id); ok {
-			results = append(results, Hit[Schema]{Id: id, Data: doc, Score: score})
-		}
-	}
-	return results
 }
 
 // Deprecated: use Search function instead. It's optimized version. This function will be removed in future version
@@ -488,7 +427,7 @@ func (db *Engine[Schema]) Search(params *Params) (Result[Schema], error) {
 		cache = nil
 	}()
 	for id, score := range allIdScores {
-		if doc, ok := db.documents.Get(id); ok {
+		if doc, ok := db.GetDocument(id); ok {
 			if len(params.Extra) > 0 {
 				if db.Check(doc, params.Extra) {
 					cache[id] = score
@@ -504,6 +443,79 @@ func (db *Engine[Schema]) Search(params *Params) (Result[Schema], error) {
 		db.cache.Set(cachedKey, cache)
 	}
 	return db.prepareResult(results, params)
+}
+
+func (db *Engine[Schema]) addIndexes(keys []string) {
+	for _, key := range keys {
+		db.addIndex(key)
+	}
+}
+
+func (db *Engine[Schema]) addIndex(key string) {
+	db.indexes.Set(key, NewIndex())
+	db.indexKeys = append(db.indexKeys, key)
+}
+
+func (db *Engine[Schema]) findWithParams(params *Params) (map[int64]float64, error) {
+	allIdScores := make(map[int64]float64)
+
+	properties := params.Properties
+	if len(params.Properties) == 0 {
+		properties = db.indexKeys
+	}
+	language := params.Language
+	if language == "" {
+		language = db.defaultLanguage
+	} else if !tokenizer.IsSupportedLanguage(language) {
+		return nil, fmt.Errorf("not supported language")
+	}
+	if language == "" {
+		language = tokenizer.ENGLISH
+	}
+	tokens, _ := tokenizer.Tokenize(&tokenizer.TokenizeParams{
+		Text:            params.Query,
+		Language:        language,
+		AllowDuplicates: false,
+	}, db.tokenizerConfig)
+
+	for _, prop := range properties {
+		if index, ok := db.indexes.Get(prop); ok {
+			idScores := index.Find(&FindParams{
+				Tokens:    tokens,
+				BoolMode:  params.BoolMode,
+				Exact:     params.Exact,
+				Tolerance: params.Tolerance,
+				Relevance: params.Relevance,
+				DocsCount: db.DocumentLen(),
+			})
+			for id, score := range idScores {
+				allIdScores[id] += score
+			}
+		}
+	}
+	return allIdScores, nil
+}
+
+func (db *Engine[Schema]) prepareResult(results Hits[Schema], params *Params) (Result[Schema], error) {
+	sort.Sort(results)
+	if !params.Paginate {
+		return Result[Schema]{Hits: results, Count: len(results)}, nil
+	}
+	if params.Limit == 0 {
+		params.Limit = 20
+	}
+	start, stop := lib.Paginate(params.Offset, params.Limit, len(results))
+	return Result[Schema]{Hits: results[start:stop], Count: len(results)}, nil
+}
+
+func (db *Engine[Schema]) getDocuments(scores map[int64]float64) Hits[Schema] {
+	results := make(Hits[Schema], 0)
+	for id, score := range scores {
+		if doc, ok := db.GetDocument(id); ok {
+			results = append(results, Hit[Schema]{Id: id, Data: doc, Score: score})
+		}
+	}
+	return results
 }
 
 func (db *Engine[Schema]) indexDocument(id int64, document map[string]string, language tokenizer.Language) {
@@ -653,6 +665,7 @@ func getFieldsFromMap(obj map[string]any) []string {
 	}
 	return fields
 }
+
 func getFieldsFromStruct(obj any, prefix ...string) []string {
 	var fields []string
 	t := reflect.TypeOf(obj)
