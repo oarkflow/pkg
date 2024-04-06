@@ -1,7 +1,7 @@
 package radix
 
 import (
-	"github.com/oarkflow/pkg/maps"
+	"github.com/oarkflow/maps"
 )
 
 // Node represents a node in the Radix Trie

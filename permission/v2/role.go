@@ -4,7 +4,7 @@ import (
 	"errors"
 	"slices"
 
-	"github.com/oarkflow/pkg/maps"
+	"github.com/oarkflow/maps"
 )
 
 type Attribute struct {

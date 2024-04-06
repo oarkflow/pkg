@@ -3,7 +3,7 @@ package v2
 import (
 	"slices"
 
-	"github.com/oarkflow/pkg/maps"
+	"github.com/oarkflow/maps"
 )
 
 var roleManager *UserRoleManager

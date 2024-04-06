@@ -1,7 +1,7 @@
 package v2
 
 import (
-	"github.com/oarkflow/pkg/maps"
+	"github.com/oarkflow/maps"
 )
 
 func Can(userID, company, module, entity, group, activity string) bool {

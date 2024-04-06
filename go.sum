@@ -3,8 +3,6 @@ github.com/Azure/azure-sdk-for-go/sdk/azcore v1.1.2/go.mod h1:uGG2W01BaETf0Ozp+Q
 github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.2.1/go.mod h1:gLa1CL2RNE4s7M3yopJ/p0iq5DdY6Yv5ZUt9MTRZOQM=
 github.com/Azure/azure-sdk-for-go/sdk/internal v1.0.0/go.mod h1:eWRD7oawr1Mu1sLCawqVc0CUiF43ia3qQMxLscsKQ9w=
 github.com/AzureAD/microsoft-authentication-library-for-go v0.8.1/go.mod h1:4qFor3D/HDsvBME35Xy9rwW9DecL+M2sNw1ybjPtwA0=
-github.com/akrylysov/pogreb v0.10.2 h1:e6PxmeyEhWyi2AKOBIJzAEi4HkiC+lKyCocRGlnDi78=
-github.com/akrylysov/pogreb v0.10.2/go.mod h1:pNs6QmpQ1UlTJKDezuRWmaqkgUE2TuU0YTWyqJZ7+lI=
 github.com/andeya/ameda v1.5.3 h1:SvqnhQPZwwabS8HQTRGfJwWPl2w9ZIPInHAw9aE1Wlk=
 github.com/andeya/ameda v1.5.3/go.mod h1:FQDHRe1I995v6GG+8aJ7UIUToEmbdTJn/U26NCPIgXQ=
 github.com/andeya/goutil v1.0.1 h1:eiYwVyAnnK0dXU5FJsNjExkJW4exUGn/xefPt3k4eXg=
@@ -18,8 +16,6 @@ github.com/bytedance/go-tagexpr/v2 v2.9.11 h1:jJgmoDKPKacGl0llPYbYL/+/2N+Ng0vV0i
 github.com/bytedance/go-tagexpr/v2 v2.9.11/go.mod h1:UAyKh4ZRLBPGsyTRFZoPqTni1TlojMdOJXQnEIPCX84=
 github.com/bytedance/gopkg v0.0.0-20240315062850-21fc7a1671a8 h1:8LX2T6XzOOPvVMS8RH0sY4+QFmO5XyFUnrmwVbtD13k=
 github.com/bytedance/gopkg v0.0.0-20240315062850-21fc7a1671a8/go.mod h1:FtQG3YbQG9L/91pbKSw787yBQPutC+457AvDW77fgUQ=
-github.com/carlmjohnson/deque v0.23.1 h1:X2HOJM9xcglY03deMZ0oZ1V2xtbqYV7dJDnZiSZN4Ak=
-github.com/carlmjohnson/deque v0.23.1/go.mod h1:LF5NJjICBrEOPx84pxPL4nCimy5n9NQjxKi5cXkh+8U=
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
@@ -114,6 +110,8 @@ github.com/nyaruka/phonenumbers v1.3.4 h1:bF1Wdh++fxw09s3surhVeBhXEcUKG07pHeP8HQ
 github.com/nyaruka/phonenumbers v1.3.4/go.mod h1:Ut+eFwikULbmCenH6InMKL9csUNLyxHuBLyfkpum11s=
 github.com/oarkflow/expr v0.0.7 h1:SHSQdO0oCprz5yewilr4iL/0mrvo2NNiMdMYXrDVZ+w=
 github.com/oarkflow/expr v0.0.7/go.mod h1:mHdjfmADGzbUWyC8weMNz8klIZxMouhQesCVAXbwsDU=
+github.com/oarkflow/flydb v0.0.0-20240406152654-9bccddc99c73 h1:7uSSrwEoiBnfQvdnS5K6gH05cc2445nlIWkopaKjrh4=
+github.com/oarkflow/flydb v0.0.0-20240406152654-9bccddc99c73/go.mod h1:45FtOqeKnmJ9dwsMqniuYNCd0oiok2iFGh/8OqFeAEQ=
 github.com/oarkflow/frame v0.0.66 h1:NMsBF+pML0g3PbOrs6O16IjQXeuhKXIaU7L/1Azwy+s=
 github.com/oarkflow/frame v0.0.66/go.mod h1:A417gImVDDVpgRjEEhC7tmysMV44z/ozDnD79n5zMI0=
 github.com/oarkflow/gorm-adapter v0.0.7 h1:mEhGXJwmegF0QERWZiIQx0rM/jdxLbM/tAeszohKkac=
@@ -122,6 +120,10 @@ github.com/oarkflow/govaluate v0.0.1 h1:+Lj3rogVtremLUhJHVympvUYn91jOx0R/Y1NGJTj
 github.com/oarkflow/govaluate v0.0.1/go.mod h1:SUUlz+h50A4snOkJhuyMyyecpTT9e5TXmYcpL1rOlgM=
 github.com/oarkflow/log v1.0.74 h1:ZF+G7ZMO2bHRcNMVovqa3LwkzxsaQqhaFCe92Gwwhtg=
 github.com/oarkflow/log v1.0.74/go.mod h1:GjB0Np5m9DXTwlS2fpkH5jDsiTMYhD60aG/9UegLNvw=
+github.com/oarkflow/maps v0.0.0-20240406152114-fc5a94538f01 h1:2U3KpUUHKyKNcc9wR6S5xMffSbHv9T42qPMFTXimLXE=
+github.com/oarkflow/maps v0.0.0-20240406152114-fc5a94538f01/go.mod h1:ku/3mpezSm5g3rBuU2U3UPpzBhJ86SY/mhvvliTTWg4=
+github.com/oarkflow/search v0.0.0-20240406153724-8487f647254f h1:iA6ckZDYkOs229XgQ3HmyPw5hZWJesSuORxwdUnLjx8=
+github.com/oarkflow/search v0.0.0-20240406153724-8487f647254f/go.mod h1:WM3Dti5c7Q4zAYdqWP79KoSq2e+O/KSKtN/uggOqZc8=
 github.com/oarkflow/xid v1.2.5 h1:6RcNJm9+oZ/B647gkME9trCzhpxGQaSdNoD56Vmkeho=
 github.com/oarkflow/xid v1.2.5/go.mod h1:jG4YBh+swbjlWApGWDBYnsJEa7hi3CCpmuqhB3RAxVo=
 github.com/phpdave11/gofpdf v1.4.2 h1:KPKiIbfwbvC/wOncwhrpRdXVj2CZTCFlw4wnoyjtHfQ=
@@ -192,8 +194,8 @@ golang.org/x/crypto v0.0.0-20221005025214-4161e89ecf1b/go.mod h1:IxCIyHEi3zRg3s0
 golang.org/x/crypto v0.6.0/go.mod h1:OFC/31mSvZgRz0V1QTNCzfAI1aIRzbiufJtkMIlEp58=
 golang.org/x/crypto v0.21.0 h1:X31++rzVUdKhX5sWmSOFZxx8UW/ldWx55cbf08iNAMA=
 golang.org/x/crypto v0.21.0/go.mod h1:0BP7YvVV9gBbVKyeTG0Gyn+gZm94bibOW5BjDEYAOMs=
-golang.org/x/exp v0.0.0-20231214170342-aacd6d4b4611 h1:qCEDpW1G+vcj3Y7Fy52pEM1AWm3abj8WimGYejI3SC4=
-golang.org/x/exp v0.0.0-20231214170342-aacd6d4b4611/go.mod h1:iRJReGqOEeBhDZGkGbynYwcHlctCvnjTYIamk7uXpHI=
+golang.org/x/exp v0.0.0-20240404231335-c0f41cb1a7a0 h1:985EYyeCOxTpcgOTJpflJUwOeEz0CQOdPt73OzpE9F8=
+golang.org/x/exp v0.0.0-20240404231335-c0f41cb1a7a0/go.mod h1:/lliqkxwWAhPjf5oSOIJup2XcqJaw8RGS6k3TGEc7GI=
 golang.org/x/image v0.0.0-20190910094157-69e4b8554b2a/go.mod h1:FeLwcggjj3mMvU+oOTbSwawSJRM1uh48EjtB4UJZlP0=
 golang.org/x/image v0.15.0 h1:kOELfmgrmJlw4Cdb7g/QGuB3CvDrXbqEIww/pNtNBm8=
 golang.org/x/image v0.15.0/go.mod h1:HUYqC05R2ZcZ3ejNQsIHQDQiwWM4JBqmm6MKANTp4LE=
