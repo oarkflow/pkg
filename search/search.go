@@ -17,7 +17,6 @@ import (
 	"github.com/oarkflow/pkg/maps"
 	"github.com/oarkflow/pkg/search/lib"
 	"github.com/oarkflow/pkg/search/tokenizer"
-	"github.com/oarkflow/pkg/utils"
 )
 
 const (
@@ -178,12 +177,12 @@ func (db *Engine[Schema]) GetDocument(id int64) (Schema, bool) {
 	return db.documents.Get(id)
 }
 
-func (db *Engine[Schema]) DelDocument(id int64) {
-	db.documents.Del(id)
+func (db *Engine[Schema]) DelDocument(id int64) error {
+	return db.documents.Del(id)
 }
 
-func (db *Engine[Schema]) SetDocument(id int64, doc Schema) {
-	db.documents.Set(id, doc)
+func (db *Engine[Schema]) SetDocument(id int64, doc Schema) error {
+	return db.documents.Set(id, doc)
 }
 
 func (db *Engine[Schema]) DocumentLen() int {
@@ -216,7 +215,10 @@ func (db *Engine[Schema]) Insert(doc Schema, lang ...tokenizer.Language) (Record
 		return Record[Schema]{}, fmt.Errorf("not supported language")
 	}
 
-	db.SetDocument(id, doc)
+	err := db.SetDocument(id, doc)
+	if err != nil {
+		return Record[Schema]{}, err
+	}
 	db.indexDocument(id, document, language)
 	return Record[Schema]{Id: id, Data: doc}, nil
 }
@@ -288,8 +290,10 @@ func (db *Engine[Schema]) Update(params *UpdateParams[Schema]) (Record[Schema], 
 	db.indexDocument(params.Id, document, language)
 	document = db.flattenSchema(oldDocument)
 	db.deindexDocument(params.Id, document, language)
-	db.SetDocument(params.Id, params.Document)
-
+	err := db.SetDocument(params.Id, params.Document)
+	if err != nil {
+		return Record[Schema]{}, err
+	}
 	return Record[Schema]{Id: params.Id, Data: params.Document}, nil
 }
 
@@ -308,9 +312,7 @@ func (db *Engine[Schema]) Delete(params *DeleteParams[Schema]) error {
 	}
 	doc := db.flattenSchema(document)
 	db.deindexDocument(params.Id, doc, language)
-	db.DelDocument(params.Id)
-
-	return nil
+	return db.DelDocument(params.Id)
 }
 
 func (db *Engine[Schema]) ClearCache() {
@@ -402,7 +404,7 @@ func (db *Engine[Schema]) SearchOld(params *Params) (Result[Schema], error) {
 			keys = append(keys, k)
 		}
 		if len(keys) > 0 {
-			d := utils.Intersection(keys...)
+			d := Intersection(keys...)
 			for id := range idScores {
 				if !slices.Contains(d, id) {
 					delete(idScores, id)

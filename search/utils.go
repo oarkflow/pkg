@@ -1,6 +1,7 @@
 package search
 
 import (
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -47,4 +48,29 @@ func isEqual(dataVal, val any) bool {
 		return false
 	}
 	return false
+}
+
+// Intersection computes the list of values that are the intersection of all the slices.
+// Each value in the result should be present in each of the provided slices.
+func Intersection[T comparable](params ...[]T) []T {
+	var result []T
+
+	for i := 0; i < len(params[0]); i++ {
+		item := params[0][i]
+		if slices.Contains(result, item) {
+			continue
+		}
+		var j int
+		for j = 1; j < len(params); j++ {
+			if !slices.Contains(params[j], item) {
+				break
+			}
+		}
+
+		if j == len(params) {
+			result = append(result, item)
+		}
+	}
+
+	return result
 }

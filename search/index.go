@@ -1,9 +1,10 @@
 package search
 
 import (
+	"slices"
+
 	"github.com/oarkflow/pkg/search/lib"
 	"github.com/oarkflow/pkg/search/radix"
-	"github.com/oarkflow/pkg/str"
 	"github.com/oarkflow/pkg/utils"
 )
 
@@ -105,7 +106,7 @@ func (idx *Index) Find(params *FindParams) map[int64]float64 {
 		if len(keys) > 0 {
 			d := utils.Intersection(keys...)
 			for id := range idScores {
-				if !str.Contains(d, id) {
+				if !slices.Contains(d, id) {
 					delete(idScores, id)
 				}
 			}
