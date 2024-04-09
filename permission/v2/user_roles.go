@@ -3,7 +3,7 @@ package v2
 import (
 	"slices"
 
-	"github.com/oarkflow/pkg/maps"
+	"github.com/oarkflow/maps"
 )
 
 var roleManager *UserRoleManager
@@ -23,18 +23,19 @@ func (u *User) Can(company, module, entity, group, activity string) bool {
 }
 
 type UserRole struct {
-	UserID              string
-	RoleID              string
-	CanManageDescendant bool
-	Company             *Company
-	Module              *Module
-	Entity              *Entity
+	UserID               string
+	RoleID               string
+	CanManageDescendants bool
+	Company              *Company
+	Module               *Module
+	Entity               *Entity
 }
 
 type CompanyUser struct {
-	Company *Company
-	User    *User
-	Roles   []*UserRole
+	Company              *Company
+	User                 *User
+	CanManageDescendants bool
+	Roles                []*UserRole
 }
 
 type UserRoleManager struct {
@@ -117,19 +118,25 @@ func (u *UserRoleManager) Entities() map[string]*Entity {
 	return u.entities.AsMap()
 }
 
-func (u *UserRoleManager) AddUserRole(userID string, roleID string, company *Company, module *Module, entity *Entity) {
+func (u *UserRoleManager) AddUserRole(userID string, roleID string, company *Company, module *Module, entity *Entity, canManageDescendants ...bool) {
+	manageDescendants := true
+	if len(canManageDescendants) > 0 {
+		manageDescendants = canManageDescendants[0]
+	}
 	role := &UserRole{
-		UserID:  userID,
-		RoleID:  roleID,
-		Company: company,
-		Module:  module,
-		Entity:  entity,
+		UserID:               userID,
+		RoleID:               roleID,
+		Company:              company,
+		Module:               module,
+		Entity:               entity,
+		CanManageDescendants: manageDescendants,
 	}
 	companyUser, ok := u.companyUsers.Get(company.ID)
 	if !ok {
 		companyUser = &CompanyUser{
-			Company: company,
-			User:    &User{ID: userID},
+			Company:              company,
+			User:                 &User{ID: userID},
+			CanManageDescendants: manageDescendants,
 		}
 	}
 	companyUser.Roles = append(companyUser.Roles, role)
@@ -149,15 +156,23 @@ func (u *UserRoleManager) GetUserRoles(company, userID string) *CompanyUser {
 	if !ok {
 		return nil
 	}
-	ur := &CompanyUser{
-		Company: userRoles.Company,
-	}
+	roles := make([]*UserRole, 0, len(userRoles.Roles))
+	userFound := false
 	for _, ut := range userRoles.Roles {
 		if ut.UserID == userID {
-			ur.Roles = append(ur.Roles, ut)
+			userFound = true
+			roles = append(roles, ut)
 		}
 	}
-	return ur
+	if !userFound {
+		return nil
+	}
+	return &CompanyUser{
+		Company:              userRoles.Company,
+		User:                 userRoles.User,
+		CanManageDescendants: userRoles.CanManageDescendants,
+		Roles:                roles,
+	}
 }
 
 func (u *UserRoleManager) GetUserRolesByCompany(company string) []*UserRole {

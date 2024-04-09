@@ -1,7 +1,7 @@
 package v2
 
 import (
-	"github.com/oarkflow/pkg/maps"
+	"github.com/oarkflow/maps"
 )
 
 type Company struct {

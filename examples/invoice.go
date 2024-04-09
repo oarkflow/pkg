@@ -17,9 +17,12 @@ func main() {
 				Telephone: "+977-1-4497653",
 				Email:     "info@orgwareconstruct.com",
 			},
-			Esewa: &invoice.Esewa{
-				ID:   "9856034616",
-				Name: "Sujit Prasad Baniya",
+			BankDetail: &invoice.BankDetail{
+				AccountName:   "ORGWARE CONSTRUCT PVT. LTD.",
+				AccountNumber: "08001010007253",
+				BankName:      "GLOBAL IME BANK LIMITED",
+				BankAddress:   "KAMALADI, 28",
+				SwiftCode:     "GLBBNPKA",
 			},
 			ContactName:  "Sujit Baniya",
 			ContactEmail: "s.baniya.np@gmail.com",
@@ -31,10 +34,10 @@ func main() {
 		panic(err)
 	}
 	detail := &invoice.Detail{
-		InvoiceNumber: "5",
+		InvoiceNumber: "7",
 		Currency:      "$",
 		PaymentTerms:  "1",
-		Date:          "2023-06-25",
+		Date:          "2024-03-25",
 		DueDays:       5,
 		TaxRate:       "0",
 		Customer: invoice.Customer{
@@ -50,25 +53,19 @@ func main() {
 		},
 		Items: []invoice.Item{
 			{
-				Description: "CARE 2.0 Development and Support for the month of May 2023 ",
+				Description: "CARE 2.0 Development and Support for the month of April 2024 (Advance) ",
 				Quantity:    1,
-				UnitPrice:   12500,
+				UnitPrice:   7500,
 				Currency:    "$",
 			},
 			{
-				Description: "CARE 2.0 Development and Support for the month of June 2023 ",
+				Description: "CARE 2.0 Development and Support for the month of March 2024 ",
 				Quantity:    1,
-				UnitPrice:   12500,
+				UnitPrice:   1250,
 				Currency:    "$",
 			},
-			/*{
-				Description: "CARE 2.0 Development and Support for the month of July 2023 ",
-				Quantity:    1,
-				UnitPrice:   12500,
-				Currency:    "$",
-			},*/
 		},
-		Transactions: []invoice.Transaction{
+		/*Transactions: []invoice.Transaction{
 			{
 				Description:   "CARE 2.0 Development and Support for the month of May 2023 ",
 				PaymentMethod: "Wire Transfer",
@@ -76,16 +73,9 @@ func main() {
 				UnitPrice:     7000,
 				Currency:      "$",
 			},
-			/*{
-				Description:   "CARE 2.0 Development and Support for the month of June 2023 ",
-				PaymentMethod: "Wire Transfer",
-				Quantity:      1,
-				UnitPrice:     7000,
-				Currency:      "$",
-			},*/
-		},
+		},*/
 	}
-	err = inv.Create(detail).RenderToFile("CARE 2.0 Invoice #6 for June 2023.pdf")
+	err = inv.Create(detail).RenderToFile("CARE 2.0 Invoice #7 for March 2024.pdf")
 	if err != nil {
 		panic(err)
 	}
