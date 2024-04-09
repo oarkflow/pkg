@@ -2,9 +2,9 @@ package utils
 
 import (
 	"errors"
+	"reflect"
 	"sort"
 
-	"github.com/goccy/go-reflect"
 	"golang.org/x/exp/constraints"
 )
 

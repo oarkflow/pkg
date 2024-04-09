@@ -3,10 +3,9 @@ package flat
 import (
 	"fmt"
 	"os"
+	"reflect"
 	"strconv"
 	"strings"
-
-	"github.com/goccy/go-reflect"
 
 	"github.com/oarkflow/pkg/mergo"
 )

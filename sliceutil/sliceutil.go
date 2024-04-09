@@ -2,9 +2,9 @@ package sliceutil
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 
-	"github.com/goccy/go-reflect"
 	"github.com/samber/lo"
 )
 

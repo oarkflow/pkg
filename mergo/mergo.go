@@ -2,7 +2,7 @@ package mergo
 
 import (
 	"errors"
-	"github.com/goccy/go-reflect"
+	"reflect"
 )
 
 // Errors reported by Mergo when it finds invalid arguments.

@@ -2,10 +2,9 @@ package dipper
 
 import (
 	"fmt"
+	"reflect"
 	"strconv"
 	"strings"
-
-	"github.com/goccy/go-reflect"
 )
 
 // setOption is a type used for special assignments in a set operation.

@@ -8,7 +8,6 @@ require (
 	github.com/boombuler/barcode v1.0.1
 	github.com/carlmjohnson/deque v0.23.1
 	github.com/casbin/casbin/v2 v2.68.0
-	github.com/goccy/go-reflect v1.2.0
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/securecookie v1.1.2
 	github.com/gorilla/sessions v1.2.2

@@ -10,7 +10,7 @@ package mergo
 
 import (
 	"fmt"
-	"github.com/goccy/go-reflect"
+	"reflect"
 )
 
 func hasMergeableFields(dst reflect.Value) (exported bool) {
