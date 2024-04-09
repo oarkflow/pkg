@@ -17,7 +17,6 @@ require (
 	github.com/oarkflow/gorm-adapter v0.0.7
 	github.com/oarkflow/govaluate v0.0.1
 	github.com/oarkflow/maps v0.0.0-20240406152114-fc5a94538f01
-	github.com/oarkflow/search v0.0.0-20240406153724-8487f647254f
 	github.com/oarkflow/xid v1.2.5
 	github.com/phpdave11/gofpdf v1.4.2
 	github.com/ruudk/golang-pdf417 v0.0.0-20201230142125-a7e3863a1245
@@ -56,16 +55,13 @@ require (
 	github.com/jackc/pgx/v5 v5.3.1 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
-	github.com/kljensen/snowball v0.9.0 // indirect
 	github.com/mattn/go-isatty v0.0.18 // indirect
 	github.com/mattn/go-runewidth v0.0.15 // indirect
 	github.com/microsoft/go-mssqldb v0.21.0 // indirect
 	github.com/nyaruka/phonenumbers v1.3.4 // indirect
-	github.com/oarkflow/flydb v0.0.0-20240406152654-9bccddc99c73 // indirect
 	github.com/oarkflow/log v1.0.74 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
-	github.com/shamaton/msgpack/v2 v2.2.0 // indirect
 	github.com/tidwall/gjson v1.17.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
