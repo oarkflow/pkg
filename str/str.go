@@ -37,29 +37,22 @@ func Random(n int) string {
 	return string(b)
 }
 
-// FromByte converts byte slice to a string without memory allocation.
-// See https://groups.google.com/forum/#!msg/Golang-Nuts/ENgbUzYvCuU/90yGx7GUAgAJ .
-//
-// Note it may break if string and/or slice header will change
-// in the future go versions.
-func FromByte(b []byte) string {
-	/* #nosec G103 */
-	return *(*string)(unsafe.Pointer(&b))
+// ToByte converts a string to a byte slice without memory allocation.
+// NOTE: The returned byte slice MUST NOT be modified since it shares the same backing array
+// with the given string.
+func ToByte(s string) []byte {
+	p := unsafe.StringData(s)
+	b := unsafe.Slice(p, len(s))
+	return b
 }
 
-// ToByte converts string to a byte slice without memory allocation.
-//
-// Note it may break if string and/or slice header will change
-// in the future go versions.
-func ToByte(s string) (b []byte) {
-	/* #nosec G103 */
-	bh := (*reflect.SliceHeader)(unsafe.Pointer(&b))
-	/* #nosec G103 */
-	sh := (*reflect.StringHeader)(unsafe.Pointer(&s))
-	bh.Data = sh.Data
-	bh.Len = sh.Len
-	bh.Cap = sh.Len
-	return b
+// FromByte converts bytes to a string without memory allocation.
+// NOTE: The given bytes MUST NOT be modified since they share the same backing array
+// with the returned string.
+func FromByte(b []byte) string {
+	// Ignore if your IDE shows an error here; it's a false positive.
+	p := unsafe.SliceData(b)
+	return unsafe.String(p, len(b))
 }
 
 func Contains[T comparable](s []T, v T) bool {
