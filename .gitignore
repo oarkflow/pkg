@@ -1,4 +1,4 @@
 .idea
 pkg.iml
 *.log
-examples/fts
+fts

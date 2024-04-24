@@ -11,9 +11,9 @@ require (
 	github.com/gorilla/securecookie v1.1.2
 	github.com/gorilla/sessions v1.2.2
 	github.com/gosimple/slug v1.14.0
-	github.com/klauspost/compress v1.17.7
+	github.com/klauspost/compress v1.17.8
 	github.com/oarkflow/expr v0.0.7
-	github.com/oarkflow/frame v0.0.66
+	github.com/oarkflow/frame v0.0.67
 	github.com/oarkflow/gorm-adapter v0.0.7
 	github.com/oarkflow/govaluate v0.0.1
 	github.com/oarkflow/maps v0.0.0-20240406152114-fc5a94538f01
@@ -25,19 +25,20 @@ require (
 	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e
 	github.com/sourcegraph/conc v0.3.0
 	github.com/tidwall/pretty v1.2.1
-	golang.org/x/crypto v0.21.0
-	golang.org/x/exp v0.0.0-20240404231335-c0f41cb1a7a0
+	golang.org/x/crypto v0.22.0
+	golang.org/x/exp v0.0.0-20240416160154-fe59bbe5cc7f
 	golang.org/x/image v0.15.0
-	golang.org/x/net v0.21.0
-	golang.org/x/sys v0.18.0
+	golang.org/x/net v0.24.0
+	golang.org/x/sys v0.19.0
 	golang.org/x/text v0.14.0
 	gonum.org/v1/gonum v0.15.0
 	gopkg.in/yaml.v3 v3.0.1
-	gorm.io/gorm v1.25.8
+	gorm.io/gorm v1.25.9
 	mvdan.cc/xurls/v2 v2.5.0
 )
 
 require (
+	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/andeya/ameda v1.5.3 // indirect
 	github.com/andeya/goutil v1.0.1 // indirect
 	github.com/apcera/termtables v0.0.0-20170405184538-bcbc5dc54055 // indirect
@@ -46,26 +47,28 @@ require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/glebarez/go-sqlite v1.21.1 // indirect
 	github.com/glebarez/sqlite v1.8.0 // indirect
-	github.com/go-sql-driver/mysql v1.7.1 // indirect
+	github.com/go-sql-driver/mysql v1.8.1 // indirect
 	github.com/golang-sql/civil v0.0.0-20220223132316-b832511892a9 // indirect
 	github.com/golang-sql/sqlexp v0.1.0 // indirect
 	github.com/gosimple/unidecode v1.0.1 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
-	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
-	github.com/jackc/pgx/v5 v5.3.1 // indirect
+	github.com/jackc/pgservicefile v0.0.0-20231201235250-de7065d80cb9 // indirect
+	github.com/jackc/pgx/v5 v5.5.5 // indirect
+	github.com/jackc/puddle/v2 v2.2.1 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/mattn/go-isatty v0.0.18 // indirect
 	github.com/mattn/go-runewidth v0.0.15 // indirect
-	github.com/microsoft/go-mssqldb v0.21.0 // indirect
+	github.com/microsoft/go-mssqldb v1.7.0 // indirect
 	github.com/nyaruka/phonenumbers v1.3.4 // indirect
 	github.com/oarkflow/log v1.0.74 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
-	github.com/rivo/uniseg v0.2.0 // indirect
-	github.com/tidwall/gjson v1.17.0 // indirect
+	github.com/rivo/uniseg v0.4.7 // indirect
+	github.com/tidwall/gjson v1.17.1 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
+	golang.org/x/sync v0.7.0 // indirect
 	google.golang.org/protobuf v1.33.0 // indirect
 	gorm.io/driver/mysql v1.5.0 // indirect
 	gorm.io/driver/postgres v1.5.0 // indirect
