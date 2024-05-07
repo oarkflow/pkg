@@ -232,8 +232,10 @@ func (condition *Condition) checkEq(val any) bool {
 		switch gtVal := condition.Value.(type) {
 		case string:
 			return strings.EqualFold(val, gtVal)
+		default:
+			gtVal1 := fmt.Sprint(gtVal)
+			return strings.EqualFold(val, gtVal1)
 		}
-		return false
 	case int:
 		switch gtVal := condition.Value.(type) {
 		case int:
@@ -242,6 +244,12 @@ func (condition *Condition) checkEq(val any) bool {
 			return val == int(gtVal)
 		case float64:
 			return float64(val) == gtVal
+		case string:
+			v, err := strconv.Atoi(gtVal)
+			if err != nil {
+				return false
+			}
+			return val == v
 		}
 		return false
 	case float64:
@@ -252,6 +260,12 @@ func (condition *Condition) checkEq(val any) bool {
 			return val == float64(gtVal)
 		case float64:
 			return val == gtVal
+		case string:
+			v, err := strconv.ParseFloat(gtVal, 32)
+			if err != nil {
+				return false
+			}
+			return val == v
 		}
 		return false
 	case bool:
@@ -266,8 +280,11 @@ func (condition *Condition) checkEq(val any) bool {
 			return val == v
 		}
 		return false
+	default:
+		dataVal1 := fmt.Sprint(condition.Value)
+		val1 := fmt.Sprint(val)
+		return strings.EqualFold(dataVal1, val1)
 	}
-	return false
 }
 
 func (condition *Condition) checkNeq(val any) bool {
