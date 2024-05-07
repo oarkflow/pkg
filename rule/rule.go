@@ -1313,6 +1313,14 @@ func (r *Rule) OnSuccess(handler CallbackFn) {
 }
 
 func (r *Rule) apply(d Data) Data {
+	result := r.Validate(d)
+	if !result {
+		return nil
+	}
+	return d
+}
+
+func (r *Rule) Validate(d Data) bool {
 	var result, n, g, j bool
 	for i, node := range r.Conditions {
 		if len(node.Condition) == 0 {
@@ -1374,10 +1382,7 @@ func (r *Rule) apply(d Data) Data {
 	if len(r.Joins) > 0 {
 		result = j
 	}
-	if !result {
-		return nil
-	}
-	return d
+	return result
 }
 
 func (r *Rule) Apply(d Data, callback ...CallbackFn) (any, error) {
