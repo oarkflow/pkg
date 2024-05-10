@@ -4,31 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/oarkflow/pkg/dataset"
 	"github.com/oarkflow/pkg/rule"
 	"github.com/oarkflow/pkg/sliceutil"
 )
 
 func main() {
 	groupBy()
-}
-
-func datasetCheck() {
-	// ruleCheck()
-	df := dataset.LoadMaps(
-		[]map[string]any{
-			{"id": 5, "code": "BJS", "name": "CN", "money": 1.23},
-			{"id": 2, "code": "BJS", "name": "CN", "money": 2.21},
-			{"id": 3, "code": "SHA", "name": "CN", "money": 1.26},
-			{"id": 4, "code": "NYC", "name": "US", "money": 3.99},
-			{"id": 7, "code": "MEL", "name": "US", "money": 3.99},
-			{"id": 1, "code": "", "name": "CN", "money": 2.99},
-		},
-	)
-	groups := df.GroupBy("code", "money")
-	for key, group := range groups.GetGroups() {
-		fmt.Println(key, group.Maps())
-	}
 }
 
 type Person struct {

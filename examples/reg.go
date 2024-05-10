@@ -18,7 +18,7 @@ type Function struct {
 	Arguments []Argument
 }
 
-func ma1n() {
+func man() {
 	code := `true`
 	node, err := parser.ParseExpr(code)
 	if err != nil {
