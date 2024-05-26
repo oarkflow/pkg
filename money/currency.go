@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/oarkflow/frame/pkg/common/storage"
+	"github.com/oarkflow/pkg/storage"
 
 	"github.com/oarkflow/pkg/decimal"
 )

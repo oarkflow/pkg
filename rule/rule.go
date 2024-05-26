@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/oarkflow/frame/pkg/common/xid"
+	"github.com/oarkflow/xid"
 
 	"github.com/oarkflow/pkg/dipper"
 	"github.com/oarkflow/pkg/evaluate"
