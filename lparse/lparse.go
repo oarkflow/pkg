@@ -2,15 +2,17 @@ package lparse
 
 import (
 	"bufio"
-	json "encoding/json"
-	"github.com/oarkflow/pkg/str"
-	"github.com/sourcegraph/conc/iter"
-	"github.com/sourcegraph/conc/pool"
+	"encoding/json"
 	"io"
 	"os"
 	"runtime"
 	"sync"
 	"sync/atomic"
+
+	"github.com/sourcegraph/conc/iter"
+	"github.com/sourcegraph/conc/pool"
+
+	"github.com/oarkflow/pkg/str"
 )
 
 func read(r *bufio.Reader) ([]byte, error) {

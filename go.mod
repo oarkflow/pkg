@@ -10,7 +10,6 @@ require (
 	github.com/oarkflow/expr v0.0.8
 	github.com/oarkflow/maps v0.0.0-20240406152114-fc5a94538f01
 	github.com/oarkflow/xid v1.2.5
-	github.com/phpdave11/gofpdf v1.4.2
 	github.com/ruudk/golang-pdf417 v0.0.0-20201230142125-a7e3863a1245
 	github.com/samber/lo v1.39.0
 	github.com/scylladb/termtables v1.0.0
