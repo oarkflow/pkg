@@ -7,12 +7,9 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/gosimple/slug v1.14.0
 	github.com/klauspost/compress v1.17.8
-	github.com/oarkflow/expr v0.0.8
-	github.com/oarkflow/maps v0.0.0-20240406152114-fc5a94538f01
+	github.com/oarkflow/paseto v0.0.0-20231006103046-f6852c552c83
 	github.com/oarkflow/xid v1.2.5
 	github.com/ruudk/golang-pdf417 v0.0.0-20201230142125-a7e3863a1245
-	github.com/samber/lo v1.39.0
-	github.com/scylladb/termtables v1.0.0
 	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e
 	github.com/sourcegraph/conc v0.3.0
 	github.com/tidwall/pretty v1.2.1
@@ -26,10 +23,7 @@ require (
 )
 
 require (
-	github.com/apcera/termtables v0.0.0-20170405184538-bcbc5dc54055 // indirect
 	github.com/gosimple/unidecode v1.0.1 // indirect
-	github.com/mattn/go-runewidth v0.0.15 // indirect
-	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/stretchr/testify v1.8.4 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.9.0 // indirect

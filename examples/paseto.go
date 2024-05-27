@@ -5,8 +5,9 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/oarkflow/paseto"
+
 	"github.com/oarkflow/pkg/key"
-	"github.com/oarkflow/pkg/paseto"
 )
 
 var data10 = []byte(`

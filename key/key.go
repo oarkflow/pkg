@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 
-	"github.com/oarkflow/pkg/paseto"
+	"github.com/oarkflow/paseto"
 )
 
 func Generate(secret string, payload []byte) (string, error) {
