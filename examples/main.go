@@ -1,15 +1,20 @@
 package main
 
 import (
+	"bytes"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"net"
 	"net/http"
 	"net/smtp"
+	"net/url"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/slack-go/slack"
+	"gopkg.in/gomail.v2"
 )
 
 type Report struct {
@@ -26,14 +31,22 @@ type Option struct {
 	RequestHeaders http.Header `json:"request_headers"`
 }
 
+type AlertConfig struct {
+	Email   string `json:"email"`
+	Phone   string `json:"phone"`
+	Slack   string `json:"slack"`
+	Webhook string `json:"webhook"`
+}
+
 type Service struct {
-	Name        string   `json:"name"`
-	URL         string   `json:"url"`
-	Type        string   `json:"type"`
-	Port        string   `json:"port"`
-	Option      Option   `json:"option"`
-	LastReports []Report `json:"last_reports"`
-	Report      Report   `json:"report"`
+	Name        string      `json:"name"`
+	URL         string      `json:"url"`
+	Type        string      `json:"type"`
+	Port        string      `json:"port"`
+	Option      Option      `json:"option"`
+	AlertConfig AlertConfig `json:"alert_config"`
+	LastReports []Report    `json:"last_reports"`
+	Report      Report      `json:"report"`
 }
 
 var services = make(map[string]Service)
@@ -106,6 +119,7 @@ func checkSMTPService(service *Service) {
 		service.Report.ResponseTime = ""
 		service.Report.Issues = fmt.Sprintf("SMTP connection failed: %v", err)
 		service.LastReports = append(service.LastReports, service.Report)
+		sendNotification(service)
 		return
 	}
 	_ = conn.Close()
@@ -122,6 +136,9 @@ func checkSMTPService(service *Service) {
 	}
 
 	service.LastReports = append(service.LastReports, service.Report)
+	if service.Report.Status == "Failed" {
+		sendNotification(service)
+	}
 }
 
 func checkDNSRecords(domain string) string {
@@ -203,6 +220,7 @@ func checkHTTPService(service *Service) {
 				service.Report.ResponseTime = ""
 				service.Report.Issues += fmt.Sprintf("; Retry without SSL failed: %v", err)
 				service.LastReports = append(service.LastReports, service.Report)
+				sendNotification(service)
 				return
 			} else {
 				service.Report.Issues += "; SSL issue detected, but passed without SSL verification"
@@ -224,6 +242,7 @@ func checkHTTPService(service *Service) {
 		service.Report.ResponseTime = ""
 		service.Report.Issues = err.Error()
 		service.LastReports = append(service.LastReports, service.Report)
+		sendNotification(service)
 	}
 }
 
@@ -237,6 +256,7 @@ func checkTCPService(service *Service) {
 		service.Report.ResponseTime = ""
 		service.Report.Issues = err.Error()
 		service.LastReports = append(service.LastReports, service.Report)
+		sendNotification(service)
 		return
 	}
 	_ = conn.Close()
@@ -265,4 +285,81 @@ func checkSecurityHeaders(resp *http.Response) string {
 		}
 	}
 	return issues.String()
+}
+
+func sendNotification(service *Service) {
+	notificationMessage := fmt.Sprintf("Service %s reported a status of %s. Issues: %s", service.Name, service.Report.Status, service.Report.Issues)
+
+	if service.AlertConfig.Email != "" {
+		sendEmail(service.AlertConfig.Email, notificationMessage)
+	}
+	if service.AlertConfig.Phone != "" {
+		sendSMS(service.AlertConfig.Phone, notificationMessage)
+	}
+	if service.AlertConfig.Slack != "" {
+		sendSlack(service.AlertConfig.Slack, notificationMessage)
+	}
+	if service.AlertConfig.Webhook != "" {
+		sendWebhook(service.AlertConfig.Webhook, notificationMessage)
+	}
+}
+
+func sendEmail(recipient, message string) {
+	m := gomail.NewMessage()
+	m.SetHeader("From", "your-email@example.com")
+	m.SetHeader("To", recipient)
+	m.SetHeader("Subject", "Service Alert")
+	m.SetBody("text/plain", message)
+
+	d := gomail.NewDialer("smtp.example.com", 587, "your-email@example.com", "your-email-password")
+	if err := d.DialAndSend(m); err != nil {
+		fmt.Printf("Failed to send email: %v\n", err)
+	}
+}
+
+func sendSMS(phone, message string) {
+	// Example using Twilio API
+	accountSid := "your_twilio_account_sid"
+	authToken := "your_twilio_auth_token"
+	urlStr := fmt.Sprintf("https://api.twilio.com/2010-04-01/Accounts/%s/Messages.json", accountSid)
+
+	msgData := url.Values{}
+	msgData.Set("To", phone)
+	msgData.Set("From", "your_twilio_phone_number")
+	msgData.Set("Body", message)
+	msgDataReader := *strings.NewReader(msgData.Encode())
+
+	client := &http.Client{}
+	req, _ := http.NewRequest("POST", urlStr, &msgDataReader)
+	req.SetBasicAuth(accountSid, authToken)
+	req.Header.Add("Accept", "application/json")
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Printf("Failed to send SMS: %v\n", err)
+	}
+	defer resp.Body.Close()
+}
+
+func sendSlack(webhookURL, message string) {
+	webhookMessage := slack.WebhookMessage{
+		Text: message,
+	}
+
+	err := slack.PostWebhook(webhookURL, &webhookMessage)
+	if err != nil {
+		fmt.Printf("Failed to send Slack message: %v\n", err)
+	}
+}
+
+func sendWebhook(webhookURL, message string) {
+	payload := map[string]string{"message": message}
+	jsonPayload, _ := json.Marshal(payload)
+
+	resp, err := http.Post(webhookURL, "application/json", bytes.NewBuffer(jsonPayload))
+	if err != nil {
+		fmt.Printf("Failed to send webhook: %v\n", err)
+	}
+	defer resp.Body.Close()
 }
