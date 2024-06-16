@@ -832,8 +832,11 @@ func (i *Invoice) prepareFooter(detail *Detail) {
 					})
 				}
 			})
-
-			i.engine.Col(4, func() {
+			var width uint = 4
+			if contactEmail == "" && contactName == "" {
+				width = 8
+			}
+			i.engine.Col(width, func() {
 				i.engine.Text("", props.Text{
 					Top:   4,
 					Align: consts.Left,
@@ -914,36 +917,38 @@ func (i *Invoice) prepareFooter(detail *Detail) {
 					})
 				}
 			})
-			i.engine.Col(4, func() {
-				i.engine.Text("Contact Information", props.Text{
-					Top:   4,
-					Align: consts.Right,
-					Size:  12,
-					Color: color.Color{
-						Red:   124,
-						Green: 124,
-						Blue:  124,
-					},
+			if width == 4 {
+				i.engine.Col(4, func() {
+					i.engine.Text("Contact Information", props.Text{
+						Top:   4,
+						Align: consts.Right,
+						Size:  12,
+						Color: color.Color{
+							Red:   124,
+							Green: 124,
+							Blue:  124,
+						},
+					})
+					i.engine.Text(contactName, props.Text{
+						Top:   10,
+						Align: consts.Right,
+						Size:  10,
+						Color: *primaryColor,
+					})
+					i.engine.Text(contactEmail, props.Text{
+						Top:   15,
+						Align: consts.Right,
+						Size:  10,
+						Color: *primaryColor,
+					})
+					i.engine.Text(contactPhone, props.Text{
+						Top:   20,
+						Align: consts.Right,
+						Size:  10,
+						Color: *primaryColor,
+					})
 				})
-				i.engine.Text(contactName, props.Text{
-					Top:   10,
-					Align: consts.Right,
-					Size:  10,
-					Color: *primaryColor,
-				})
-				i.engine.Text(contactEmail, props.Text{
-					Top:   15,
-					Align: consts.Right,
-					Size:  10,
-					Color: *primaryColor,
-				})
-				i.engine.Text(contactPhone, props.Text{
-					Top:   20,
-					Align: consts.Right,
-					Size:  10,
-					Color: *primaryColor,
-				})
-			})
+			}
 		})
 		/*i.engine.Line(1)*/
 		i.engine.Row(3, func() {})
