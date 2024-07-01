@@ -1,27 +1,19 @@
 package main
 
 import (
+	"encoding/binary"
 	"fmt"
+
+	"github.com/oarkflow/xid"
 
 	"github.com/oarkflow/pkg/enc"
 )
 
 func main() {
-	key := []byte("myverystrongpasswordo32bitlength")
-	originalText := []byte("Lorem akajhsd kajhsdkasjhdkjashdk jashdkjhasdgkjhadkjahgdkjahgdkjahsgdkjhasgdkjhasg kjdasdkjhagsdkja gdkjashgd jkashgd jas")
-	// Encrypt in Go
-	encrypted, err := enc.EncryptCBC(string(originalText), string(key))
-	if err != nil {
-		fmt.Println("Encryption error:", err)
-		return
-	}
-	fmt.Println("Encrypted:", encrypted)
-
-	// Decrypt in Go (encrypted string from JavaScript can be used here)
-	decrypted, err := enc.DecryptCFB("e8c8131d7282c5bb93036d34dc914b13:Mrpyq5u3pKBpUMtrn+9A1sZTmc5k7Flyth3O+r8Sd2s=", key)
-	if err != nil {
-		fmt.Println("Decryption error:", err)
-		return
-	}
-	fmt.Println("Decrypted:", string(decrypted))
+	keyBytes := make([]byte, 8)
+	binary.BigEndian.PutUint64(keyBytes, uint64(xid.New().Int64()))
+	fmt.Println(xid.New().String())
+	key := "myverystrongpasswordo32bitlength"
+	originalText := "myverystrongpasswordo32bitlength"
+	fmt.Println(enc.Encrypt(originalText, key))
 }
